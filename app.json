@@ -1,28 +1,73 @@
 {
-  "expo": {
-    "name": "FitnessApp",
-    "slug": "FitnessApp",
-    "version": "1.0.0",
-    "orientation": "portrait",
-    "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
-    "newArchEnabled": true,
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
-    "ios": {
-      "supportsTablet": true
-    },
-    "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      }
-    },
-    "web": {
-      "favicon": "./assets/favicon.png"
+    "expo": {
+        "name": "FitnessApp",
+        "slug": "FitnessApp",
+        "version": "1.0.0",
+        "scheme": "fitnessapp",
+        "orientation": "portrait",
+
+        "userInterfaceStyle": "light",
+        "newArchEnabled": true,
+        "splash": {
+            "resizeMode": "contain",
+            "backgroundColor": "#ffffff"
+        },
+        "ios": {
+            "supportsTablet": true,
+            "bundleIdentifier": "com.chicmictechnologies.fitnessapp",
+            "infoPlist": {
+                "NSFaceIDUsageDescription": "We use Face ID to allow you to log in without entering your password.",
+                "NSPhotoLibraryUsageDescription": "We need access to your photo library to allow you to select a custom image.",
+                "NSCameraUsageDescription": "We need access to your camera to allow you to take a photo for your custom image."
+            },
+            "googleServicesFile": "./ios/FitnessApp/GoogleService-Info.plist",
+            "entitlements": {
+                "com.apple.developer.healthkit": true
+            }
+        },
+        "android": {
+            "adaptiveIcon": {
+                "backgroundColor": "#ffffff"
+            },
+            "package": "com.chicmictechnologies.fitnessapp",
+            "googleServicesFile": "./android/app/google-services.json"
+        },
+        "web": {
+            "favicon": "./assets/favicon.png",
+            "permissions": ["USE_BIOMETRIC", "USE_FINGERPRINT", "CAMERA", "READ_EXTERNAL_STORAGE", "WRITE_EXTERNAL_STORAGE"]
+        },
+        "extra": {
+            "eas": {
+                "projectId": "a060a8a2-5680-41a8-8a06-c59cfa1ac497",
+                "webClientId": "602719973492-kpgm6n50gejr82a9nbvc4c976iql2dqn.apps.googleusercontent.com"
+            },
+            "plugins": [
+                [
+                    "react-native-fbsdk-next",
+                    {
+                        "appID": "501511446351352",
+                        "clientToken": "16a0ca38182d964913beda6e46883e03",
+                        "displayName": "FitnessApp",
+                        "scheme": "fb48127127xxxxxxxx",
+                        "advertiserIDCollectionEnabled": false,
+                        "autoLogAppEventsEnabled": false,
+                        "isAutoInitEnabled": true,
+                        "iosUserTrackingPermission": "This identifier will be used to deliver personalized ads to you."
+                    }
+                ],
+                [
+                    "react-native-health",
+                    {
+                        "permissions": {
+                            "NSHealthShareUsageDescription": "Read and understand health data.",
+                            "NSHealthUpdateUsageDescription": "Share workout data with other apps."
+                        }
+                    }
+                ]
+            ],
+            "expoGo": {
+                "webClientId": "602719973492-kpgm6n50gejr82a9nbvc4c976iql2dqn.apps.googleusercontent.com"
+            }
+        }
     }
-  }
 }
