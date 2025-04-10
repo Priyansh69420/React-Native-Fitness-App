@@ -1,0 +1,57 @@
+{
+    "project_info": {
+        "project_number": "602719973492",
+        "project_id": "fitnessapp-340e5",
+        "storage_bucket": "fitnessapp-340e5.firebasestorage.app"
+    },
+    "client": [
+        {
+            "client_info": {
+                "mobilesdk_app_id": "1:602719973492:android:ee656f6e02eafd4e406121",
+                "android_client_info": {
+                    "package_name": "com.chicmictechnologies.fitnessapp"
+                }
+            },
+            "oauth_client": [
+                {
+                    "client_id": "602719973492-68i8ej1utp8pkk20ntg3r1fsotkc8823.apps.googleusercontent.com",
+                    "client_type": 1,
+                    "android_info": {
+                        "package_name": "com.chicmictechnologies.fitnessapp",
+                        "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+                    }
+                },
+                {
+                    "client_id": "602719973492-nj6j3hu2akaqj7k02v3rdohp54v3rk2u.apps.googleusercontent.com",
+                    "client_type": 2,
+                    "ios_info": {
+                        "bundle_id": "com.chicmictechnologies.fitnessapp"
+                    }
+                },
+                {
+                    "client_id": "602719973492-kpgm6n50gejr82a9nbvc4c976iql2dqn.apps.googleusercontent.com",
+                    "client_type": 3
+                }
+            ],
+            "api_key": [
+                {
+                    "current_key": "AIzaSyB0T8r5XKD35K3gTBblvjNS0zJCuZxAQoA"
+                }
+            ],
+            "services": {
+                "appinvite_service": {
+                    "other_platform_oauth_client": [
+                        {
+                            "client_id": "602719973492-nj6j3hu2akaqj7k02v3rdohp54v3rk2u.apps.googleusercontent.com",
+                            "client_type": 2,
+                            "ios_info": {
+                                "bundle_id": "com.chicmictechnologies.fitnessapp"
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    ],
+    "configuration_version": "1"
+}

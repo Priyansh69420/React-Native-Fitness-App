@@ -176,7 +176,7 @@ export default function DailySteps() {
         </View>
 
         <View style={styles.performanceContainer}>
-          <View style={styles.performanceBox}>
+          <View style={[styles.performanceBox, {borderBottomWidth: 0.5, borderBottomColor: "#d9d9d9"}]}>
             <View style={styles.performanceRow}>
               <View style={styles.smileyContainer}>
                 <Image
@@ -407,10 +407,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     padding: width * 0.05,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 3,
+    elevation: 2,
     marginBlock: height * 0.001,
   },
   performanceRow: {

@@ -164,7 +164,7 @@ export default function Water() {
       ) : (<View />)}
 
       <View style={styles.performanceContainer}>
-        <View style={styles.performanceBox}>
+        <View style={[styles.performanceBox, {borderBottomWidth: 0.5, borderBottomColor: "#d9d9d9"}]}>
           <View style={styles.performanceRow}>
             <View style={styles.smileyContainer}>
               <Image
@@ -245,13 +245,13 @@ const styles = StyleSheet.create({
     marginBottom: height * 0.03,
   },
   glassWrapper: {
-    width: (width - width * 0.1 - width * 0.075 * 3) / 4,
-    height: (width - width * 0.1 - width * 0.075 * 3) / 4,
+    width: (width - RFValue(30, width) * 3) / 4, // Dynamically adjust the width for 4 items per row
+    height: (width - RFValue(30, width) * 3) / 4, // Use the same dynamic calculation for height
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: height * 0.05,
+    marginBottom: height * 0.05, // Maintain the spacing between rows
     position: 'relative',
-    marginHorizontal: 15,
+    marginHorizontal: RFValue(10, width), // Dynamically adjust spacing between items
   },
   glassIcon: {
     width: RFValue(60, height),
