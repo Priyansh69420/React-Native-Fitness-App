@@ -50,12 +50,20 @@ export const loadData = async (setGlassDrunk: any) => {
 export default function Water() {
   const totalGlasses = 8;
   const [glassDrunk, setGlassDrunk] = useState<number>(0);
+  const [weeklyPerformance, setWeeklyPerformance] = useState<{ day: string; count: number }[]>([]);
+  const [bestPerformance, setBestPerformance] = useState<{ day: string; count: number } | null>(null);
+  const [worstPerformance, setWorstPerformance] = useState<{ day: string; count: number } | null>(null);
   const navigation = useNavigation<NavigationProp>();
+
+  useEffect(() => {
+    loadData();
+  }, []);
 
   const loadData = async () => {
     try {
       const storedDate = await AsyncStorage.getItem('lastDate');
       const storedGlassDrunk = await AsyncStorage.getItem('glassDrunk');
+      const storedWeeklyPerformance = await AsyncStorage.getItem('weeklyPerformance');
 
       const currentDate = getCurrentDate();
 
@@ -70,6 +78,10 @@ export default function Water() {
       if (!storedDate) {
         await AsyncStorage.setItem('lastDate', currentDate);
       }
+
+      if (storedWeeklyPerformance) {
+        setWeeklyPerformance(JSON.parse(storedWeeklyPerformance));
+      }
     } catch (error) {
       console.error('Error loading data from AsyncStorage:', error);
     }
@@ -78,14 +90,55 @@ export default function Water() {
   const saveGlassDrunk = async (newCount: number) => {
     try {
       await AsyncStorage.setItem('glassDrunk', newCount.toString());
+
+      const currentDate = getCurrentDate();
+      const currentDay = getDayOfWeek(currentDate); // Implement getDayOfWeek function
+
+      const updatedPerformance = weeklyPerformance.map((item) =>
+        item.day === currentDay ? { ...item, count: newCount } : item
+      );
+
+      const dayExists = updatedPerformance.some((item) => item.day === currentDay);
+      if (!dayExists) {
+        updatedPerformance.push({ day: currentDay, count: newCount });
+      }
+
+      setWeeklyPerformance(updatedPerformance);
+      await AsyncStorage.setItem('weeklyPerformance', JSON.stringify(updatedPerformance));
+      updateBestAndWorstPerformance(updatedPerformance); // Call function to update best/worst
     } catch (error) {
       console.error('Error saving glass count to AsyncStorage:', error);
     }
   };
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  const updateBestAndWorstPerformance = (performanceData: { day: string; count: number }[]) => {
+    if (performanceData.length > 0) {
+      let best = performanceData[0];
+      let worst = performanceData[0];
+
+      performanceData.forEach((dayData) => {
+        if (dayData.count > best.count) {
+          best = dayData;
+        }
+        if (dayData.count < worst.count) {
+          worst = dayData;
+        }
+      });
+
+      setBestPerformance(best);
+      setWorstPerformance(worst);
+    } else {
+      setBestPerformance(null);
+      setWorstPerformance(null);
+    }
+  };
+
+  const getDayOfWeek = (dateString: string): string => {
+    const date = new Date(dateString);
+    const options: Intl.DateTimeFormatOptions = { weekday: 'long' };
+    return new Intl.DateTimeFormat('en-US', options).format(date);
+  };
+  
 
   const handleGlassPress = (index: number) => {
     if (index >= glassDrunk) {
@@ -98,7 +151,11 @@ export default function Water() {
   const resetData = async () => {
     try {
       await AsyncStorage.setItem('glassDrunk', '0');
+      await AsyncStorage.removeItem('weeklyPerformance'); // Remove weekly performance
       setGlassDrunk(0);
+      setWeeklyPerformance([]);
+      setBestPerformance(null);
+      setWorstPerformance(null);
 
       const currentDate = getCurrentDate();
       await AsyncStorage.setItem('lastDate', currentDate);
@@ -173,10 +230,11 @@ export default function Water() {
               />
             </View>
             <Text style={styles.performanceText}>Best Performance</Text>
-            <Text style={styles.performanceValue}>10</Text>
+            <Text style={styles.performanceValue}>{bestPerformance?.count || '-'}</Text>
           </View>
-          <Text style={styles.performanceDay}>Monday</Text>
+          <Text style={styles.performanceDay}>{bestPerformance?.day || ''}</Text>
         </View>
+
         <View style={styles.performanceBox}>
           <View style={styles.performanceRow}>
             <View style={styles.smileyContainer}>
@@ -186,9 +244,9 @@ export default function Water() {
               />
             </View>
             <Text style={styles.performanceText}>Worst Performance</Text>
-            <Text style={styles.performanceValue}>6</Text>
+            <Text style={styles.performanceValue}>{worstPerformance?.count || '-'}</Text>
           </View>
-          <Text style={styles.performanceDay}>Sunday</Text>
+          <Text style={styles.performanceDay}>{worstPerformance?.day || ''}</Text>
         </View>
       </View>
       <Button title='Reset Data' onPress={resetData} />
@@ -245,13 +303,13 @@ const styles = StyleSheet.create({
     marginBottom: height * 0.03,
   },
   glassWrapper: {
-    width: (width - RFValue(30, width) * 3) / 4, // Dynamically adjust the width for 4 items per row
-    height: (width - RFValue(30, width) * 3) / 4, // Use the same dynamic calculation for height
+    width: (width - RFValue(30, width) * 3) / 4, 
+    height: (width - RFValue(30, width) * 3) / 4, 
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: height * 0.05, // Maintain the spacing between rows
+    marginBottom: height * 0.05, 
     position: 'relative',
-    marginHorizontal: RFValue(10, width), // Dynamically adjust spacing between items
+    marginHorizontal: RFValue(10, width), 
   },
   glassIcon: {
     width: RFValue(60, height),

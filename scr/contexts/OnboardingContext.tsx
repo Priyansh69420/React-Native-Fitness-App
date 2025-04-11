@@ -10,6 +10,7 @@ interface OnboardingData {
   goals?: number[];
   interests?: number[];
   gender?: string;
+  calories?: number;
 }
 
 interface OnboardingContextType {

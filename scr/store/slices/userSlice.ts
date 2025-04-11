@@ -10,6 +10,7 @@ export interface UserData {
     goals: string[];
     interests: string[];
     gender: string;
+    calories: number;
 }
 
 interface UserState {
@@ -57,6 +58,11 @@ const userSlice = createSlice({
             state.userData = null;
             state.error = null;
         },
+        setCalories: (state, action: PayloadAction<number>) => {
+            if(state.userData) {
+                state.userData.calories = action.payload;
+            }
+        }
     },
     extraReducers: (builder) => {
         builder
@@ -75,5 +81,5 @@ const userSlice = createSlice({
     },
 });
 
-export const { setUserData, updateUser, clearUser } = userSlice.actions;
+export const { setUserData, updateUser, clearUser, setCalories } = userSlice.actions;
 export default userSlice.reducer;

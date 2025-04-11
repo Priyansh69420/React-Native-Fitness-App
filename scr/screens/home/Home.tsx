@@ -59,25 +59,25 @@ export default function Home() {
     }, 1000);
 
     return () => clearTimeout(unsubscribe);
-}, []);
+  }, []);
 
-useEffect(() => {
-    if (rehydrated && !userData) {
-        dispatch(fetchUserData());
-    }
-}, [rehydrated, dispatch, userData]);
+  useEffect(() => {
+      if (rehydrated && !userData) {
+          dispatch(fetchUserData());
+      }
+  }, [rehydrated, dispatch, userData]);
 
-useEffect(() => {
-  loadData(setGlassDrunk);
-  dispatch(fetchSteps());
+  useEffect(() => {
+    loadData(setGlassDrunk);
+    dispatch(fetchSteps());
 
   const unsubscribe = navigation.addListener('focus', () => {
     loadData(setGlassDrunk);
     dispatch(fetchSteps());
   });
 
-  return unsubscribe;
-}, [navigation, dispatch]);
+    return unsubscribe;
+  }, [navigation, dispatch]);
 
   if (loading || !rehydrated || (!userData && !loading)) {
     return (
@@ -114,7 +114,7 @@ useEffect(() => {
     borderRadius: RFValue(50, height),
   };
 
-  const nutritionProgress = 850 / 1200;
+  const nutritionProgress = userData?.calories / 1200;
   const waterProgress = glassDrunk / totalGlasses;
   const stepsProgress = steps / 10000;
 
@@ -181,7 +181,7 @@ useEffect(() => {
                     <Text style={styles.toggleText}>On</Text>
                   </TouchableOpacity>
                 </View>
-                <Text style={styles.sectionProgress}>850 cal / 1200 cal</Text>
+                <Text style={styles.sectionProgress}>{userData?.calories} cal / 1500 cal</Text>
                 <View style={styles.progressBarContainer}>
                   <LinearGradient
                     colors={['#6B4EFF', '#6B4EFF', '#FF9500', '#FF9500', '#FF6347', '#FF6347']}
@@ -193,7 +193,6 @@ useEffect(() => {
                   <View
                     style={[styles.progressMarker, { left: `${nutritionProgress * 100}%` }]}
                   >
-                    <Text style={styles.markerLine}>|</Text>
                   </View>
                 </View>
               </View>
@@ -214,7 +213,7 @@ useEffect(() => {
                 <View style={styles.sectionHeader}>
                   <Text style={styles.sectionTitle}>Water</Text>
                   <TouchableOpacity style={styles.warningButton}>
-                    <Text style={[styles.toggleText, styles.warningText]}>Warning</Text>
+                    <Text style={[styles.toggleText, styles.warningText]}>{ glassDrunk === totalGlasses ? 'Complete' : 'Warning'}</Text>
                   </TouchableOpacity>
                 </View>
                 <Text style={styles.sectionProgress}>{glassDrunk} / {totalGlasses} glasses</Text>
@@ -229,7 +228,6 @@ useEffect(() => {
                   <View
                     style={[styles.progressMarker, { left: `${waterProgress * 100}%` }]}
                   >
-                    <Text style={styles.markerLine}>|</Text>
                   </View>
                 </View>
               </View>
@@ -268,7 +266,6 @@ useEffect(() => {
                   <View
                     style={[styles.progressMarker, { left: `${stepsProgress * 100}%` }]}
                   >
-                    <Text style={styles.markerLine}>|</Text>
                   </View>
                 </View>
               </View>

@@ -36,7 +36,7 @@ export default function ReadyToGo() {
         goals: onboardingData.goals || [],
         interests: onboardingData.interests || [],
         gender: onboardingData.gender || '',
-        onboardingCompleted: true,
+        calories: 0,
       });
 
     } catch (error: any) {

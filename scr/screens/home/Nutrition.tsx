@@ -1,11 +1,15 @@
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Image, Dimensions, ScrollView, Modal, FlatList } from 'react-native'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { RFPercentage, RFValue } from 'react-native-responsive-fontsize';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { HomeStackParamList } from '../../navigations/HomeStackParamList';
 import { useNavigation } from '@react-navigation/native';
 import Svg, { Circle } from 'react-native-svg';
-
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { auth, firestore } from '../../../firebaseConfig';
+import { useDispatch } from 'react-redux';
+import { setCalories } from '../../store/slices/userSlice';
+import { doc, updateDoc } from '@firebase/firestore';
 
 type NavigationProp = DrawerNavigationProp<HomeStackParamList, 'Nutrition'>;
 
@@ -15,22 +19,27 @@ interface FoodItem {
   name: string;
   quantity: number;
   calories: number;
-  fat: string;
-  carb: string;
-  protein: string;
+  fat: number;
+  carb: number;
+  protein: number;
 }
 
 type MealType = 'Breakfast' | 'Lunch' | 'Dinner' | 'Snack';
 
 export default function Nutrition() {
+  const dispatch = useDispatch();
   const [modalVisible, setModalVisible] = useState(false);
   const navigation = useNavigation<NavigationProp>();
+  const [totalCalories, setTotalCalories] = useState(0);
+  const [totalFat, setTotalFat] = useState(0);
+  const [totalCarbs, setTotalCarbs] = useState(0);
+  const [totalProtein, setTotalProtein] = useState(0);
 	const [selectedMeal, setSelectedMeal] = useState<string | null>('');
 	const [selectedFoods, setSelectedFoods] = useState<FoodItem[]>([]);
 	const [nutritionData, setNutritionData] = useState([
-    { name: 'Fat', percentage: 0.27, color: '#9A7FFF' },
-    { name: 'Carb', percentage: 0.30, color: '#A98FFF' },
-    { name: 'Protein', percentage: 0.63, color: '#9A9CFF' },
+    { name: 'Fat', percentage: 0, color: '#9A7FFF' },
+    { name: 'Carb', percentage: 0, color: '#A98FFF' },
+    { name: 'Protein', percentage: 0, color: '#9A9CFF' },
   ]);
 	const mealTypes = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
   const [consumedFoods, setConsumedFoods] = useState<{
@@ -44,7 +53,6 @@ export default function Nutrition() {
     Dinner: [],
     Snack: [],
   });
-  
 
   const baseRadius = width * 0.22; 
   const strokeWidth = 18;
@@ -53,57 +61,66 @@ export default function Nutrition() {
   const backgroundColor = '#E6E6FA';
 
 	const nutritionInfo = [
-		{ name: 'Eggs', quantity: 200, calories: 300, fat: '15g', carb: '2g', protein: '26g' },
-		{ name: 'Rice', quantity: 200, calories: 260, fat: '0.5g', carb: '57g', protein: '5g' },
-		{ name: 'Chapati', quantity: 100, calories: 240, fat: '3.5g', carb: '49g', protein: '8g' },
-		{ name: 'Dal', quantity: 150, calories: 180, fat: '1g', carb: '30g', protein: '12g' },
-		{ name: 'Paneer', quantity: 100, calories: 265, fat: '20g', carb: '2g', protein: '18g' },
-		{ name: 'Chicken Curry', quantity: 200, calories: 300, fat: '15g', carb: '5g', protein: '30g' },
-		{ name: 'Fish Curry', quantity: 200, calories: 250, fat: '10g', carb: '4g', protein: '28g' },
-		{ name: 'Vegetable Pulao', quantity: 200, calories: 280, fat: '8g', carb: '50g', protein: '6g' },
-		{ name: 'Samosa', quantity: 100, calories: 260, fat: '17g', carb: '25g', protein: '4g' },
-		{ name: 'Idli', quantity: 150, calories: 150, fat: '0.5g', carb: '33g', protein: '3g' },
-		{ name: 'Dosa', quantity: 150, calories: 170, fat: '4g', carb: '30g', protein: '4g' },
-		{ name: 'Upma', quantity: 150, calories: 200, fat: '6g', carb: '35g', protein: '5g' },
-		{ name: 'Poha', quantity: 150, calories: 180, fat: '4g', carb: '30g', protein: '4g' },
-		{ name: 'Chole', quantity: 200, calories: 280, fat: '8g', carb: '40g', protein: '12g' },
-		{ name: 'Rajma', quantity: 200, calories: 290, fat: '6g', carb: '45g', protein: '13g' },
-		{ name: 'Aloo Paratha', quantity: 150, calories: 290, fat: '12g', carb: '40g', protein: '6g' },
-		{ name: 'Pav Bhaji', quantity: 200, calories: 300, fat: '10g', carb: '45g', protein: '7g' },
-		{ name: 'Biryani', quantity: 200, calories: 320, fat: '12g', carb: '45g', protein: '18g' },
-		{ name: 'Curd', quantity: 100, calories: 60, fat: '3g', carb: '4g', protein: '3g' },
-		{ name: 'Raita', quantity: 100, calories: 80, fat: '4g', carb: '5g', protein: '3g' },
-		{ name: 'Butter Chicken', quantity: 200, calories: 400, fat: '25g', carb: '8g', protein: '30g' },
-		{ name: 'Palak Paneer', quantity: 200, calories: 280, fat: '18g', carb: '10g', protein: '12g' },
-		{ name: 'Bhindi Masala', quantity: 150, calories: 120, fat: '6g', carb: '12g', protein: '3g' },
-		{ name: 'Aloo Gobi', quantity: 150, calories: 150, fat: '7g', carb: '18g', protein: '3g' },
-		{ name: 'Kheer', quantity: 150, calories: 200, fat: '6g', carb: '35g', protein: '5g' },
-		{ name: 'Gulab Jamun', quantity: 100, calories: 300, fat: '15g', carb: '40g', protein: '4g' },
-		{ name: 'Lassi', quantity: 200, calories: 260, fat: '8g', carb: '40g', protein: '6g' },
-		{ name: 'Pani Puri', quantity: 100, calories: 150, fat: '5g', carb: '25g', protein: '2g' },
-		{ name: 'Halwa', quantity: 150, calories: 300, fat: '12g', carb: '45g', protein: '5g' },
-		{ name: 'Thepla', quantity: 100, calories: 200, fat: '8g', carb: '30g', protein: '5g' },
-		{ name: 'Pizza', quantity: 200, calories: 500, fat: '20g', carb: '60g', protein: '15g' },
-		{ name: 'Burger', quantity: 200, calories: 450, fat: '18g', carb: '40g', protein: '25g' },
-		{ name: 'Pasta', quantity: 200, calories: 400, fat: '15g', carb: '50g', protein: '10g' },
-		{ name: 'French Fries', quantity: 150, calories: 300, fat: '15g', carb: '40g', protein: '3g' },
-		{ name: 'Fried Chicken', quantity: 200, calories: 480, fat: '25g', carb: '15g', protein: '35g' },
-		{ name: 'Sushi', quantity: 150, calories: 200, fat: '2g', carb: '40g', protein: '5g' },
-		{ name: 'Tacos', quantity: 150, calories: 250, fat: '10g', carb: '30g', protein: '15g' },
-		{ name: 'Spring Rolls', quantity: 150, calories: 220, fat: '10g', carb: '30g', protein: '5g' },
-		{ name: 'Chocolate Cake', quantity: 100, calories: 400, fat: '20g', carb: '50g', protein: '5g' },
-		{ name: 'Ice Cream', quantity: 100, calories: 200, fat: '10g', carb: '25g', protein: '3g' },
-		{ name: 'Donuts', quantity: 100, calories: 250, fat: '12g', carb: '35g', protein: '4g' },
-		{ name: 'Hot Dog', quantity: 150, calories: 300, fat: '15g', carb: '30g', protein: '12g' },
-		{ name: 'Pancakes', quantity: 150, calories: 350, fat: '10g', carb: '60g', protein: '6g' },
-		{ name: 'Falafel', quantity: 150, calories: 300, fat: '15g', carb: '30g', protein: '10g' },
-		{ name: 'Hummus with Pita Bread', quantity: 150, calories: 250, fat: '10g', carb: '30g', protein: '8g' },
-		{ name: 'Nachos with Cheese', quantity: 150, calories: 350, fat: '20g', carb: '40g', protein: '8g' },
-		{ name: 'Dim Sum', quantity: 150, calories: 200, fat: '5g', carb: '30g', protein: '8g' },
-		{ name: 'Croissant', quantity: 100, calories: 300, fat: '15g', carb: '35g', protein: '5g' },
-		{ name: 'Waffles', quantity: 150, calories: 400, fat: '20g', carb: '50g', protein: '6g' },
-		{ name: 'Shawarma', quantity: 200, calories: 450, fat: '20g', carb: '40g', protein: '25g' },
-	];
+    { name: 'Eggs', quantity: 200, calories: 300, fat: 15, carb: 2, protein: 26 },
+    { name: 'Rice', quantity: 200, calories: 260, fat: 0.5, carb: 57, protein: 5 },
+    { name: 'Chapati', quantity: 100, calories: 240, fat: 3.5, carb: 49, protein: 8 },
+    { name: 'Dal', quantity: 150, calories: 180, fat: 1, carb: 30, protein: 12 },
+    { name: 'Paneer', quantity: 100, calories: 265, fat: 20, carb: 2, protein: 18 },
+    { name: 'Chicken Curry', quantity: 200, calories: 300, fat: 15, carb: 5, protein: 30 },
+    { name: 'Fish Curry', quantity: 200, calories: 250, fat: 10, carb: 4, protein: 28 },
+    { name: 'Vegetable Pulao', quantity: 200, calories: 280, fat: 8, carb: 50, protein: 6 },
+    { name: 'Samosa', quantity: 100, calories: 260, fat: 17, carb: 25, protein: 4 },
+    { name: 'Idli', quantity: 150, calories: 150, fat: 0.5, carb: 33, protein: 3 },
+    { name: 'Dosa', quantity: 150, calories: 170, fat: 4, carb: 30, protein: 4 },
+    { name: 'Upma', quantity: 150, calories: 200, fat: 6, carb: 35, protein: 5 },
+    { name: 'Poha', quantity: 150, calories: 180, fat: 4, carb: 30, protein: 4 },
+    { name: 'Chole', quantity: 200, calories: 280, fat: 8, carb: 40, protein: 12 },
+    { name: 'Rajma', quantity: 200, calories: 290, fat: 6, carb: 45, protein: 13 },
+    { name: 'Aloo Paratha', quantity: 150, calories: 290, fat: 12, carb: 40, protein: 6 },
+    { name: 'Pav Bhaji', quantity: 200, calories: 300, fat: 10, carb: 45, protein: 7 },
+    { name: 'Biryani', quantity: 200, calories: 320, fat: 12, carb: 45, protein: 18 },
+    { name: 'Curd', quantity: 100, calories: 60, fat: 3, carb: 4, protein: 3 },
+    { name: 'Raita', quantity: 100, calories: 80, fat: 4, carb: 5, protein: 3 },
+    { name: 'Butter Chicken', quantity: 200, calories: 400, fat: 25, carb: 8, protein: 30 },
+    { name: 'Palak Paneer', quantity: 200, calories: 280, fat: 18, carb: 10, protein: 12 },
+    { name: 'Bhindi Masala', quantity: 150, calories: 120, fat: 6, carb: 12, protein: 3 },
+    { name: 'Aloo Gobi', quantity: 150, calories: 150, fat: 7, carb: 18, protein: 3 },
+    { name: 'Kheer', quantity: 150, calories: 200, fat: 6, carb: 35, protein: 5 },
+    { name: 'Gulab Jamun', quantity: 100, calories: 300, fat: 15, carb: 40, protein: 4 },
+    { name: 'Lassi', quantity: 200, calories: 260, fat: 8, carb: 40, protein: 6 },
+    { name: 'Pani Puri', quantity: 100, calories: 150, fat: 5, carb: 25, protein: 2 },
+    { name: 'Halwa', quantity: 150, calories: 300, fat: 12, carb: 45, protein: 5 },
+    { name: 'Thepla', quantity: 100, calories: 200, fat: 8, carb: 30, protein: 5 },
+    { name: 'Pizza', quantity: 200, calories: 500, fat: 20, carb: 60, protein: 15 },
+    { name: 'Burger', quantity: 200, calories: 450, fat: 18, carb: 40, protein: 25 },
+    { name: 'Pasta', quantity: 200, calories: 400, fat: 15, carb: 50, protein: 10 },
+    { name: 'French Fries', quantity: 150, calories: 300, fat: 15, carb: 40, protein: 3 },
+    { name: 'Fried Chicken', quantity: 200, calories: 480, fat: 25, carb: 15, protein: 35 },
+    { name: 'Sushi', quantity: 150, calories: 200, fat: 2, carb: 40, protein: 5 },
+    { name: 'Tacos', quantity: 150, calories: 250, fat: 10, carb: 30, protein: 15 },
+    { name: 'Spring Rolls', quantity: 150, calories: 220, fat: 10, carb: 30, protein: 5 },
+    { name: 'Chocolate Cake', quantity: 100, calories: 400, fat: 20, carb: 50, protein: 5 },
+    { name: 'Ice Cream', quantity: 100, calories: 200, fat: 10, carb: 25, protein: 3 },
+    { name: 'Donuts', quantity: 100, calories: 250, fat: 12, carb: 35, protein: 4 },
+    { name: 'Hot Dog', quantity: 150, calories: 300, fat: 15, carb: 30, protein: 12 },
+    { name: 'Pancakes', quantity: 150, calories: 350, fat: 10, carb: 60, protein: 6 },
+    { name: 'Falafel', quantity: 150, calories: 300, fat: 15, carb: 30, protein: 10 },
+    { name: 'Hummus with Pita Bread', quantity: 150, calories: 250, fat: 10, carb: 30, protein: 8 },
+    { name: 'Nachos with Cheese', quantity: 150, calories: 350, fat: 20, carb: 40, protein: 8 },
+    { name: 'Dim Sum', quantity: 150, calories: 200, fat: 5, carb: 30, protein: 8 },
+    { name: 'Croissant', quantity: 100, calories: 300, fat: 15, carb: 35, protein: 5 },
+    { name: 'Waffles', quantity: 150, calories: 400, fat: 20, carb: 50, protein: 6 },
+    { name: 'Shawarma', quantity: 200, calories: 450, fat: 20, carb: 40, protein: 25 },
+  ];
+
+  useEffect(() => {
+    loadAndResetData();
+  }, []);
+
+  useEffect(() => {
+    calculateTotal();
+    saveData();
+  }, [consumedFoods]);
 
 	const handleMealTypeSelect = (meal: string) => {
     setSelectedMeal(meal === selectedMeal ? null : meal); 
@@ -144,7 +161,128 @@ export default function Nutrition() {
     </TouchableOpacity>
   );
 
-  console.log(consumedFoods.Lunch);
+  const calculateTotal = async () => {
+    let calories = 0;
+    let fat = 0;
+    let carb = 0;
+    let protein = 0;
+
+    for (const mealType in consumedFoods) {
+      consumedFoods[mealType as keyof typeof consumedFoods].forEach(food => { 
+        calories += food.calories;
+        fat += food.fat;
+        carb += food.carb;
+        protein +=food.protein;
+      })
+    }
+
+    setTotalCalories(calories);
+    setTotalFat(fat);
+    setTotalCarbs(carb);
+    setTotalProtein(protein);
+
+    const totalNutrients = fat + carb + protein;
+
+    if(totalNutrients > 0) {
+      const fatPct = fat / totalNutrients;
+      const carbPct = carb / totalNutrients;
+      const proteinPct = protein / totalNutrients;
+
+      setNutritionData([
+        { name: 'Fat', percentage: fatPct, color: '#9A7FFF' },
+        { name: 'Carb', percentage: carbPct, color: '#A98FFF' },
+        { name: 'Protein', percentage: proteinPct, color: '#9A9CFF' },
+      ]);
+    } else {
+      setNutritionData([
+        { name: 'Fat', percentage: 0, color: '#9A7FFF' },
+        { name: 'Carb', percentage: 0, color: '#A98FFF' },
+        { name: 'Protein', percentage: 0, color: '#9A9CFF' },
+      ]);
+    }
+    dispatch(setCalories(calories));
+    const userId = auth.currentUser?.uid;
+    if (userId) {
+      try {
+        await updateDoc(doc(firestore, 'users', userId), {
+          calories: calories,
+        });
+        console.log('Total calories updated in Firestore:', calories);
+      } catch (error) {
+        console.error('Error updating total calories in Firestore:', error);
+      }
+    }
+  }
+
+  const handleDeleteCard = (mealTypeToDelete: MealType) => {
+    setConsumedFoods(prevConsumedFoods => {
+      const newConsumedFoods = { ...prevConsumedFoods };
+      delete newConsumedFoods[mealTypeToDelete];
+      return newConsumedFoods;
+    });
+  };
+
+  const saveData = async () => {
+    const userId = auth.currentUser?.uid;
+    if (userId) {
+      try {
+        const now = new Date().toISOString().split('T')[0];
+        await AsyncStorage.setItem(`consumedFoods_${userId}`, JSON.stringify(consumedFoods));
+        await AsyncStorage.setItem(`lastSavedDate_${userId}`, now);
+      } catch (error: any) {
+        console.error('Nutrition Screen: Error while saving data-', error);
+      }
+    } 
+  }
+
+  const loadAndResetData = async () => {
+    const userId = auth.currentUser?.uid;
+    if (userId) {
+      try {
+        const storedFoods = await AsyncStorage.getItem(`consumedFoods_${userId}`);
+        const lastSaved = await AsyncStorage.getItem(`lastSavedDate_${userId}`);
+        const today = new Date().toISOString().split('T')[0];
+
+        if (storedFoods && lastSaved === today) {
+          setConsumedFoods(JSON.parse(storedFoods));
+        } else {
+          setConsumedFoods({ Breakfast: [], Lunch: [], Dinner: [], Snack: [] });
+          setTotalCalories(0);
+          setTotalFat(0);
+          setTotalCarbs(0);
+          setTotalProtein(0);
+          setNutritionData([
+            { name: 'Fat', percentage: 0, color: '#9A7FFF' },
+            { name: 'Carb', percentage: 0, color: '#A98FFF' },
+            { name: 'Protein', percentage: 0, color: '#9A9CFF' },
+          ]);
+        }
+      } catch (error) {
+        console.error('Nutrtiton Screen: Error while loading data-', error);
+        setConsumedFoods({ Breakfast: [], Lunch: [], Dinner: [], Snack: [] });
+        setTotalCalories(0);
+        setTotalFat(0);
+        setTotalCarbs(0);
+        setTotalProtein(0);
+        setNutritionData([
+          { name: 'Fat', percentage: 0, color: '#9A7FFF' },
+          { name: 'Carb', percentage: 0, color: '#A98FFF' },
+          { name: 'Protein', percentage: 0, color: '#9A9CFF' },
+        ]);
+      }
+    } else {
+      setConsumedFoods({ Breakfast: [], Lunch: [], Dinner: [], Snack: [] });
+      setTotalCalories(0);
+      setTotalFat(0);
+      setTotalCarbs(0);
+      setTotalProtein(0);
+      setNutritionData([
+        { name: 'Fat', percentage: 0, color: '#9A7FFF' },
+        { name: 'Carb', percentage: 0, color: '#A98FFF' },
+        { name: 'Protein', percentage: 0, color: '#9A9CFF' },
+      ]);
+    }
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -166,7 +304,7 @@ export default function Nutrition() {
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.stepsContainer}>
-          <Text style={styles.title}>You consumed <Text style={styles.highlight}>850</Text> calories today</Text>
+          <Text style={styles.title}>You consumed <Text style={styles.highlight}>{totalCalories}</Text> calories today</Text>
         </View>
 
         <View style={styles.progressContainer}>
@@ -219,27 +357,68 @@ export default function Nutrition() {
 					</View>
 				</View>
 
-        <View>
-        {Object.keys(consumedFoods).map((mealType) => {
-          if (consumedFoods[mealType as MealType].length > 0) {
-            return (
-              <View key={mealType} style={styles.mealCard}>
-                <Text style={styles.mealCardTitle}>{mealType}</Text>
-                {consumedFoods[mealType as MealType].map((food) => (
-                  <View key={food.name} style={styles.foodCardItem}>
-                    <View style={{flexDirection: 'column'}}>
-                      <Text style={styles.foodCardName}>{food.name}</Text>
-                      <Text style={styles.foodQuantity}>{food.quantity} grams</Text>
-                    </View>
+        <View style={styles.nutritionContainer}>
+          <View style={{flexDirection: 'row', borderBottomWidth: 0.5, borderBottomColor: '#d6d6d6', paddingVertical: 20, paddingHorizontal: 20}}>
+            <View style={{height: 20, width: 20, backgroundColor: 'orange', borderRadius: 6}} />
+            <View style={{flex: 1, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 10}}>
+              <Text style={{fontSize: 17}}>Protein</Text>
+              <Text style={{fontSize: 17, marginLeft: -20}}>{totalProtein}g</Text>
+              <Text style={{fontSize: 17, fontWeight: 'bold'}}>{Math.round(nutritionData[2].percentage * 100)}%</Text>
+            </View>
+          </View>
+          
+          <View style={{flexDirection: 'row', borderBottomWidth: 0.5, borderBottomColor: '#d6d6d6', paddingVertical: 20, paddingHorizontal: 20}}>
+            <View style={{height: 20, width: 20, backgroundColor: '#9D6DEB', borderRadius: 6}} />
+            <View style={{flex: 1, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 10}}>
+              <Text style={{fontSize: 17}}>Carb</Text>
+              <Text style={{fontSize: 17}}>{totalCarbs}g</Text>
+              <Text style={{fontSize: 17, fontWeight: 'bold'}}>{Math.round(nutritionData[1].percentage * 100)}%</Text>
+            </View>
+          </View>
 
-                    <Text style={styles.foodCalories}>{food.calories}</Text>
-                  </View>
-                ))}
-              </View>
-            );
-          }
-          return null; 
-        })}
+          <View style={{flexDirection: 'row', paddingVertical: 20, paddingHorizontal: 20}}>
+            <View style={{height: 20, width: 20, backgroundColor: '#66D3C8', borderRadius: 6}} />
+            <View style={{flex: 1, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 12}}>
+              <Text style={{fontSize: 17}}>Fats</Text>
+              <Text style={{fontSize: 17}}>{totalFat}g</Text>
+              <Text style={{fontSize: 17, fontWeight: 'bold'}}>{Math.round(nutritionData[0].percentage * 100)}%</Text>
+            </View>
+          </View>
+        </View>
+
+        <View>
+          {Object.keys(consumedFoods).map((mealType) => {
+            if (consumedFoods[mealType as MealType].length > 0) {
+              const foodList = consumedFoods[mealType as MealType];
+              return (
+                <View key={mealType} style={styles.mealCard}>
+                  <TouchableOpacity
+                    style={styles.deleteCardButton}
+                    onPress={() => handleDeleteCard(mealType as MealType)}
+                  >
+                    <Text style={styles.deleteCardText}>✕</Text>
+                  </TouchableOpacity>
+                  <Text style={styles.mealCardTitle}>{mealType}</Text>
+                  {foodList.map((food, index) => (
+                    <View
+                      key={food.name}
+                      style={[
+                        styles.foodCardItem,
+                        index < foodList.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#d6d6d6' },
+                      ]}
+                    >
+                      <View style={{ flexDirection: 'column' }}>
+                        <Text style={styles.foodCardName}>{food.name}</Text>
+                        <Text style={styles.foodQuantity}>{food.quantity} grams</Text>
+                      </View>
+                      <Text style={styles.foodCalories}>{food.calories}</Text>
+                    </View>
+                  ))}
+                </View>
+              );
+            }
+            return null;
+          })}
         </View>
 
 				<Modal
@@ -375,10 +554,15 @@ const styles = StyleSheet.create({
     marginVertical: RFPercentage(1.5), 
     marginRight: -RFPercentage(5)
   },
+  nutritionContainer: {
+    flexDirection: 'column', 
+    paddingHorizontal: 10, 
+    marginTop: 10
+  },
   mealCard: {
     backgroundColor: 'white',
     borderRadius: 8,
-    marginTop: RFPercentage(4),
+    marginTop: RFPercentage(3),
     padding: 15,
   },
   mealCardTitle: {
@@ -391,10 +575,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#eee',
-    paddingHorizontal: RFPercentage(2)
+    paddingVertical: RFPercentage(1.5),
+    paddingHorizontal: RFPercentage(2),
   },
   foodCardName: {
     fontSize: RFValue(18),
@@ -403,7 +585,7 @@ const styles = StyleSheet.create({
     marginBottom: RFPercentage(0.5),
   },
   foodQuantity: {
-    fontSize: RFValue(14),
+    fontSize: RFValue(12),
     color: 'gray',
     marginBottom: RFPercentage(0.5),
   },
@@ -411,6 +593,17 @@ const styles = StyleSheet.create({
     fontSize: RFValue(18),
     fontWeight: '400',
     marginRight: RFValue(0.04 * width)
+  },
+  deleteCardButton: {
+    position: 'absolute',
+    top: 12,
+    right: 15,
+  },
+  deleteCardText: {
+    fontSize: RFValue(16),
+    color: 'gray',
+    fontWeight: 'bold',
+    lineHeight: RFValue(16), 
   },
 	modalOverlay: {
     flex: 1,
@@ -524,10 +717,11 @@ const styles = StyleSheet.create({
   },
   addButton: {
     backgroundColor: '#7B68EE',
-    borderRadius: RFValue(10),
+    borderRadius: RFValue(20),
     paddingVertical: RFPercentage(1.5),
     alignItems: 'center',
     marginTop: RFPercentage(2),
+    marginHorizontal: RFPercentage(2),
   },
   addButtonText: {
     color: '#fff',

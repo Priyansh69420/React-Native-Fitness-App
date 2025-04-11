@@ -10,6 +10,7 @@ import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { HomeStackParamList } from '../../navigations/HomeStackParamList';
 import { RFPercentage, RFValue } from 'react-native-responsive-fontsize';
 import LineGraph from '../../components/LineGraph';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type NavigationProp = DrawerNavigationProp<HomeStackParamList, 'DailySteps'>;
 
@@ -35,18 +36,35 @@ const getAvatarSource = (id: number): any => {
   return avatar ? avatar.source : null;
 };
 
+interface DailyStepsPerformance {
+  day: string;
+  count: number;
+}
+
 export default function DailySteps() {
   const dispatch = useDispatch<AppDispatch>();
-  const { loading, error } = useSelector((state: RootState) => state.footsteps);
+  const { steps, loading, error } = useSelector((state: RootState) => state.footsteps);
   const { userData } = useSelector((state: RootState) => state.user);
   const navigation = useNavigation<NavigationProp>();
   const [modalVisible, setModalVisible] = useState(false);
   const [imageLoading, setImageLoading] = useState<boolean>(true);
-  const steps = 7000;
-
+  const [weeklySteps, setWeeklySteps] = useState<DailyStepsPerformance[]>([]);
+  const [bestPerformance, setBestPerformance] = useState<DailyStepsPerformance | null>(null);
+  const [worstPerformance, setWorstPerformance] = useState<DailyStepsPerformance | null>(null);
+  
   useEffect(() => {
     dispatch(fetchSteps());
   }, [dispatch]);
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  useEffect(() => {
+  if (!loading && !error) {
+    saveDailySteps();
+  }
+}, [useSelector((state: RootState) => state.footsteps.steps), loading, error]);
 
   const progress = Math.min(steps / 10000, 1); 
   const strokeDashoffset = CIRCLE_CIRCUMFERENCE * (1 - progress);
@@ -77,6 +95,86 @@ export default function DailySteps() {
       height: isCustomImg ? RFValue(50, height) : RFValue(60, height),
       borderRadius: RFValue(50, height),
       marginRight: RFPercentage(1),
+    };
+
+    const loadData = async () => {
+      try {
+        const storedDate = await AsyncStorage.getItem('stepsLastDate');
+        const storedWeeklySteps = await AsyncStorage.getItem('weeklyStepsPerformance');
+        const currentDate = new Date().toISOString().split('T')[0];
+    
+        if (storedDate && storedDate !== currentDate) {
+          setWeeklySteps([]);
+          await AsyncStorage.removeItem('weeklyStepsPerformance');
+          await AsyncStorage.setItem('stepsLastDate', currentDate);
+        }
+    
+        if (storedWeeklySteps) {
+          setWeeklySteps(JSON.parse(storedWeeklySteps));
+          updateBestAndWorstPerformance(JSON.parse(storedWeeklySteps));
+        } else if (storedDate === currentDate && steps > 0) {
+          const currentDay = getDayOfWeek(currentDate);
+          setWeeklySteps([{ day: currentDay, count: steps }]); 
+          await AsyncStorage.setItem('weeklyStepsPerformance', JSON.stringify([{ day: currentDay, count: steps }]));
+        }
+      } catch (error) {
+        console.error('Error loading steps data from AsyncStorage:', error);
+      } finally {
+        dispatch(fetchSteps());
+      }
+    };
+
+    const saveDailySteps = async () => {
+      if (steps > 0) { 
+    try {
+      const currentDate = new Date().toISOString().split('T')[0];
+      const currentDay = getDayOfWeek(currentDate);
+
+      const updatedPerformance = weeklySteps.map((item) =>
+        item.day === currentDay ? { ...item, count: steps } : item 
+      );
+
+      const dayExists = updatedPerformance.some((item) => item.day === currentDay);
+      if (!dayExists) {
+        updatedPerformance.push({ day: currentDay, count: steps }); 
+      }
+
+      setWeeklySteps(updatedPerformance);
+      await AsyncStorage.setItem('weeklyStepsPerformance', JSON.stringify(updatedPerformance));
+      updateBestAndWorstPerformance(updatedPerformance);
+    } catch (error) {
+      console.error('Error saving weekly steps performance to AsyncStorage:', error);
+    }
+  }
+    };
+    
+
+    const updateBestAndWorstPerformance = (performanceData: DailyStepsPerformance[]) => {
+      if (performanceData.length > 0) {
+        let best = performanceData[0];
+        let worst = performanceData[0];
+  
+        performanceData.forEach((dayData) => {
+          if (dayData.count > best.count) {
+            best = dayData;
+          }
+          if (dayData.count < worst.count) {
+            worst = dayData;
+          }
+        });
+  
+        setBestPerformance(best);
+        setWorstPerformance(worst);
+      } else {
+        setBestPerformance(null);
+        setWorstPerformance(null);
+      }
+    };
+  
+    const getDayOfWeek = (dateString: string): string => {
+      const date = new Date(dateString);
+      const options: Intl.DateTimeFormatOptions = { weekday: 'long' };
+      return new Intl.DateTimeFormat('en-US', options).format(date);
     };
 
   return (
@@ -185,10 +283,11 @@ export default function DailySteps() {
                 />
               </View>
               <Text style={styles.performanceText}>Best Performance</Text>
-              <Text style={styles.performanceValue}>10</Text>
+              <Text style={styles.performanceValue}>{bestPerformance?.count || '-'}</Text>
             </View>
-            <Text style={styles.performanceDay}>Monday</Text>
+            <Text style={styles.performanceDay}>{bestPerformance?.day || ''}</Text>
           </View>
+
           <View style={styles.performanceBox}>
             <View style={styles.performanceRow}>
               <View style={styles.smileyContainer}>
@@ -198,9 +297,9 @@ export default function DailySteps() {
                 />
               </View>
               <Text style={styles.performanceText}>Worst Performance</Text>
-              <Text style={styles.performanceValue}>6</Text>
+              <Text style={styles.performanceValue}>{worstPerformance?.count || '-'}</Text>
             </View>
-            <Text style={styles.performanceDay}>Sunday</Text>
+            <Text style={styles.performanceDay}>{worstPerformance?.day || ''}</Text>
           </View>
         </View>
       </ScrollView>
