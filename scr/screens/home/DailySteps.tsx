@@ -43,14 +43,14 @@ interface DailyStepsPerformance {
 
 export default function DailySteps() {
   const dispatch = useDispatch<AppDispatch>();
-  const { steps, loading, error } = useSelector((state: RootState) => state.footsteps);
+  const { loading, error } = useSelector((state: RootState) => state.footsteps);
   const { userData } = useSelector((state: RootState) => state.user);
   const navigation = useNavigation<NavigationProp>();
   const [modalVisible, setModalVisible] = useState(false);
-  const [imageLoading, setImageLoading] = useState<boolean>(true);
   const [weeklySteps, setWeeklySteps] = useState<DailyStepsPerformance[]>([]);
   const [bestPerformance, setBestPerformance] = useState<DailyStepsPerformance | null>(null);
   const [worstPerformance, setWorstPerformance] = useState<DailyStepsPerformance | null>(null);
+  const steps = 7000;
   
   useEffect(() => {
     dispatch(fetchSteps());
@@ -285,7 +285,7 @@ export default function DailySteps() {
               <Text style={styles.performanceText}>Best Performance</Text>
               <Text style={styles.performanceValue}>{bestPerformance?.count || '-'}</Text>
             </View>
-            <Text style={styles.performanceDay}>{bestPerformance?.day || ''}</Text>
+            <Text style={styles.performanceDay}>{bestPerformance?.day || '-'}</Text>
           </View>
 
           <View style={styles.performanceBox}>
@@ -299,7 +299,7 @@ export default function DailySteps() {
               <Text style={styles.performanceText}>Worst Performance</Text>
               <Text style={styles.performanceValue}>{worstPerformance?.count || '-'}</Text>
             </View>
-            <Text style={styles.performanceDay}>{worstPerformance?.day || ''}</Text>
+            <Text style={styles.performanceDay}>{worstPerformance?.day || '-'}</Text>
           </View>
         </View>
       </ScrollView>

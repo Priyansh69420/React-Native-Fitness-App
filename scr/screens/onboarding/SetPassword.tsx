@@ -3,9 +3,8 @@ import React, { useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { RootStackParamList } from '../../navigations/RootStackParamList';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { auth } from '../../../firebaseConfig';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { useOnboarding } from '../../contexts/OnboardingContext';
+import { RFValue } from 'react-native-responsive-fontsize';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, "SetPassword">;
 const logo = require('../../assets/logo.png'); 
@@ -97,7 +96,7 @@ export default function SetPassword() {
   )
 }
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 const styles = StyleSheet.create({
   safeArea: {
@@ -107,49 +106,49 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F5F7FA',
-    paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingHorizontal: width * 0.05, 
+    paddingTop: height * 0.025, 
   },
   backButton: {
     position: 'absolute',
-    top: 40,
-    left: 20,
+    top: height * 0.05, 
+    left: width * 0.05, 
     zIndex: 1,
   },
   backIcon: {
-    width: 30,
-    height: 30,
+    width: width * 0.075, 
+    height: width * 0.075, 
     resizeMode: 'contain',
   },
   centeredContent: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 20,
-    marginTop: -50, 
+    paddingHorizontal: width * 0.05, 
+    marginTop: -height * 0.06, 
   },
   appLogo: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    marginBottom: 40,
+    width: width * 0.13,
+    height: width * 0.13,
+    borderRadius: width * 0.065, 
+    marginBottom: height * 0.05, 
     backgroundColor: 'transparent',
   },
   title: {
-    fontSize: 26,
+    fontSize: RFValue(26, height), 
     fontWeight: 'bold',
     color: '#333',
     textAlign: 'center',
-    marginBottom: 30,
+    marginBottom: height * 0.035, 
   },
   inputContainer: {
     backgroundColor: '#FFF',
-    borderRadius: 10,
-    paddingHorizontal: 15,
-    marginBottom: 20,
-    marginTop: 10,
+    borderRadius: width * 0.025, 
+    paddingHorizontal: width * 0.0375, 
+    marginBottom: height * 0.025, 
+    marginTop: height * 0.0125, 
     width: '90%',
-    height: 50,
+    height: height * 0.0625, 
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -158,13 +157,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   input: {
-    fontSize: 16,
+    fontSize: RFValue(16, height), 
     color: '#666',
     width: '100%',
     textAlign: 'center',
   },
   requirementsContainer: {
-    marginBottom: 80,
+    marginBottom: height * 0.1, 
     alignItems: 'flex-start',
     justifyContent: 'center',
     width: "90%"
@@ -172,38 +171,38 @@ const styles = StyleSheet.create({
   requirementRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 5,
+    marginBottom: height * 0.00625, 
   },
   checkedBox: {
-  width: 18,
-  height: 18,
-  backgroundColor: '#7A5FFF', 
-  borderRadius: 3,
-  marginRight: 5,
+    width: width * 0.045, 
+    height: width * 0.045, 
+    backgroundColor: '#7A5FFF', 
+    borderRadius: width * 0.0075, 
+    marginRight: width * 0.0125, 
   },
   uncheckedBox: {
-  width: 18,
-  height: 18,
-  backgroundColor: '#D9D9D9',
-  borderRadius: 3,
-  marginRight: 5,
+    width: width * 0.045, 
+    height: width * 0.045, 
+    backgroundColor: '#D9D9D9',
+    borderRadius: width * 0.0075, 
+    marginRight: width * 0.0125, 
   },
   requirementText: {
-    fontSize: 14,
+    fontSize: RFValue(14, height), 
     color: '#D3D3D3',
     textAlign: 'left',
   },
   button: {
     backgroundColor: '#7A5FFF',
-    paddingVertical: 15,
-    paddingHorizontal: 40,
-    borderRadius: 25,
-    width: '75%',
+    paddingVertical: height * 0.01875, 
+    paddingHorizontal: width * 0.1, 
+    borderRadius: width * 0.0725, 
+    width: '85%',
     alignItems: 'center',
   },
   buttonText: {
     color: '#FFF',
-    fontSize: 18,
+    fontSize: RFValue(18, height), 
     fontWeight: 'bold',
   },
 });

@@ -3,7 +3,8 @@ import React, { useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { RootStackParamList } from '../../navigations/RootStackParamList';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { OnboardingProvider, useOnboarding } from '../../contexts/OnboardingContext';
+import { useOnboarding } from '../../contexts/OnboardingContext';
+import { RFValue } from 'react-native-responsive-fontsize';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, "SetProfile">;
 
@@ -95,7 +96,14 @@ export default function Intrests() {
   )
 }
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
+
+const guidelineBaseWidth = 390; // Width of iPhone 15 Pro Max
+const guidelineBaseHeight = 844; // Height of iPhone 15 Pro Max
+
+const scale = (size: number) => (width / guidelineBaseWidth) * size;
+const verticalScale = (size: number) => (height / guidelineBaseHeight) * size;
+const moderateScale = (size: number, factor = 0.5) => size + (scale(size) - size) * factor;
 
 const styles = StyleSheet.create({
   safeArea: {
@@ -105,91 +113,92 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F5F7FA',
-    paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingHorizontal: scale(20),
+    paddingTop: verticalScale(20),
   },
   backButton: {
     position: 'absolute',
-    top: 40,
-    left: 20,
+    top: verticalScale(40),
+    left: scale(20),
     zIndex: 1,
   },
   backIcon: {
-    width: 30,
-    height: 30,
+    width: scale(30),
+    height: scale(30),
     resizeMode: 'contain',
   },
   centeredContent: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 20,
-    marginTop: -50,
+    paddingHorizontal: scale(20),
   },
   appLogo: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    marginBottom: 40,
+    width: scale(50),
+    height: scale(50),
+    borderRadius: scale(25),
+    marginBottom: verticalScale(40), // Adjusted marginBottom
     backgroundColor: 'transparent',
   },
   title: {
-    fontSize: 26,
+    fontSize: RFValue(26),
     fontWeight: 'bold',
     color: '#333',
     textAlign: 'center',
-    marginBottom: 40, 
+    marginBottom: verticalScale(30), // Adjusted marginBottom
   },
   interestsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    width: '110%',
-    marginBottom: 50,
+    justifyContent: 'space-around', // Changed to space-around
+    width: '115%', // Use full width
+    marginBottom: verticalScale(40), // Adjusted marginBottom
+    
   },
   interestItem: {
-    width: '33.33%', 
+    width: '30%', // Adjusted width for better spacing
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: verticalScale(15), // Adjusted marginBottom
   },
   iconContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: scale(90), // Slightly smaller icon container
+    height: scale(90), // Slightly smaller icon container
+    borderRadius: scale(50),
     backgroundColor: '#FFF',
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: verticalScale(2) },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: scale(4),
     elevation: 2,
-    marginBottom: 8,
+    marginBottom: verticalScale(5), // Adjusted marginBottom
   },
   selectedIconContainer: {
-    backgroundColor: '#7A5FFF', 
+    backgroundColor: '#7A5FFF',
   },
   interestIcon: {
-    width: 50,
-    height: 50,
+    width: scale(40), // Slightly smaller icon
+    height: scale(40), // Slightly smaller icon
     tintColor: '#333',
   },
   interestLabel: {
-    fontSize: 17,
+    fontSize: RFValue(16), // Slightly smaller font
     color: '#333',
     textAlign: 'center',
   },
   button: {
     backgroundColor: '#7A5FFF',
-    paddingVertical: 15,
-    paddingHorizontal: 40,
-    borderRadius: 25,
-    width: '75%',
+    paddingVertical: height * 0.018, // Slightly adjusted padding
+    paddingHorizontal: width * 0.15, // Slightly adjusted padding
+    borderRadius: scale(50),
+    width: width * 0.8, // Use a more consistent percentage
     alignItems: 'center',
   },
   buttonText: {
     color: '#FFF',
-    fontSize: 18,
+    fontSize: RFValue(18),
     fontWeight: 'bold',
   },
 });
+

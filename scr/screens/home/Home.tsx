@@ -114,7 +114,7 @@ export default function Home() {
     borderRadius: RFValue(50, height),
   };
 
-  const nutritionProgress = userData?.calories / 1200;
+  const nutritionProgress = userData?.calories / 2000;
   const waterProgress = glassDrunk / totalGlasses;
   const stepsProgress = steps / 10000;
 
@@ -181,7 +181,7 @@ export default function Home() {
                     <Text style={styles.toggleText}>On</Text>
                   </TouchableOpacity>
                 </View>
-                <Text style={styles.sectionProgress}>{userData?.calories} cal / 1500 cal</Text>
+                <Text style={styles.sectionProgress}>{userData?.calories ?? 0} cal / 2000 cal</Text>
                 <View style={styles.progressBarContainer}>
                   <LinearGradient
                     colors={['#6B4EFF', '#6B4EFF', '#FF9500', '#FF9500', '#FF6347', '#FF6347']}

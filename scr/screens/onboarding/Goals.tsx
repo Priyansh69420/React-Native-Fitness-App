@@ -4,6 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import { RootStackParamList } from '../../navigations/RootStackParamList';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useOnboarding } from '../../contexts/OnboardingContext';
+import { RFValue } from 'react-native-responsive-fontsize';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, "Goals">;
 
@@ -86,7 +87,13 @@ export default function SetGoalsScreen() {
   );
 }
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
+
+const baseWidth = 430;
+const baseHeight = 932;
+
+const widthRatio = width / baseWidth;
+const heightRatio = height / baseHeight;
 
 const styles = StyleSheet.create({
   safeArea: {
@@ -96,74 +103,75 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F5F7FA',
-    paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingHorizontal: 10 * widthRatio,
+    paddingTop: 20 * heightRatio,
   },
   backButton: {
     position: 'absolute',
-    top: 40,
-    left: 20,
+    top: 40 * heightRatio,
+    left: 20 * widthRatio,
     zIndex: 1,
   },
   backIcon: {
-    width: 30,
-    height: 30,
+    width: 30 * widthRatio,
+    height: 30 * widthRatio,
     resizeMode: 'contain',
   },
   centeredContent: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 20,
-    marginTop: -130,
+    paddingHorizontal: 20 * widthRatio,
+    
   },
   appLogo: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    marginBottom: 40,
+    width: 50 * widthRatio,
+    height: 50 * widthRatio,
+    borderRadius: 25 * widthRatio,
+    marginBottom: 50 * heightRatio,
     backgroundColor: 'transparent',
   },
   title: {
-    fontSize: 26,
+    fontSize: RFValue(22),
     fontWeight: 'bold',
     color: '#333',
     textAlign: 'center',
-    marginBottom: 10,
+    marginBottom: 10 * heightRatio,
+    width: '75%',
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: RFValue(16),
     color: '#666',
     textAlign: 'center',
-    marginBottom: 40,
+    marginBottom: 40 * heightRatio,
   },
   goalsContainer: {
     width: '100%',
-    marginBottom: 60,
+    marginBottom: 60 * heightRatio,
   },
   goalItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: '#FFF',
-    borderRadius: 10,
-    paddingVertical: 15,
-    paddingHorizontal: 20,
-    marginBottom: 20,
+    borderRadius: 10 * widthRatio,
+    paddingVertical: 25 * heightRatio,
+    paddingHorizontal: 15 * widthRatio,
+    marginBottom: 20 * heightRatio,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 2 * heightRatio },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: 4 * widthRatio,
     elevation: 2,
   },
   goalText: {
-    fontSize: 16,
+    fontSize: RFValue(16),
     color: '#333',
   },
   checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 24 * widthRatio,
+    height: 24 * widthRatio,
+    borderRadius: 12 * widthRatio,
     borderWidth: 1,
     borderColor: '#CCC',
     justifyContent: 'center',
@@ -171,25 +179,25 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF',
   },
   selectedCheckbox: {
-    backgroundColor: '#7A5FFF', 
-    borderColor: '#7A5FFF', 
+    backgroundColor: '#7A5FFF',
+    borderColor: '#7A5FFF',
   },
   checkIcon: {
-    width: 21,
-    height: 21,
-    tintColor: '#FFF', 
+    width: 21 * widthRatio,
+    height: 21 * widthRatio,
+    tintColor: '#FFF',
   },
   button: {
     backgroundColor: '#7A5FFF',
-    paddingVertical: 15,
-    paddingHorizontal: 40,
-    borderRadius: 25,
-    width: '75%',
+    paddingVertical: height * 0.02,
+    paddingHorizontal: width * 0.1,
+    borderRadius: 50 * widthRatio,
+    width: '80%',
     alignItems: 'center',
   },
   buttonText: {
     color: '#FFF',
-    fontSize: 18,
+    fontSize: RFValue(18),
     fontWeight: 'bold',
   },
 });

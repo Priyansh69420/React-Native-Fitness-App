@@ -7,6 +7,7 @@ import { FacebookAuthProvider, GoogleAuthProvider, signInWithCredential, signInW
 import { auth } from '../../../firebaseConfig';
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { RFValue } from 'react-native-responsive-fontsize';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, "GettingStarted">;
 
@@ -141,7 +142,7 @@ export default function LoginScreen() {
   );
 }
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 const styles = StyleSheet.create({
   safeArea: {
@@ -153,37 +154,37 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5F7FA',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 20, 
-    marginTop: -100
+    paddingHorizontal: width * 0.05, 
+    paddingTop: height * 0.025,
+    marginTop: -height * 0.12, 
   },
   backButton: {
     position: 'absolute',
-    top: 100,
-    left: 20, 
-    zIndex: 1, 
+    top: height * 0.12, 
+    left: width * 0.05, 
+    zIndex: 1,
   },
   backIcon: {
-    width: 30, 
-    height: 30, 
-    resizeMode: 'contain', 
+    width: width * 0.075, 
+    height: width * 0.075, 
+    resizeMode: 'contain',
   },
   appLogo: {
-    width: 50,
-    height: 50,
+    width: width * 0.13,
+    height: width * 0.13, 
     backgroundColor: '#F5F7FA',
-    borderRadius: 25,
-    marginBottom: 60,
+    borderRadius: width * 0.065, 
+    marginBottom: height * 0.075, 
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFF',
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    marginBottom: 15,
+    borderRadius: width * 0.025, 
+    paddingHorizontal: width * 0.025,
+    marginBottom: height * 0.01875,
     width: '100%',
-    height: 50,
+    height: height * 0.0625, 
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -191,32 +192,32 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   iconPlaceholder: {
-    width: 18,
-    height: 18,
+    width: width * 0.045,
+    height: width * 0.045, 
     backgroundColor: '#FFF',
-    marginRight: 10,
+    marginRight: width * 0.025, 
   },
   input: {
     flex: 1,
-    fontSize: 16,
+    fontSize: RFValue(16, height),
     color: '#333',
   },
   signInWithText: {
-    fontSize: 16,
+    fontSize: RFValue(16, height), 
     color: '#666',
-    marginVertical: 20,
+    marginVertical: height * 0.025, 
   },
   socialIconsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    width: 150,
-    marginBottom: 30,
+    width: width * 0.38, 
+    marginBottom: height * 0.0375, 
   },
   socialButton: {
-    width: 40,
-    height: 40,
+    width: width * 0.1, 
+    height: width * 0.1, 
     backgroundColor: '#FFF',
-    borderRadius: 20,
+    borderRadius: width * 0.05, 
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
@@ -226,22 +227,22 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   socialIconImage: {
-    width: 22,
-    height: 22,
+    width: width * 0.055,
+    height: width * 0.055, 
     resizeMode: 'contain',
   },
   button: {
     backgroundColor: '#7A5FFF',
-    paddingVertical: 15,
-    paddingHorizontal: 40,
-    borderRadius: 25,
-    marginTop: 20,
-    width: '60%',
+    paddingVertical: height * 0.01875, 
+    paddingHorizontal: width * 0.1, 
+    borderRadius: width * 0.0625, 
+    marginTop: height * 0.025, 
+    width: '80%',
     alignItems: 'center',
   },
   buttonText: {
     color: '#FFF',
-    fontSize: 18,
+    fontSize: RFValue(18, height), 
     fontWeight: 'bold',
   },
 });

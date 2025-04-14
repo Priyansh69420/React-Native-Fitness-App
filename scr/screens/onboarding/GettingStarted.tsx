@@ -3,6 +3,7 @@ import { View, Text, Image, StyleSheet, Dimensions, TouchableOpacity, Button } f
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useNavigation } from "@react-navigation/native";
 import { RootStackParamList } from "../../navigations/RootStackParamList";
+import { RFValue, RFPercentage } from "react-native-responsive-fontsize";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, "GettingStarted">;
 const logo = require('../../assets/logo.png');
@@ -43,7 +44,7 @@ const GettingStartedScreen = () => {
 
 export default GettingStartedScreen;
 
-const { width } = Dimensions.get("window");
+const { width, height } = Dimensions.get("window");
 
 const styles = StyleSheet.create({
   container: {
@@ -51,39 +52,39 @@ const styles = StyleSheet.create({
     backgroundColor: "#F5F7FA",
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 20,
+    paddingHorizontal: width * 0.05,
   },
   logo: {
-    width: 50,
-    height: 50,
+    width: width * 0.13, 
+    height: width * 0.13, 
     backgroundColor: "#F5F7FA",
-    borderRadius: 25,
+    borderRadius: width * 0.065, 
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom: height * 0.025, 
   },
   logoText: {
-    fontSize: 24,
+    fontSize: RFValue(24, height), 
   },
   title: {
-    fontSize: 24,
+    fontSize: RFValue(24, height), 
     fontWeight: "bold",
     color: "#333",
-    marginBottom: 10,
+    marginBottom: height * 0.0125, 
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: RFValue(16, height), 
     color: "#666",
     textAlign: "center",
-    marginBottom: 30,
+    marginBottom: height * 0.0375, 
     width: "80%"
   },
   illustrationContainer: {
     width: "120%",
-    height: 300,
+    height: height * 0.35, 
     justifyContent: "center",
     alignItems: "center",
-    marginVertical: 20,
+    marginVertical: height * 0.025, 
   },
   illustrationImage: {
     width: "100%",
@@ -92,29 +93,29 @@ const styles = StyleSheet.create({
   },
   button: {
     backgroundColor: "#7A5FFF",
-    paddingVertical: 15,
-    paddingHorizontal: 40,
-    borderRadius: 25,
-    marginTop: 30,
-    marginBottom: 5,
-    width: "65%",
+    paddingVertical: height * 0.01875, 
+    paddingHorizontal: width * 0.1, 
+    borderRadius: width * 0.0625, 
+    marginTop: height * 0.0375, 
+    marginBottom: height * 0.00625, 
+    width: "75%",
     alignItems: 'center'
   },
   buttonText: {
     color: "#FFF",
-    fontSize: 18,
+    fontSize: RFValue(18, height), 
     fontWeight: "bold",
   },
   signInContainer: {
     flexDirection: "row",
-    marginTop: 10,
+    marginTop: height * 0.0125, 
   },
   signInText: {
-    fontSize: 15,
+    fontSize: RFValue(15, height), 
     color: "#666",
   },
   linkText: {
-    fontSize: 14,
+    fontSize: RFValue(14, height), 
     color: "#6B48FF",
     fontWeight: "bold",
   },

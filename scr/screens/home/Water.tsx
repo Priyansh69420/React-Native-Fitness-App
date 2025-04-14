@@ -14,6 +14,7 @@ import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RFPercentage, RFValue } from 'react-native-responsive-fontsize';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { auth } from '../../../firebaseConfig';
 
 type NavigationProp = DrawerNavigationProp<HomeStackParamList, 'Water'>;
 
@@ -24,27 +25,38 @@ const getCurrentDate = () => {
   return now.toISOString().split('T')[0]; // e.g., "2025-03-31"
 };
 
+const getUserStorageKey = (baseKey: string) => {
+  const userId = auth.currentUser?.uid;
+  return userId ? `${userId}_${baseKey}` : '';
+}
+
 export const loadData = async (setGlassDrunk: any) => {
-  try {
-    const storedDate = await AsyncStorage.getItem('lastDate');
-    const storedGlassDrunk = await AsyncStorage.getItem('glassDrunk');
+  const userId = auth.currentUser?.uid;
+    if (!userId) return; 
 
-    const currentDate = getCurrentDate();
+    try {
+      const storedDateKey = getUserStorageKey('lastDate');
+      const storedGlassDrunkKey = getUserStorageKey('glassDrunk');
 
-    if (storedDate && storedDate !== currentDate) {
-      setGlassDrunk(0);
-      await AsyncStorage.setItem('glassDrunk', '0');
-      await AsyncStorage.setItem('lastDate', currentDate);
-    } else if (storedGlassDrunk) {
-      setGlassDrunk(parseInt(storedGlassDrunk, 10));
+      const storedDate = await AsyncStorage.getItem(storedDateKey);
+      const storedGlassDrunk = await AsyncStorage.getItem(storedGlassDrunkKey);
+
+      const currentDate = getCurrentDate();
+
+      if (storedDate && storedDate !== currentDate) {
+        setGlassDrunk(0);
+        await AsyncStorage.setItem(storedGlassDrunkKey, '0');
+        await AsyncStorage.setItem(storedDateKey, currentDate);
+      } else if (storedGlassDrunk) {
+        setGlassDrunk(parseInt(storedGlassDrunk, 10));
+      }
+
+      if (!storedDate) {
+        await AsyncStorage.setItem(storedDateKey, currentDate);
+      }
+    } catch (error) {
+      console.error('Error loading data from AsyncStorage:', error);
     }
-
-    if (!storedDate) {
-      await AsyncStorage.setItem('lastDate', currentDate);
-    }
-  } catch (error) {
-    console.error('Error loading data from AsyncStorage:', error);
-  }
 };
 
 export default function Water() {
@@ -60,27 +72,35 @@ export default function Water() {
   }, []);
 
   const loadData = async () => {
+    const userId = auth.currentUser?.uid;
+    if (!userId) return; 
+
     try {
-      const storedDate = await AsyncStorage.getItem('lastDate');
-      const storedGlassDrunk = await AsyncStorage.getItem('glassDrunk');
-      const storedWeeklyPerformance = await AsyncStorage.getItem('weeklyPerformance');
+      const storedDateKey = getUserStorageKey('lastDate');
+      const storedGlassDrunkKey = getUserStorageKey('glassDrunk');
+      const storedWeeklyPerformanceKey = getUserStorageKey('weeklyPerformance');
+
+      const storedDate = await AsyncStorage.getItem(storedDateKey);
+      const storedGlassDrunk = await AsyncStorage.getItem(storedGlassDrunkKey);
+      const storedWeeklyPerformance = await AsyncStorage.getItem(storedWeeklyPerformanceKey);
 
       const currentDate = getCurrentDate();
 
       if (storedDate && storedDate !== currentDate) {
         setGlassDrunk(0);
-        await AsyncStorage.setItem('glassDrunk', '0');
-        await AsyncStorage.setItem('lastDate', currentDate);
+        await AsyncStorage.setItem(storedGlassDrunkKey, '0');
+        await AsyncStorage.setItem(storedDateKey, currentDate);
       } else if (storedGlassDrunk) {
         setGlassDrunk(parseInt(storedGlassDrunk, 10));
       }
 
       if (!storedDate) {
-        await AsyncStorage.setItem('lastDate', currentDate);
+        await AsyncStorage.setItem(storedDateKey, currentDate);
       }
 
       if (storedWeeklyPerformance) {
         setWeeklyPerformance(JSON.parse(storedWeeklyPerformance));
+        updateBestAndWorstPerformance(JSON.parse(storedWeeklyPerformance)); 
       }
     } catch (error) {
       console.error('Error loading data from AsyncStorage:', error);
@@ -88,11 +108,17 @@ export default function Water() {
   };
 
   const saveGlassDrunk = async (newCount: number) => {
+    const userId = auth.currentUser?.uid;
+    if (!userId) return;
+
     try {
-      await AsyncStorage.setItem('glassDrunk', newCount.toString());
+      const storedGlassDrunkKey = getUserStorageKey('glassDrunk');
+      const storedWeeklyPerformanceKey = getUserStorageKey('weeklyPerformance');
+
+      await AsyncStorage.setItem(storedGlassDrunkKey, newCount.toString());
 
       const currentDate = getCurrentDate();
-      const currentDay = getDayOfWeek(currentDate); // Implement getDayOfWeek function
+      const currentDay = getDayOfWeek(currentDate);
 
       const updatedPerformance = weeklyPerformance.map((item) =>
         item.day === currentDay ? { ...item, count: newCount } : item
@@ -104,8 +130,8 @@ export default function Water() {
       }
 
       setWeeklyPerformance(updatedPerformance);
-      await AsyncStorage.setItem('weeklyPerformance', JSON.stringify(updatedPerformance));
-      updateBestAndWorstPerformance(updatedPerformance); // Call function to update best/worst
+      await AsyncStorage.setItem(storedWeeklyPerformanceKey, JSON.stringify(updatedPerformance));
+      updateBestAndWorstPerformance(updatedPerformance);
     } catch (error) {
       console.error('Error saving glass count to AsyncStorage:', error);
     }
@@ -149,16 +175,19 @@ export default function Water() {
   };
 
   const resetData = async () => {
+    const userId = auth.currentUser?.uid;
+    if (!userId) return;
+
     try {
-      await AsyncStorage.setItem('glassDrunk', '0');
-      await AsyncStorage.removeItem('weeklyPerformance'); // Remove weekly performance
+      const storedGlassDrunkKey = getUserStorageKey('glassDrunk');
+      const storedDateKey = getUserStorageKey('lastDate');
+
+      await AsyncStorage.setItem(storedGlassDrunkKey, '0');
+      await AsyncStorage.setItem(storedDateKey, getCurrentDate()); 
+
       setGlassDrunk(0);
-      setWeeklyPerformance([]);
       setBestPerformance(null);
       setWorstPerformance(null);
-
-      const currentDate = getCurrentDate();
-      await AsyncStorage.setItem('lastDate', currentDate);
     } catch (error) {
       console.error('Error resetting data in AsyncStorage:', error);
     }
@@ -232,7 +261,7 @@ export default function Water() {
             <Text style={styles.performanceText}>Best Performance</Text>
             <Text style={styles.performanceValue}>{bestPerformance?.count || '-'}</Text>
           </View>
-          <Text style={styles.performanceDay}>{bestPerformance?.day || ''}</Text>
+          <Text style={styles.performanceDay}>{bestPerformance?.day || '-'}</Text>
         </View>
 
         <View style={styles.performanceBox}>
@@ -246,7 +275,7 @@ export default function Water() {
             <Text style={styles.performanceText}>Worst Performance</Text>
             <Text style={styles.performanceValue}>{worstPerformance?.count || '-'}</Text>
           </View>
-          <Text style={styles.performanceDay}>{worstPerformance?.day || ''}</Text>
+          <Text style={styles.performanceDay}>{worstPerformance?.day || '-'}</Text>
         </View>
       </View>
       <Button title='Reset Data' onPress={resetData} />

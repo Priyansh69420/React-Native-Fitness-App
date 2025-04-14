@@ -207,7 +207,6 @@ export default function Nutrition() {
         await updateDoc(doc(firestore, 'users', userId), {
           calories: calories,
         });
-        console.log('Total calories updated in Firestore:', calories);
       } catch (error) {
         console.error('Error updating total calories in Firestore:', error);
       }
@@ -317,7 +316,7 @@ export default function Nutrition() {
                 const rotation = -90;
 
                 return (
-                  <>
+                  <View key={`nutrition-arc-${index}`}>
                     <Circle
                       key={`bg-circle-${index}`} 
                       cx={center}
@@ -341,7 +340,7 @@ export default function Nutrition() {
                       transform={`rotate(${rotation}, ${center}, ${center})`}
                       fill="none"
                     />
-                  </>
+                  </View>
                 );
               })}
             </Svg>

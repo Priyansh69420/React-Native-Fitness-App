@@ -4,6 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import { RootStackParamList } from '../../navigations/RootStackParamList';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useOnboarding } from '../../contexts/OnboardingContext';
+import { RFValue } from 'react-native-responsive-fontsize';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, "SetProfile">;
 
@@ -85,7 +86,14 @@ export default function SetGenderScreen() {
   );
 }
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
+
+const guidelineBaseWidth = 390; 
+const guidelineBaseHeight = 844; 
+
+const scale = (size: number) => (width / guidelineBaseWidth) * size;
+const verticalScale = (size: number) => (height / guidelineBaseHeight) * size;
+const moderateScale = (size: number, factor = 0.5) => size + (scale(size) - size) * factor;
 
 const styles = StyleSheet.create({
   safeArea: {
@@ -95,78 +103,79 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F5F7FA',
-    paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingHorizontal: scale(20),
+    paddingTop: verticalScale(20),
   },
   backButton: {
     position: 'absolute',
-    top: 40,
-    left: 20,
+    top: verticalScale(40),
+    left: scale(20),
     zIndex: 1,
   },
   backIcon: {
-    width: 30,
-    height: 30,
+    width: scale(30),
+    height: scale(30),
     resizeMode: 'contain',
   },
   centeredContent: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 20,
-    marginTop: -130,
+    paddingHorizontal: scale(20),
+    marginTop: verticalScale(-100), // Adjusted marginTop
   },
   appLogo: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    marginBottom: 30,
+    width: scale(50),
+    height: scale(50),
+    borderRadius: scale(25),
+    marginBottom: verticalScale(30),
     backgroundColor: 'transparent',
   },
   title: {
-    fontSize: 26,
+    fontSize: RFValue(26),
     fontWeight: 'bold',
     color: '#333',
     textAlign: 'center',
-    marginBottom: 40,
+    marginBottom: verticalScale(30),
   },
   genderContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-    marginBottom: 50,
+    justifyContent: 'space-between', 
+    width: '90%', 
+    marginBottom: verticalScale(40),
   },
   genderCard: {
     width: '45%',
     backgroundColor: '#FFF',
-    borderRadius: 10,
-    padding: 20,
+    borderRadius: scale(10),
+    padding: moderateScale(20), 
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: verticalScale(2) },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: scale(4),
     elevation: 2,
     position: 'relative',
   },
   genderIcon: {
-    width: 100,
-    height: 100,
-    marginBottom: 10,
+    width: scale(80), 
+    height: scale(80), 
+    marginBottom: verticalScale(10),
   },
   genderLabel: {
-    fontSize: 18,
+    fontSize: RFValue(18),
     color: '#333',
-    fontWeight: 'bold'
+    fontWeight: 'bold',
+    textAlign: 'center', 
   },
   checkbox: {
     position: 'absolute',
-    top: 10,
-    right: 10,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    top: scale(10),
+    right: scale(10),
+    width: scale(24),
+    height: scale(24),
+    borderRadius: scale(12),
     borderWidth: 1,
     borderColor: '#CCC',
     justifyContent: 'center',
@@ -178,28 +187,28 @@ const styles = StyleSheet.create({
     borderColor: '#7A5FFF',
   },
   checkIcon: {
-    width: 16,
-    height: 16,
+    width: scale(16),
+    height: scale(16),
     tintColor: '#FFF',
   },
   subtitle: {
-    fontSize: 20,
+    fontSize: RFValue(18),
     color: '#777',
     textAlign: 'center',
-    marginBottom: 50,
+    marginBottom: verticalScale(40),
   },
   button: {
     backgroundColor: '#7A5FFF',
-    paddingVertical: 15,
-    paddingHorizontal: 40,
-    borderRadius: 25,
-    width: '75%',
+    paddingVertical: height * 0.02,
+    paddingHorizontal: width * 0.1,
+    borderRadius: scale(50),
+    width: width * 0.75,
     alignItems: 'center',
-    marginTop: 20
+    marginTop: verticalScale(20),
   },
   buttonText: {
     color: '#FFF',
-    fontSize: 18,
+    fontSize: RFValue(18),
     fontWeight: 'bold',
   },
 });
