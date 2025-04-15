@@ -31,14 +31,17 @@ const interests: items[] = [
 
 export default function Intrests() {
   const navigation = useNavigation<NavigationProp>();
-  const [selectedInterest, setSelectedInterest] = useState<number[]>([]);
+  const [selectedInterest, setSelectedInterest] = useState<string[]>([]);
   const {updateOnboardingData} = useOnboarding();
 
   const handleInterestsPress = (interestId: number) => {
-    if(selectedInterest.includes(interestId)) {
-      setSelectedInterest(selectedInterest.filter((id) => id != interestId));
-    } else {
-      setSelectedInterest([...selectedInterest, interestId]);
+    const selectedItem = interests.find(item => item.id === interestId);
+    if (selectedItem) {
+      if(selectedInterest.includes(selectedItem.label)) {
+        setSelectedInterest(selectedInterest.filter((label) => label != selectedItem.label));
+      } else {
+        setSelectedInterest([...selectedInterest, selectedItem.label]);
+      }
     }
   };
 
@@ -73,7 +76,7 @@ export default function Intrests() {
                 <View
                   style={[
                     styles.iconContainer,
-                    selectedInterest.includes(item.id) && styles.selectedIconContainer,
+                    selectedInterest.includes(item.label) && styles.selectedIconContainer,
                   ]}
                 >
                   <Image 
@@ -98,8 +101,8 @@ export default function Intrests() {
 
 const { width, height } = Dimensions.get('window');
 
-const guidelineBaseWidth = 390; // Width of iPhone 15 Pro Max
-const guidelineBaseHeight = 844; // Height of iPhone 15 Pro Max
+const guidelineBaseWidth = 390;
+const guidelineBaseHeight = 844;
 
 const scale = (size: number) => (width / guidelineBaseWidth) * size;
 const verticalScale = (size: number) => (height / guidelineBaseHeight) * size;
@@ -137,7 +140,7 @@ const styles = StyleSheet.create({
     width: scale(50),
     height: scale(50),
     borderRadius: scale(25),
-    marginBottom: verticalScale(40), // Adjusted marginBottom
+    marginBottom: verticalScale(40), 
     backgroundColor: 'transparent',
   },
   title: {
@@ -145,24 +148,24 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333',
     textAlign: 'center',
-    marginBottom: verticalScale(30), // Adjusted marginBottom
+    marginBottom: verticalScale(30),
   },
   interestsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-around', // Changed to space-around
-    width: '115%', // Use full width
-    marginBottom: verticalScale(40), // Adjusted marginBottom
+    justifyContent: 'space-around', 
+    width: '115%', 
+    marginBottom: verticalScale(40), 
     
   },
   interestItem: {
-    width: '30%', // Adjusted width for better spacing
+    width: '30%', 
     alignItems: 'center',
-    marginBottom: verticalScale(15), // Adjusted marginBottom
+    marginBottom: verticalScale(15), 
   },
   iconContainer: {
-    width: scale(90), // Slightly smaller icon container
-    height: scale(90), // Slightly smaller icon container
+    width: scale(90), 
+    height: scale(90), 
     borderRadius: scale(50),
     backgroundColor: '#FFF',
     justifyContent: 'center',
@@ -172,27 +175,27 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: scale(4),
     elevation: 2,
-    marginBottom: verticalScale(5), // Adjusted marginBottom
+    marginBottom: verticalScale(5), 
   },
   selectedIconContainer: {
     backgroundColor: '#7A5FFF',
   },
   interestIcon: {
-    width: scale(40), // Slightly smaller icon
-    height: scale(40), // Slightly smaller icon
+    width: scale(40), 
+    height: scale(40), 
     tintColor: '#333',
   },
   interestLabel: {
-    fontSize: RFValue(16), // Slightly smaller font
+    fontSize: RFValue(16),
     color: '#333',
     textAlign: 'center',
   },
   button: {
     backgroundColor: '#7A5FFF',
-    paddingVertical: height * 0.018, // Slightly adjusted padding
-    paddingHorizontal: width * 0.15, // Slightly adjusted padding
+    paddingVertical: height * 0.018, 
+    paddingHorizontal: width * 0.15,
     borderRadius: scale(50),
-    width: width * 0.8, // Use a more consistent percentage
+    width: width * 0.8, 
     alignItems: 'center',
   },
   buttonText: {

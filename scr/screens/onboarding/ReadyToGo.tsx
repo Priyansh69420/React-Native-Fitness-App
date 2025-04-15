@@ -1,21 +1,15 @@
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
 import React, { useState } from 'react';
-import { useNavigation } from '@react-navigation/native';
-import { RootStackParamList } from '../../navigations/RootStackParamList';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useOnboarding } from '../../contexts/OnboardingContext';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth, firestore } from '../../../firebaseConfig';
 import { doc, setDoc } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-type NavigationProp = NativeStackNavigationProp<RootStackParamList, "SetProfile">;
-
 const logo = require('../../assets/logo.png');
 const continueIcon = require('../../assets/continueIcon.png'); 
 
 export default function ReadyToGo() {
-  const navigation = useNavigation<NavigationProp>();
   const [loading, setLoading] = useState(false);
   const { onboardingData } = useOnboarding();
   const email = onboardingData.email ?? "";

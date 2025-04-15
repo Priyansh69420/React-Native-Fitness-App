@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Dimensions,
   SafeAreaView,
+  Button,
 } from 'react-native';
 import { auth } from '../../../firebaseConfig';
 import { HomeStackParamList } from '../../navigations/HomeStackParamList';
@@ -50,7 +51,6 @@ export default function Home() {
   const [rehydrated, setRehydrated] = useState<boolean>(false);
   const [imageLoading, setImageLoading] = useState<boolean>(true);
   const navigation = useNavigation<NavigationProp>();
-
   const totalGlasses = 8;
 
   useEffect(() => {

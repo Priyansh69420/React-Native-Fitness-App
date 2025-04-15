@@ -7,8 +7,8 @@ interface OnboardingData {
   lastName?: string;
   faceId?: boolean;
   profilePicture?: any;
-  goals?: number[];
-  interests?: number[];
+  goals?: string[];
+  interests?: string[];
   gender?: string;
   calories?: number;
 }

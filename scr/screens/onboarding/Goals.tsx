@@ -21,14 +21,17 @@ const goals = [
 
 export default function SetGoalsScreen() {
   const navigation = useNavigation<NavigationProp>();
-  const [selectedGoals, setSelectedGoals] = useState<number[]>([]);
+  const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
   const {updateOnboardingData} = useOnboarding();
 
   const handleGoalPress = (goalId: number) => {
-    if (selectedGoals.includes(goalId)) {
-      setSelectedGoals(selectedGoals.filter((id) => id !== goalId));
-    } else {
-      setSelectedGoals([...selectedGoals, goalId]);
+    const selectedGoal = goals.find(goal => goal.id === goalId);
+    if (selectedGoal) {
+      if (selectedGoals.includes(selectedGoal.label)) {
+        setSelectedGoals(selectedGoals.filter(label => label !== selectedGoal.label));
+      } else {
+        setSelectedGoals([...selectedGoals, selectedGoal.label]);
+      }
     }
   };
 
@@ -67,10 +70,10 @@ export default function SetGoalsScreen() {
                 <View
                   style={[
                     styles.checkbox,
-                    selectedGoals.includes(goal.id) && styles.selectedCheckbox,
+                    selectedGoals.includes(goal.label) && styles.selectedCheckbox,
                   ]}
                 >
-                  {selectedGoals.includes(goal.id) && (
+                  {selectedGoals.includes(goal.label) && (
                     <Image source={checkIcon} style={styles.checkIcon} />
                   )}
                 </View>

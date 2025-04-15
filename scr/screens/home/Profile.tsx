@@ -63,12 +63,11 @@ const { width, height } = Dimensions.get('window');
 const responsiveWidth = (percentage: number) => width * (percentage / 100);
 const responsiveHeight = (percentage: number) => height * (percentage / 100);
 
-export default function EditProfile() {
+export default function Profile() {
   const navigation = useNavigation<NavigationProp>();
   const dispatch = useDispatch<AppDispatch>();
-  const userData = useSelector((state: RootState) => state.user.userData) as UserData;
+  const userData = useSelector((state: RootState) => state.user.userData);
   const [imageLoading, setImageLoading] = useState<boolean>(true);
-  
 
   const [name, setName] = useState(userData?.name || '');
   const [profilePicture, setProfilePicture] = useState<number | string>(userData?.profilePicture || 1);
@@ -106,14 +105,12 @@ export default function EditProfile() {
   const handleAddCustomPhoto = async () => {
       try {
         setLoading(true);
-          // Request media library permissions
           const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
           if (!permissionResult.granted) {
               alert('Permission Denied. Please grant permission to select an image.');
               return;
           }
 
-          // Launch the image picker
           const result = await ImagePicker.launchImageLibraryAsync({
               mediaTypes: ['images'],
               allowsEditing: true,
@@ -129,7 +126,6 @@ export default function EditProfile() {
 
               let base64Image: string | null = null;
 
-              // Convert image to Base64 (web or native)
               if (Platform.OS === 'web') {
                   const response = await fetch(uri);
                   const blob = await response.blob();
@@ -153,7 +149,6 @@ export default function EditProfile() {
                   throw new Error('Failed to convert image to Base64');
               }
 
-              // Delete the old profile image FIRST
               if (typeof profilePicture === 'string' && profilePicture.includes('supabase.co')) {
                 const oldFilePath = profilePicture.split('/storage/v1/object/public/profileimages/')[1]?.split('?')[0];
                 if (oldFilePath) {
@@ -170,14 +165,12 @@ export default function EditProfile() {
                 }
             }
 
-              // Prepare the file for upload
               const binaryString = atob(base64Image);
               const fileArray = new Uint8Array(binaryString.length);
               for (let i = 0; i < binaryString.length; i++) {
                   fileArray[i] = binaryString.charCodeAt(i);
               }
 
-              // Upload the new image
               const { data, error: uploadError } = await supabase.storage
                   .from('profileimages')
                   .upload(filePath, fileArray, {
@@ -189,7 +182,6 @@ export default function EditProfile() {
                   throw new Error(uploadError.message);
               }
 
-              // Retrieve public URL for the new image
               const { data: urlData } = supabase.storage
                   .from('profileimages')
                   .getPublicUrl(filePath);
@@ -200,7 +192,6 @@ export default function EditProfile() {
 
               const publicUrlWithCacheBust = `${urlData.publicUrl}?t=${Date.now()}`;
 
-              // Update the profile picture state
               setProfilePicture(publicUrlWithCacheBust);
               console.log('New profile picture updated:', publicUrlWithCacheBust);
           }
@@ -228,6 +219,7 @@ export default function EditProfile() {
         const userRefDoc = doc(firestore, 'users', user.uid);
         await setDoc(userRefDoc, updatedUserData, { merge: true });
       }
+      
       alert('Profile updated successfully!');
     } catch (error: any) {
       alert('Failed to update profile: ' + error.message);
