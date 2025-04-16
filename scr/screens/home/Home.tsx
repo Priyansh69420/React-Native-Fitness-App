@@ -8,7 +8,6 @@ import {
   TouchableOpacity,
   Dimensions,
   SafeAreaView,
-  Button,
 } from 'react-native';
 import { auth } from '../../../firebaseConfig';
 import { HomeStackParamList } from '../../navigations/HomeStackParamList';
@@ -300,15 +299,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: width * 0.04,
-    paddingVertical: height * 0.02,
+    paddingVertical: height * 0.025,
   },
   drawerContainer: {
     marginTop: -(height * 0.011),
     marginLeft: width * 0.006,
   },
   drawerIcon: {
-    width: RFValue(30, height),
-    height: RFValue(30, height),
+    width: RFValue(31, height),
+    height: RFValue(31, height),
   },
   profileContainer: {
     width: RFValue(50, height),

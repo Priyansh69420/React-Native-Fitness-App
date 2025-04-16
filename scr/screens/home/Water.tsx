@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Image,
   Button,
+  ActivityIndicator,
 } from 'react-native';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { HomeStackParamList } from '../../navigations/HomeStackParamList';
@@ -65,10 +66,15 @@ export default function Water() {
   const [weeklyPerformance, setWeeklyPerformance] = useState<{ day: string; count: number }[]>([]);
   const [bestPerformance, setBestPerformance] = useState<{ day: string; count: number } | null>(null);
   const [worstPerformance, setWorstPerformance] = useState<{ day: string; count: number } | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
   const navigation = useNavigation<NavigationProp>();
 
   useEffect(() => {
-    loadData();
+    try {
+      loadData();
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   const loadData = async () => {
@@ -193,6 +199,16 @@ export default function Water() {
     }
   }
 
+  if (loading) {
+      return (
+        <SafeAreaView style={styles.safeArea}>
+          <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+            <ActivityIndicator size="large" color="#7A5FFF" />
+          </View>
+        </SafeAreaView>
+      );
+    }
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
@@ -287,7 +303,7 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#F5F7FA',
-    marginTop: -(height * 0.015),
+    marginTop: (height * 0.015),
   },
   header: {
     flexDirection: 'row',

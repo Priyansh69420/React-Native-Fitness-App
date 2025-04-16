@@ -57,8 +57,7 @@ export default function AboutUs() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#F5F7FA', 
-    marginTop: -(height * 0.015),
+    marginTop: (height * 0.03),
   },
   header: {
     flexDirection: 'row',

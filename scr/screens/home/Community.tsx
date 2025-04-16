@@ -12,35 +12,24 @@ import {
   StyleSheet,
   Dimensions,
   ActivityIndicator,
+  Modal,
+  Platform,
 } from 'react-native';
-import {
-  collection,
-  query,
-  orderBy,
-  onSnapshot,
-  doc,
-  updateDoc,
-  arrayUnion,
-  arrayRemove,
-  addDoc,
-  serverTimestamp,
-  increment,
-  getDoc,
-  where,
-  limit,
-  getDocs,
-} from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, doc, updateDoc, arrayUnion, arrayRemove, addDoc, serverTimestamp, increment, getDoc, where, limit, getDocs } from 'firebase/firestore';
 import { auth, firestore } from '../../../firebaseConfig';
 import { useNavigation } from '@react-navigation/native';
 import { User } from '@firebase/auth';
 import { Feather, SimpleLineIcons } from '@expo/vector-icons';
 import { RFPercentage, RFValue } from 'react-native-responsive-fontsize';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
-import { SettingStackParamList } from '../../navigations/SettingStackParamList';
+import { CommunityStackParamList } from '../../navigations/CommunityStackParamList';
+import * as ImagePicker from 'expo-image-picker';
+import RNFS from 'react-native-fs';
+import { supabase } from '../../../supabaseConfig'; 
 
-type NavigationProp = DrawerNavigationProp<SettingStackParamList, 'Settings'>;
+type NavigationProp = DrawerNavigationProp<CommunityStackParamList, 'Community'>;
 
-interface Post {
+export interface Post {
   id: string;
   userId: string;
   content: string;
@@ -48,14 +37,6 @@ interface Post {
   timestamp?: any;
   likes?: string[];
   commentCount?: number;
-}
-
-interface Comment {
-  id: string;
-  postId: string;
-  userId: string;
-  content: string;
-  timestamp?: any;
 }
 
 interface UserData {
@@ -69,16 +50,37 @@ interface UserData {
   calories?: number;
 }
 
-const CommunityScreen = () => {
+const getTimeAgo = (timestamp: any) => {
+  if (!timestamp) return 'Just now';
+
+  const date = timestamp.toDate();
+  const now = new Date();
+  const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+  if (seconds < 60) {
+    return 'Just now';
+  } else if (seconds < 3600) {
+    const minutes = Math.floor(seconds / 60);
+    return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+  } else if (seconds < 86400) {
+    const hours = Math.floor(seconds / 3600);
+    return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+  } else {
+    const days = Math.floor(seconds / 86400);
+    return `${days} day${days > 1 ? 's' : ''} ago`;
+  }
+};
+
+const Community = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [postIdWithOpenComments, setPostIdWithOpenComments] = useState<string | null>(null);
-  const [comments, setComments] = useState<Record<string, Comment[]>>({});
-  const [commentTexts, setCommentTexts] = useState<Record<string, string>>({});
-  const [postContent, setPostContent] = useState('');
   const [suggestedUsers, setSuggestedUsers] = useState<UserData[]>([]);
   const [userDataMap, setUserDataMap] = useState<Record<string, UserData>>({});
+  const [isAddPostModalVisible, setIsAddPostModalVisible] = useState(false);
+  const [newPostContent, setNewPostContent] = useState('');
+  const [newPostImage, setNewPostImage] = useState<string | null>(null); 
+  const [uploadingImage, setUploadingImage] = useState(false); 
   const navigation = useNavigation<NavigationProp>();
 
   useEffect(() => {
@@ -92,24 +94,23 @@ const CommunityScreen = () => {
           id: doc.id,
           ...doc.data(),
         })) as Post[];
-        
-        // Fetch user data for all unique user IDs in posts
+
         const userIds = [...new Set(allPosts.map(post => post.userId))];
-        const userDataPromises = userIds.map(userId => 
-          getDoc(doc(firestore, 'users', userId)).then(doc => 
-            doc.exists() ? doc.data() as UserData : { 
-              name: 'User', 
-              profilePicture: undefined 
+        const userDataPromises = userIds.map(userId =>
+          getDoc(doc(firestore, 'users', userId)).then(doc =>
+            doc.exists() ? doc.data() as UserData : {
+              name: 'User',
+              profilePicture: undefined
             }
           )
         );
-        
+
         const userDataResults = await Promise.all(userDataPromises);
         const newUserDataMap = userIds.reduce((acc, id, index) => {
           acc[id] = userDataResults[index];
           return acc;
         }, {} as Record<string, UserData>);
-        
+
         setUserDataMap(newUserDataMap);
         setPosts(allPosts);
         setLoading(false);
@@ -141,38 +142,117 @@ const CommunityScreen = () => {
     };
   }, []);
 
-  useEffect(() => {
-    if (postIdWithOpenComments) {
-      const commentsRef = collection(firestore, 'comments');
-      const commentsQuery = query(
-        commentsRef,
-        where('postId', '==', postIdWithOpenComments),
-        orderBy('timestamp', 'desc')
-      );
+  const handlePickImage = async () => {
+    try {
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permissionResult.granted) {
+        Alert.alert('Permission Denied', 'Please grant permission to access your photo library.');
+        return;
+      }
 
-      const unsubscribeComments = onSnapshot(
-        commentsQuery,
-        (snapshot) => {
-          const fetchedComments = snapshot.docs.map(
-            (doc) =>
-              ({
-                id: doc.id,
-                ...doc.data(),
-              } as Comment)
-          );
-          setComments((prev) => ({
-            ...prev,
-            [postIdWithOpenComments]: fetchedComments,
-          }));
-        },
-        (error) => {
-          console.error("Error fetching comments", error);
-        }
-      );
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [4, 3], 
+        quality: 0.8,
+      });
 
-      return () => unsubscribeComments();
+      if (!result.canceled && result.assets.length > 0) {
+        setNewPostImage(result.assets[0].uri);
+      }
+    } catch (error: any) {
+      console.error('Error picking image:', error.message);
     }
-  }, [postIdWithOpenComments]);
+  };
+
+  const uploadImageToSupabase = async (uri: string): Promise<string | null> => {
+    setUploadingImage(true);
+    try {
+      const fileName = uri.split('/').pop() || `post_${Date.now()}.jpg`;
+      const fileType = uri.split('.').pop() || 'jpeg';
+      const filePath = `userposts/${fileName}`;
+
+      const base64Image = await RNFS.readFile(uri, 'base64');
+
+      if (!base64Image) {
+        throw new Error('Failed to convert image to Base64');
+      }
+
+      const binaryString = atob(base64Image);
+      const fileArray = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        fileArray[i] = binaryString.charCodeAt(i);
+      }
+
+      const { data, error: uploadError } = await supabase.storage
+        .from('userposts')
+        .upload(filePath, fileArray, {
+          contentType: `image/${fileType}`,
+          upsert: false, 
+        });
+
+      if (uploadError) {
+        throw new Error(uploadError.message);
+      }
+
+      const { data: urlData } = supabase.storage
+        .from('userposts')
+        .getPublicUrl(filePath);
+
+      if (!urlData?.publicUrl) {
+        throw new Error('Failed to retrieve public URL');
+      }
+
+      return urlData.publicUrl;
+    } catch (error: any) {
+      console.error('Error uploading image to Supabase:', error.message);
+      return null;
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleCreateNewPostWithImage = async () => {
+    if (!newPostContent.trim() && !newPostImage) {
+      return;
+    }
+
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        Alert.alert(
+          'Authentication Required',
+          'You need to be logged in to create a post.'
+        );
+        return;
+      }
+
+      let imageUrl: string | null = null;
+      if (newPostImage) {
+        imageUrl = await uploadImageToSupabase(newPostImage);
+        if (!imageUrl) {
+          return; 
+        }
+      }
+
+      const postsCollectionRef = collection(firestore, 'posts');
+      await addDoc(postsCollectionRef, {
+        userId: user.uid,
+        content: newPostContent,
+        imageUrl: imageUrl,
+        timestamp: serverTimestamp(),
+        likes: [],
+        commentCount: 0,
+      });
+
+      setNewPostContent('');
+      setNewPostImage(null);
+      setIsAddPostModalVisible(false);
+
+    } catch (error: any) {
+      console.error('Error creating post:', error.message);
+    }
+  };
 
   const handleLikePost = async (postId: string) => {
     try {
@@ -209,99 +289,15 @@ const CommunityScreen = () => {
       });
     } catch (error: any) {
       console.error('Error liking post:', error.message);
-      Alert.alert('Error', 'Could not like/unlike the post.');
     }
-  };
-
-  const handleToggleComments = (postId: string) => {
-    setPostIdWithOpenComments((prevId) =>
-      prevId === postId ? null : postId
-    );
-    setCommentTexts((prev) => ({ ...prev, [postId]: '' }));
-  };
-
-  const handleAddComment = async (postId: string) => {
-    const commentText = commentTexts[postId] || '';
-    if (!commentText.trim()) return;
-
-    try {
-      const user = auth.currentUser;
-      if (!user) {
-        Alert.alert(
-          'Authentication Required',
-          'You need to be logged in to comment.'
-        );
-        return;
-      }
-
-      const commentsCollectionRef = collection(firestore, 'comments');
-      await addDoc(commentsCollectionRef, {
-        postId,
-        userId: user.uid,
-        content: commentText,
-        timestamp: serverTimestamp(),
-      });
-
-      const postDocRef = doc(firestore, 'posts', postId);
-      await updateDoc(postDocRef, {
-        commentCount: increment(1),
-      });
-
-      setCommentTexts((prev) => ({ ...prev, [postId]: '' }));
-    } catch (error: any) {
-      console.error('Error adding comment:', error.message);
-      Alert.alert('Error', 'Could not add comment.');
-    }
-  };
-
-  const handleCreateNewPost = async () => {
-    if (!postContent.trim()) {
-      Alert.alert('Warning', 'Post content cannot be empty.');
-      return;
-    }
-
-    try {
-      const user = auth.currentUser;
-      if (!user) {
-        Alert.alert(
-          'Authentication Required',
-          'You need to be logged in to create a post.'
-        );
-        return;
-      }
-
-      const postsCollectionRef = collection(firestore, 'posts');
-      await addDoc(postsCollectionRef, {
-        userId: user.uid,
-        content: postContent,
-        timestamp: serverTimestamp(),
-        likes: [],
-        commentCount: 0,
-      });
-
-      setPostContent('');
-    } catch (error: any) {
-      console.error('Error creating post:', error.message);
-      Alert.alert('Error', 'Could not create the post.');
-    }
-  };
-
-  const renderCommentItem = ({ item }: { item: Comment }) => {
-    const userData = userDataMap[item.userId] || { name: 'User' };
-    
-    return (
-      <View style={styles.commentItem}>
-        <Text style={styles.commentUserId}>{userData.name}:</Text>
-        <Text style={styles.commentContent}>{item.content}</Text>
-        <Text style={styles.commentTimestamp}>
-          {item.timestamp?.toDate().toLocaleTimeString()}
-        </Text>
-      </View>
-    );
   };
 
   const renderPostItem = ({ item }: { item: Post }) => {
     const userData = userDataMap[item.userId] || { name: 'User', profilePicture: undefined };
+    const user = auth.currentUser;
+    const isLiked = user ? item.likes?.includes(user.uid) : false;
+    const name = userData?.name;
+    const profilePic = userData?.profilePicture;
 
     return (
       <View style={styles.postContainer}>
@@ -314,69 +310,46 @@ const CommunityScreen = () => {
           <View style={styles.userInfo}>
             <Text style={styles.userName}>{userData.name}</Text>
             <Text style={styles.timestamp}>
-              {item.timestamp?.toDate().toLocaleTimeString()}
+              {getTimeAgo(item.timestamp)}
             </Text>
           </View>
         </View>
 
         <Text style={styles.content}>{item.content}</Text>
-        {item.imageUrl && (
-          <Image
-            source={{ uri: item.imageUrl }}
-            style={styles.postImage}
-            resizeMode="cover"
-          />
-        )}
+
+        <View style={{ justifyContent: 'center', alignItems: 'center' }}>
+          {item.imageUrl && (
+            <Image
+              source={{ uri: item.imageUrl }}
+              style={styles.postImage}
+              resizeMode="cover"
+            />
+          )}
+        </View>
 
         <View style={styles.postActions}>
           <TouchableOpacity
             style={styles.actionButton}
             onPress={() => handleLikePost(item.id)}
           >
-            <Feather name="heart" size={20} color="#757575" />
+            <Image
+              source={isLiked ? require('../../assets/likedIcon.png') : require('../../assets/likeIcon.png')}
+              style={[styles.likeIcon]}
+            />
             <Text style={styles.actionText}>
               {item.likes ? item.likes.length : 0}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => handleToggleComments(item.id)}
+            onPress={() => navigation.navigate('Post', { item, name, profilePic })}
           >
-            <SimpleLineIcons name="bubble" size={20} color="#757575" />
+            <SimpleLineIcons name="bubble" size={20} color='#d3d3d3' />
             <Text style={styles.actionText}>
               {item.commentCount || 0}
             </Text>
           </TouchableOpacity>
         </View>
-
-        {postIdWithOpenComments === item.id && (
-          <View style={styles.commentSection}>
-            <FlatList
-              data={comments[item.id] || []}
-              keyExtractor={(comment) => comment.id}
-              renderItem={renderCommentItem}
-            />
-            <View style={styles.addCommentContainer}>
-              <TextInput
-                style={styles.commentInput}
-                placeholder="Add a comment..."
-                value={commentTexts[item.id] || ''}
-                onChangeText={(text) =>
-                  setCommentTexts((prev) => ({
-                    ...prev,
-                    [item.id]: text,
-                  }))
-                }
-              />
-              <TouchableOpacity
-                style={styles.postCommentButton}
-                onPress={() => handleAddComment(item.id)}
-              >
-                <Text style={styles.postCommentButtonText}>Post</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
       </View>
     );
   };
@@ -414,11 +387,11 @@ const CommunityScreen = () => {
             style={styles.drawerIcon}
           />
         </TouchableOpacity>
-        <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <Text style={styles.headerTitle}>Community</Text>
-          <TouchableOpacity 
-            style={{paddingVertical: height * 0.03, paddingHorizontal: width * 0.02,}}
-            
+          <TouchableOpacity
+            style={{ paddingVertical: height * 0.03, paddingHorizontal: width * 0.02 }}
+            onPress={() => setIsAddPostModalVisible(true)}
           >
             <Feather name="inbox" size={24} color="#222" />
           </TouchableOpacity>
@@ -448,12 +421,57 @@ const CommunityScreen = () => {
         renderItem={renderPostItem}
         contentContainerStyle={styles.postsListContainer}
       />
+
+      {/* Add Post Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={isAddPostModalVisible}
+        onRequestClose={() => {
+          setIsAddPostModalVisible(!isAddPostModalVisible);
+        }}
+      >
+        <View style={styles.centeredView}>
+          <View style={styles.modalView}>
+            <Text style={styles.modalTitle}>Create New Post</Text>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="What's on your mind?"
+              multiline
+              value={newPostContent}
+              onChangeText={setNewPostContent}
+            />
+
+            <TouchableOpacity style={styles.modalImagePlaceholder} onPress={handlePickImage}>
+              <Text style={{ color: '#757575' }}>Tap to add image</Text>
+              {uploadingImage && <ActivityIndicator size="small" color="#7A5FFF" />}
+              {newPostImage && <Image source={{ uri: newPostImage }} style={styles.modalImagePreview} />}
+            </TouchableOpacity>
+
+            <View style={styles.modalButtonsContainer}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalCancelButton]}
+                onPress={() => setIsAddPostModalVisible(false)}
+              >
+                <Text style={styles.modalButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalPostButton]}
+                onPress={handleCreateNewPostWithImage}
+                disabled={uploadingImage}
+              >
+                <Text style={styles.modalButtonText}>{uploadingImage ? 'Posting...' : 'Post'}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
 
-const width = Dimensions.get('window').width;
-const height = Dimensions.get('window').height;
+const { width, height } = Dimensions.get('window');
+const scaleFactor = 1.1;
 
 const styles = StyleSheet.create({
   safeArea: {
@@ -470,199 +488,239 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: width * 0.05,
+    padding: width * 0.05 * scaleFactor,
     backgroundColor: '#F5F7FA',
   },
   header: {
     flexDirection: 'column',
     justifyContent: 'space-between',
-    paddingHorizontal: width * 0.04,
-    paddingVertical: height * 0.02,
+    paddingHorizontal: width * 0.04 * scaleFactor,
+    paddingVertical: height * 0.02 * scaleFactor,
   },
   drawerContainer: {
-    marginTop: (height * 0.006),
-    marginLeft: width * 0.007,
+    marginTop: height * 0.006 * scaleFactor,
+    marginLeft: width * 0.007 * scaleFactor,
   },
   drawerIcon: {
-    width: RFValue(30, height),
-    height: RFValue(30, height),
+    width: RFValue(30 * scaleFactor, height),
+    height: RFValue(30 * scaleFactor, height),
   },
   headerTitle: {
-    fontSize: RFPercentage(4),
+    fontSize: RFPercentage(4 * scaleFactor),
     fontWeight: 'bold',
-    marginLeft: width * 0.01,
-    marginVertical: height * 0.02,
+    marginLeft: width * 0.01 * scaleFactor,
+    marginVertical: height * 0.02 * scaleFactor,
   },
   suggestedUsersContainer: {
-    paddingBottom: 25,
-    paddingLeft: 15, // Added padding to align with the start of the list
+    paddingBottom: RFValue(25 * scaleFactor, height),
+    paddingHorizontal: RFValue(7 * scaleFactor, width),
   },
   suggestedUserItem: {
     alignItems: 'center',
-    marginHorizontal: 10,
+    marginHorizontal: width * 0.02 * scaleFactor,
   },
   suggestedUserAvatar: {
-    width: RFValue(65, height), // Slightly smaller avatars
-    height: RFValue(65, height),
-    borderRadius: 35,
-    marginBottom: 5,
+    width: RFValue(65 * scaleFactor, height),
+    height: RFValue(65 * scaleFactor, height),
+    borderRadius: RFValue(35 * scaleFactor, height),
+    marginBottom: height * 0.006 * scaleFactor,
   },
   suggestedUserAvatarPlaceholder: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#EEEEEE', // Lighter grey placeholder
-    marginBottom: 5,
+    width: RFValue(50 * scaleFactor, height),
+    height: RFValue(50 * scaleFactor, height),
+    borderRadius: RFValue(25 * scaleFactor, height),
+    backgroundColor: '#EEEEEE',
+    marginBottom: height * 0.006 * scaleFactor,
   },
   title: {
-    fontSize: 24,
+    fontSize: RFPercentage(3.5 * scaleFactor),
     fontWeight: 'bold',
     color: '#212121',
-    marginBottom: 10,
+    marginBottom: height * 0.012 * scaleFactor,
     textAlign: 'center',
   },
   createPostContainer: {
     backgroundColor: 'white',
-    padding: 15,
-    marginHorizontal: 15, // Added horizontal margin
-    marginBottom: 10,
-    borderRadius: 8,
+    padding: RFValue(15 * scaleFactor, height),
+    marginHorizontal: width * 0.04 * scaleFactor,
+    marginBottom: height * 0.012 * scaleFactor,
+    borderRadius: RFValue(8 * scaleFactor, height),
     borderColor: '#E0E0E0',
-    borderWidth: 1,
+    borderWidth: 1 * scaleFactor,
   },
   input: {
-    borderWidth: 0, // Removed border from input
-    padding: 10,
-    marginBottom: 10,
-    minHeight: 40,
+    borderWidth: 1 * scaleFactor,
+    borderColor: '#E0E0E0',
+    padding: RFValue(10 * scaleFactor, height),
+    marginBottom: height * 0.012 * scaleFactor,
+    minHeight: RFValue(40 * scaleFactor, height),
     textAlignVertical: 'top',
+    fontSize: RFValue(16 * scaleFactor, height),
   },
   postButton: {
-    backgroundColor: '#6200EE', // Primary color from the image
-    borderRadius: 5,
-    paddingVertical: 10,
+    backgroundColor: '#6200EE',
+    borderRadius: RFValue(5 * scaleFactor, height),
+    paddingVertical: RFValue(10 * scaleFactor, height),
     alignItems: 'center',
   },
   postButtonText: {
     color: 'white',
     fontWeight: 'bold',
+    fontSize: RFValue(16 * scaleFactor),
   },
   postsListContainer: {
-    paddingBottom: 20,
+    paddingBottom: RFValue(20 * scaleFactor, height),
   },
   postContainer: {
     backgroundColor: 'white',
-    padding: 15,
-   
-    marginBottom: 10,
-    borderRadius: 8,
+    paddingHorizontal: width * 0.06 * scaleFactor,
+    paddingVertical: height * 0.025 * scaleFactor,
+    marginBottom: height * 0.012 * scaleFactor,
+    borderRadius: RFValue(8 * scaleFactor, height),
     borderColor: '#E0E0E0',
-    borderWidth: 1,
+    borderWidth: 1 * scaleFactor,
   },
   postHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: height * 0.024 * scaleFactor,
   },
   avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 10,
+    width: RFValue(50 * scaleFactor, height),
+    height: RFValue(50 * scaleFactor, height),
+    borderRadius: RFValue(25 * scaleFactor, height),
+    marginRight: width * 0.023 * scaleFactor
   },
   avatarPlaceholder: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: RFValue(50 * scaleFactor, height),
+    height: RFValue(50 * scaleFactor, height),
+    borderRadius: RFValue(25 * scaleFactor, height),
     backgroundColor: '#EEEEEE',
-    marginRight: 10,
+    marginRight: width * 0.023 * scaleFactor,
   },
   userInfo: {
     flexDirection: 'column',
   },
   userName: {
     fontWeight: 'bold',
-    fontSize: 16,
+    fontSize: RFValue(17 * scaleFactor, height),
     color: '#212121',
   },
   timestamp: {
-    fontSize: 12,
+    fontSize: RFValue(12 * scaleFactor, height),
     color: '#757575',
   },
   content: {
-    fontSize: 14,
+    fontSize: RFValue(17 * scaleFactor, height),
     color: '#212121',
-    lineHeight: 20,
-    marginBottom: 10,
+    lineHeight: RFValue(20 * scaleFactor, height),
+    marginBottom: height * 0.027 * scaleFactor,
   },
   postImage: {
     width: '100%',
-    aspectRatio: 1, // Changed to 1:1 aspect ratio to match image
-    borderRadius: 8,
-    marginBottom: 10,
+    aspectRatio: 1.25,
+    borderRadius: RFValue(10 * scaleFactor, height),
+    maxHeight: height * 0.31 * scaleFactor,
   },
   postActions: {
     flexDirection: 'row',
-    paddingVertical: 8,
+    paddingVertical: height * 0.024 * scaleFactor,
   },
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 8
+    paddingRight: width * 0.03 * scaleFactor,
+    paddingLeft: width * 0.009 * scaleFactor
+  },
+  likeIcon: {
+    width: RFValue(20 * scaleFactor, height),
+    height: RFValue(20 * scaleFactor, height),
   },
   actionText: {
-    marginLeft: 5,
-    color: '#757575',
-  },
-  commentSection: {
-    marginTop: 10,
-    padding: 10,
-    backgroundColor: '#F5F5F5', // Slightly darker background for comments
-    borderRadius: 8,
-  },
-  commentItem: {
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
-  },
-  commentUserId: {
+    marginLeft: width * 0.012 * scaleFactor,
+    fontSize: RFValue(14 * scaleFactor, height),
     fontWeight: 'bold',
-    marginRight: 5,
+    color: '#d3d3d3'
+  },
+  centeredView: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalView: {
+    backgroundColor: 'white',
+    borderRadius: RFValue(10 * scaleFactor, height),
+    padding: RFValue(20 * scaleFactor, height),
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+    width: '85%',
+  },
+  modalTitle: {
+    fontSize: RFPercentage(3 * scaleFactor),
+    fontWeight: 'bold',
+    marginBottom: height * 0.02 * scaleFactor,
     color: '#212121',
   },
-  commentContent: {
-    fontSize: 14,
-    color: '#424242', // Slightly darker for comment content
-  },
-  commentTimestamp: {
-    fontSize: 10,
-    color: '#757575',
-    marginLeft: 5,
-  },
-  addCommentContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  commentInput: {
-    flex: 1,
-    borderWidth: 1,
+  modalInput: {
+    borderWidth: 1 * scaleFactor,
     borderColor: '#E0E0E0',
-    borderRadius: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    marginRight: 8,
+    borderRadius: RFValue(8 * scaleFactor, height),
+    padding: RFValue(10 * scaleFactor, height),
+    marginBottom: height * 0.02 * scaleFactor,
+    width: '100%',
+    minHeight: height * 0.1 * scaleFactor,
+    textAlignVertical: 'top',
+    fontSize: RFValue(16 * scaleFactor, height),
   },
-  postCommentButton: {
-    backgroundColor: '#6200EE',
-    borderRadius: 5,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+  modalImagePlaceholder: {
+    borderWidth: 1 * scaleFactor,
+    borderColor: '#E0E0E0',
+    borderRadius: RFValue(8 * scaleFactor, height),
+    padding: RFValue(15 * scaleFactor, height),
+    marginBottom: height * 0.02 * scaleFactor,
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  postCommentButtonText: {
+  modalImagePreview: {
+    width: 100,
+    height: 100,
+    marginTop: 10,
+    borderRadius: RFValue(8 * scaleFactor, height),
+    resizeMode: 'cover',
+  },
+  modalButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    width: '100%',
+  },
+  modalButton: {
+    borderRadius: RFValue(8 * scaleFactor, height),
+    paddingVertical: RFValue(10 * scaleFactor, height),
+    paddingHorizontal: RFValue(15 * scaleFactor, height),
+    alignItems: 'center',
+    flex: 1,
+    marginHorizontal: width * 0.01 * scaleFactor,
+  },
+  modalCancelButton: {
+    backgroundColor: '#d3d3d3',
+  },
+  modalPostButton: {
+    backgroundColor: '#7A5FFF',
+  },
+  modalButtonText: {
     color: 'white',
     fontWeight: 'bold',
+    fontSize: RFValue(16 * scaleFactor),
   },
 });
 
-export default CommunityScreen;
+export default Community;

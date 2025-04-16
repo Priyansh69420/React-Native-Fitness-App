@@ -85,16 +85,16 @@ const styles = StyleSheet.create({
         backgroundColor: '#F5F7FA',
     },
     menuContainer: {
-        marginTop: height * 0.02, 
+        marginTop: height * 0.03, 
         marginLeft: width * 0.04,
     },
     menuIcon: {
-        height: RFValue(30, height),
-        width: RFValue(30, height),
+        height: RFValue(32, height),
+        width: RFValue(32, height),
         marginBottom: height * 0.005
     },
     title: {
-        fontSize: RFPercentage(4),
+        fontSize: RFPercentage(4 * 1.1),
         fontWeight: 'bold',
         marginLeft: width * 0.05,
         marginVertical: height * 0.015,

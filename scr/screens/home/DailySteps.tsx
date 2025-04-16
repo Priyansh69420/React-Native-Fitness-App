@@ -399,7 +399,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: RFPercentage(2),
-    paddingVertical: RFPercentage(0.5),
+    paddingVertical: RFPercentage(3),
     backgroundColor: '#F5F7FA',
     marginBottom: RFPercentage(1.5),
   },

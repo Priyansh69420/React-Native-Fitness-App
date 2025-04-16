@@ -371,6 +371,7 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#F5F5F5',
+    marginTop: (height * 0.03),
   },
   container: {
     flexGrow: 1, 
@@ -400,7 +401,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   title: {
-    fontSize: RFValue(23), 
+    fontSize: RFValue(25), 
     fontWeight: 600,
     color: '#333',
     textAlign: 'center',
@@ -414,6 +415,7 @@ const styles = StyleSheet.create({
     padding: responsiveWidth(4), 
     borderBottomWidth: 0.2,
     borderBottomColor: '#999',
+    marginBottom: 10,
   },
   genderSection: {
     backgroundColor: '#FFF',

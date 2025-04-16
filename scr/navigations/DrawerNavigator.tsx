@@ -2,7 +2,7 @@ import React from 'react';
 import { createDrawerNavigator, DrawerContentScrollView, DrawerItem } from '@react-navigation/drawer';
 import { DrawerParamList } from './DrawerParamList';
 import HomeStack from './HomeStack'; 
-import Community from '../screens/home/Community';
+import CommunityStack from './CommunityStack';
 import Notifications from '../screens/home/Notifications';
 import SettingStack from './SettingStack';
 import GetPremium from '../screens/home/GetPremium';
@@ -11,7 +11,6 @@ import { View, Image, StyleSheet } from 'react-native';
 import { useDispatch } from 'react-redux';
 import { clearUser } from '../store/slices/userSlice';
 import { persistor } from '../store/store';
-
 
 const Drawer = createDrawerNavigator<DrawerParamList>();
 
@@ -111,7 +110,7 @@ export default function DrawerNavigator() {
       />
       <Drawer.Screen
         name="Community"
-        component={Community}
+        component={CommunityStack}
         options={{ title: 'Community' }}
       />
       <Drawer.Screen
