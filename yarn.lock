@@ -5933,6 +5933,7 @@ __metadata:
     react: 18.3.1
     react-native: 0.76.9
     react-native-biometrics: ^3.0.1
+    react-native-ble-plx: ^3.5.0
     react-native-dev-menu: ^4.1.1
     react-native-fs: ^2.20.0
     react-native-gesture-handler: ~2.20.2
@@ -8639,6 +8640,16 @@ __metadata:
   peerDependencies:
     react-native: ">=0.60.0"
   checksum: 3864fea4bbf3dee1d360daf048e4f9980083c4e919e95082a5e4646e3b22475bb2b592cae18cccd7fb55b50498dca29e5346cf98d958646cbfc26fed5654bc53
+  languageName: node
+  linkType: hard
+
+"react-native-ble-plx@npm:^3.5.0":
+  version: 3.5.0
+  resolution: "react-native-ble-plx@npm:3.5.0"
+  peerDependencies:
+    react: "*"
+    react-native: "*"
+  checksum: d84ce1eefdc584c8a4891266941f5951b31c8a800d0993659d7f87ba57cb8c23c4ba09dc3d4d8bfbc1d16f64dbd7405fad2b5fd2cf79fa7578d001a22aee47ae
   languageName: node
   linkType: hard
 

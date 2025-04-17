@@ -23,7 +23,7 @@ function CustomDrawerContent(props: any) {
       await persistor.purge();
       dispatch(clearUser()); 
     } catch (error: any) {
-      console.error("🚨 Sign out failed:"+ error.message);
+      console.error("Sign out failed:"+ error.message);
     }
   };
 

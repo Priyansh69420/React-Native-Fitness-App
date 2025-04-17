@@ -43,14 +43,13 @@ interface DailyStepsPerformance {
 
 export default function DailySteps() {
   const dispatch = useDispatch<AppDispatch>();
-  const { loading, error } = useSelector((state: RootState) => state.footsteps);
+  const { steps, loading, error } = useSelector((state: RootState) => state.footsteps);
   const { userData } = useSelector((state: RootState) => state.user);
   const navigation = useNavigation<NavigationProp>();
   const [modalVisible, setModalVisible] = useState(false);
   const [weeklySteps, setWeeklySteps] = useState<DailyStepsPerformance[]>([]);
   const [bestPerformance, setBestPerformance] = useState<DailyStepsPerformance | null>(null);
   const [worstPerformance, setWorstPerformance] = useState<DailyStepsPerformance | null>(null);
-  const steps = 7000;
   
   useEffect(() => {
     dispatch(fetchSteps());

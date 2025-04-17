@@ -70,11 +70,10 @@ export default function Water() {
   const navigation = useNavigation<NavigationProp>();
 
   useEffect(() => {
-    try {
-      loadData();
-    } finally {
-      setLoading(false);
-    }
+    const fetchData = async () => {
+      await loadData();
+    };
+    fetchData().finally(() => setLoading(false));
   }, []);
 
   const loadData = async () => {

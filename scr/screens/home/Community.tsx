@@ -13,9 +13,8 @@ import {
   Dimensions,
   ActivityIndicator,
   Modal,
-  Platform,
 } from 'react-native';
-import { collection, query, orderBy, onSnapshot, doc, updateDoc, arrayUnion, arrayRemove, addDoc, serverTimestamp, increment, getDoc, where, limit, getDocs } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, doc, updateDoc, arrayUnion, arrayRemove, addDoc, serverTimestamp, getDoc, where, limit, getDocs } from 'firebase/firestore';
 import { auth, firestore } from '../../../firebaseConfig';
 import { useNavigation } from '@react-navigation/native';
 import { User } from '@firebase/auth';
@@ -39,7 +38,7 @@ export interface Post {
   commentCount?: number;
 }
 
-interface UserData {
+export interface UserData {
   email?: string;
   name?: string;
   faceId?: boolean;
@@ -48,6 +47,7 @@ interface UserData {
   interests?: string[];
   gender?: string;
   calories?: number;
+  stories?: {imageUrl: string; timestamp: any}[];
 }
 
 const getTimeAgo = (timestamp: any) => {
@@ -81,6 +81,8 @@ const Community = () => {
   const [newPostContent, setNewPostContent] = useState('');
   const [newPostImage, setNewPostImage] = useState<string | null>(null); 
   const [uploadingImage, setUploadingImage] = useState(false); 
+  const [currentStoryUrl, setCurrentStoryUrl] = useState<string>('');
+  const [isStoryModalVisible, setIsStoryModalVisible] = useState<boolean>(false);
   const navigation = useNavigation<NavigationProp>();
 
   useEffect(() => {
@@ -127,12 +129,40 @@ const Community = () => {
         const usersCollection = collection(firestore, 'users');
         const usersQuery = query(usersCollection, limit(5));
         const snapshot = await getDocs(usersQuery);
-        const usersData = snapshot.docs.map(
-          (doc) => doc.data() as UserData
-        );
-        setSuggestedUsers(usersData);
+        const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  
+        const updatedSuggestedUsers = snapshot.docs.map((doc) => {
+          const user = doc.data() as UserData;
+  
+          if (user?.stories) {
+            const filteredStories = Object.values(user.stories).filter((story: any) => { // Iterate over object values
+              if (!story) {
+                console.warn('Story object is null or undefined');
+                return false;
+              }
+  
+              try {
+                // Handle Firestore Timestamp
+                if (story.timestamp?.toDate) {
+                  return story.timestamp.toDate() > twentyFourHoursAgo;
+                } else {
+                  console.warn('Invalid timestamp format:', story.timestamp);
+                  return false;
+                }
+              } catch (e) {
+                console.error('Error processing story timestamp:', e);
+                return false;
+              }
+            });
+  
+            return { ...user, stories: filteredStories };
+          }
+          return user;
+        });
+  
+        setSuggestedUsers(updatedSuggestedUsers);
       } catch (e) {
-        console.error("Error fetching suggested users", e);
+        console.error('Error fetching suggested users', e);
       }
     };
     fetchSuggestedUsers();
@@ -165,7 +195,7 @@ const Community = () => {
     }
   };
 
-  const uploadImageToSupabase = async (uri: string): Promise<string | null> => {
+  const uploadImageForPosts = async (uri: string): Promise<string | null> => {
     setUploadingImage(true);
     try {
       const fileName = uri.split('/').pop() || `post_${Date.now()}.jpg`;
@@ -212,6 +242,50 @@ const Community = () => {
     }
   };
 
+  const uploadImageForStory = async (uri: string): Promise<string | null> => {
+    try {
+      const fileName = uri.split('/').pop() || `post_${Date.now()}.jpg`;
+      const fileType = uri.split('.').pop() || 'jpeg';
+      const filePath = `stories/${fileName}`;
+
+      const base64Image = await RNFS.readFile(uri, 'base64');
+
+      if (!base64Image) {
+        throw new Error('Failed to convert image to Base64');
+      }
+
+      const binaryString = atob(base64Image);
+      const fileArray = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        fileArray[i] = binaryString.charCodeAt(i);
+      }
+
+      const { data, error: uploadError } = await supabase.storage
+        .from('stories')
+        .upload(filePath, fileArray, {
+          contentType: `image/${fileType}`,
+          upsert: false, 
+        });
+
+      if (uploadError) {
+        throw new Error(uploadError.message);
+      }
+
+      const { data: urlData } = supabase.storage
+        .from('stories')
+        .getPublicUrl(filePath);
+
+      if (!urlData?.publicUrl) {
+        throw new Error('Failed to retrieve public URL');
+      }
+
+      return urlData.publicUrl;
+    } catch (error: any) {
+      console.error('Error uploading image to Supabase:', error.message);
+      return null;
+    } 
+  };
+
   const handleCreateNewPostWithImage = async () => {
     if (!newPostContent.trim() && !newPostImage) {
       return;
@@ -229,7 +303,7 @@ const Community = () => {
 
       let imageUrl: string | null = null;
       if (newPostImage) {
-        imageUrl = await uploadImageToSupabase(newPostImage);
+        imageUrl = await uploadImageForPosts(newPostImage);
         if (!imageUrl) {
           return; 
         }
@@ -292,6 +366,112 @@ const Community = () => {
     }
   };
 
+  const handleAddStory = async () => {
+    try {
+      const permissionResult =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permissionResult.granted) {
+        Alert.alert(
+          'Permission Denied',
+          'Please grant permission to access your photo library.'
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [9, 16], 
+        quality: 0.7,
+      });
+
+      if (!result.canceled && result.assets.length > 0) {
+        const imageUrl = await uploadImageForStory(result.assets[0].uri);
+        if (imageUrl && auth.currentUser) {
+          const userRef = doc(firestore, 'users', auth.currentUser.uid);
+          const timestamp = serverTimestamp(); 
+ 
+          const userSnap = await getDoc(userRef);
+          const existingStories = userSnap.data()?.stories || [];
+ 
+          const newStoryId = Date.now().toString(); 
+          await updateDoc(userRef, {
+            stories: {
+              ...existingStories, 
+              [newStoryId]: { imageUrl, timestamp: serverTimestamp() }
+            }
+          });           
+          Alert.alert("Story Added", "Your story has been posted!");
+        } else {
+          Alert.alert("Error", "Failed to add story.");
+        }
+      }
+    } catch (error: any) {
+      console.error("Error adding story:", error.message);
+      Alert.alert("Error", "Could not add story.");
+    }
+  };
+
+  const handleStoryPress = async (userEmail: string) => {
+    try {
+      const usersCollection = collection(firestore, 'users');
+      const q = query(usersCollection, where('email', '==', userEmail), limit(1));
+      const snapshot = await getDocs(q);
+ 
+      if (!snapshot.empty) {
+        const userData = snapshot.docs[0].data() as UserData;
+ 
+        if (!userData.stories || Object.keys(userData.stories).length === 0) { 
+          return;
+        }
+ 
+        const recentStories = Object.values(userData.stories).filter((story: any) => {
+          if (!story) {
+            return false;
+          }
+          if (!story.timestamp) {
+            console.warn('Story timestamp is null or undefined:', story);
+            return false;
+          }
+          if (typeof story.timestamp?.toDate !== 'function') {
+            console.warn('Story timestamp is not a valid Timestamp:', story);
+            return false;
+          }
+          try {
+            const storyTimestamp = story.timestamp.toDate().getTime();
+            const isRecent = Date.now() - storyTimestamp < 24 * 60 * 60 * 1000;
+            return isRecent;
+          } catch (e) {
+            console.error('Error processing timestamp:', e);
+            return false;
+          }
+        });
+  
+        if (recentStories && recentStories.length > 0) {
+          const latestStory = recentStories.reduce((latest: any, current: any) => {
+            if (!latest || !latest.timestamp || !latest.timestamp.toDate) return current;
+            if (!current || !current.timestamp || !current.timestamp.toDate) return latest;
+            try {
+              const latestTime = latest.timestamp.toDate().getTime();
+              const currentTime = current.timestamp.toDate().getTime();
+              return latestTime > currentTime ? latest : current;
+            } catch (e) {
+              console.error('Error comparing timestamps:', e);
+              return latest;
+            }
+          });
+ 
+          setCurrentStoryUrl(latestStory.imageUrl);
+          setIsStoryModalVisible(true);
+        } 
+      } else {
+        console.warn("Could not find user with email:", userEmail);
+      }
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+    }
+  };
+
   const renderPostItem = ({ item }: { item: Post }) => {
     const userData = userDataMap[item.userId] || { name: 'User', profilePicture: undefined };
     const user = auth.currentUser;
@@ -303,7 +483,9 @@ const Community = () => {
       <View style={styles.postContainer}>
         <View style={styles.postHeader}>
           {userData.profilePicture ? (
-            <Image source={{ uri: userData.profilePicture }} style={styles.avatar} />
+            <TouchableOpacity onPress={() => navigation.navigate('UserInfo', {user: userData})}>
+              <Image source={{ uri: userData.profilePicture }} style={styles.avatar} />
+            </TouchableOpacity>
           ) : (
             <View style={styles.avatarPlaceholder} />
           )}
@@ -354,6 +536,72 @@ const Community = () => {
     );
   };
 
+  const renderStoryView = () => {
+    if (!currentStoryUrl) return null;
+ 
+    return (
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={isStoryModalVisible}
+        onRequestClose={() => setIsStoryModalVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.storyModalContainer}
+          onPress={() => setIsStoryModalVisible(false)}
+        >
+          <Image
+            source={{ uri: currentStoryUrl }}
+            style={styles.storyImage}
+            resizeMode="contain"
+          />
+        </TouchableOpacity>
+      </Modal>
+    );
+  };
+
+  const renderSuggestedUserItem = (user: UserData): React.ReactNode => {
+    const hasRecentStory =
+      user.stories &&
+      user.stories.some((story) => {
+        if (!story) return false;
+        if (!story.timestamp) return false;
+        if (typeof story.timestamp?.toDate !== 'function') return false;
+        try {
+          return (
+            Date.now() - story.timestamp.toDate().getTime() < 24 * 60 * 60 * 1000
+          );
+        } catch (e) {
+          console.error('Error processing timestamp in suggested user:', e);
+          return false;
+        }
+      });
+   
+    return (
+      <TouchableOpacity
+        key={user.email}  
+        style={styles.suggestedUserItem}
+        onPress={() => handleStoryPress(user.email!)}
+      >
+        <View
+          style={[
+            styles.suggestedUserAvatarContainer,
+            hasRecentStory && {borderWidth: 2, borderColor: '#7A5FFF'},
+          ]}
+        >
+          {user?.profilePicture ? (
+            <Image
+              source={{ uri: user.profilePicture }}
+              style={styles.suggestedUserAvatar}
+            />
+          ) : (
+            <View style={styles.suggestedUserAvatarPlaceholder} />
+          )}
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={styles.safeArea}>
@@ -389,31 +637,27 @@ const Community = () => {
         </TouchableOpacity>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <Text style={styles.headerTitle}>Community</Text>
-          <TouchableOpacity
-            style={{ paddingVertical: height * 0.03, paddingHorizontal: width * 0.02 }}
-            onPress={() => setIsAddPostModalVisible(true)}
-          >
-            <Feather name="inbox" size={24} color="#222" />
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', marginTop: height * 0.008 }}>
+            <TouchableOpacity onPress={handleAddStory} style={{ paddingVertical: height * 0.03, paddingHorizontal: width * 0.02 }}>
+              <Feather name="plus-square" size={24} color="#222" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={{ paddingVertical: height * 0.03, paddingHorizontal: width * 0.02 }}
+              onPress={() => setIsAddPostModalVisible(true)}
+            >
+              <Feather name="inbox" size={24} color="#222" />
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
 
       <View style={styles.suggestedUsersContainer}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {suggestedUsers.map((user, index) => (
-            <TouchableOpacity key={index} style={styles.suggestedUserItem}>
-              {user?.profilePicture ? (
-                <Image
-                  source={{ uri: user.profilePicture }}
-                  style={styles.suggestedUserAvatar}
-                />
-              ) : (
-                <View style={styles.suggestedUserAvatarPlaceholder} />
-              )}
-            </TouchableOpacity>
-          ))}
+          {suggestedUsers.map(renderSuggestedUserItem)}
         </ScrollView>
       </View>
+
+      {renderStoryView()}
 
       <FlatList
         data={posts}
@@ -422,7 +666,6 @@ const Community = () => {
         contentContainerStyle={styles.postsListContainer}
       />
 
-      {/* Add Post Modal */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -520,8 +763,8 @@ const styles = StyleSheet.create({
     marginHorizontal: width * 0.02 * scaleFactor,
   },
   suggestedUserAvatar: {
-    width: RFValue(65 * scaleFactor, height),
-    height: RFValue(65 * scaleFactor, height),
+    width: RFValue(66 * scaleFactor, height),
+    height: RFValue(66 * scaleFactor, height),
     borderRadius: RFValue(35 * scaleFactor, height),
     marginBottom: height * 0.006 * scaleFactor,
   },
@@ -720,6 +963,25 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: 'bold',
     fontSize: RFValue(16 * scaleFactor),
+  },
+  storyModalContainer: {
+    flex: 1,
+    backgroundColor: 'black',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  storyImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'contain',
+  },
+  suggestedUserAvatarContainer: {
+    width: RFValue(70 * scaleFactor, height),
+    height: RFValue(70 * scaleFactor, height),
+    borderRadius: RFValue(40 * scaleFactor, height),
+    marginBottom: height * 0.006 * scaleFactor,
+    borderWidth: 2 * scaleFactor,
+    borderColor: 'transparent',
   },
 });
 
