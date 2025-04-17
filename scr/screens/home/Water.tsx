@@ -125,6 +125,7 @@ export default function Water() {
       const currentDate = getCurrentDate();
       const currentDay = getDayOfWeek(currentDate);
 
+      // Update weekly performance to reflect the new count for the current day
       const updatedPerformance = weeklyPerformance.map((item) =>
         item.day === currentDay ? { ...item, count: newCount } : item
       );
@@ -172,31 +173,17 @@ export default function Water() {
   
 
   const handleGlassPress = (index: number) => {
-    if (index >= glassDrunk) {
-      const newCount = glassDrunk + 1;
+    const newCount = index + 1; 
+
+    if (index < glassDrunk) {
+      setGlassDrunk(index);
+      saveGlassDrunk(index);
+    } 
+    else if (index >= glassDrunk) {
       setGlassDrunk(newCount);
-      saveGlassDrunk(newCount); 
+      saveGlassDrunk(newCount);
     }
   };
-
-  const resetData = async () => {
-    const userId = auth.currentUser?.uid;
-    if (!userId) return;
-
-    try {
-      const storedGlassDrunkKey = getUserStorageKey('glassDrunk');
-      const storedDateKey = getUserStorageKey('lastDate');
-
-      await AsyncStorage.setItem(storedGlassDrunkKey, '0');
-      await AsyncStorage.setItem(storedDateKey, getCurrentDate()); 
-
-      setGlassDrunk(0);
-      setBestPerformance(null);
-      setWorstPerformance(null);
-    } catch (error) {
-      console.error('Error resetting data in AsyncStorage:', error);
-    }
-  }
 
   if (loading) {
       return (
@@ -293,7 +280,6 @@ export default function Water() {
           <Text style={styles.performanceDay}>{worstPerformance?.day || '-'}</Text>
         </View>
       </View>
-      <Button title='Reset Data' onPress={resetData} />
     </SafeAreaView>
   );
 }

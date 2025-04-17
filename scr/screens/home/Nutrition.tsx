@@ -37,9 +37,9 @@ export default function Nutrition() {
 	const [selectedMeal, setSelectedMeal] = useState<string | null>('');
 	const [selectedFoods, setSelectedFoods] = useState<FoodItem[]>([]);
 	const [nutritionData, setNutritionData] = useState([
-    { name: 'Fat', percentage: 0, color: '#9A7FFF' },
-    { name: 'Carb', percentage: 0, color: '#A98FFF' },
-    { name: 'Protein', percentage: 0, color: '#9A9CFF' },
+    { name: 'Fat', percentage: 0, color: '#66D3C8' },
+    { name: 'Carb', percentage: 0, color: '#9D6DEB' },
+    { name: 'Protein', percentage: 0, color: '#FFA500' },
   ]);
 	const mealTypes = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
   const [consumedFoods, setConsumedFoods] = useState<{
@@ -189,15 +189,15 @@ export default function Nutrition() {
       const proteinPct = protein / totalNutrients;
 
       setNutritionData([
-        { name: 'Fat', percentage: fatPct, color: '#9A7FFF' },
-        { name: 'Carb', percentage: carbPct, color: '#A98FFF' },
-        { name: 'Protein', percentage: proteinPct, color: '#9A9CFF' },
+        { name: 'Fat', percentage: fatPct, color: '#66D3C8' },
+        { name: 'Carb', percentage: carbPct, color: '#9D6DEB' },
+        { name: 'Protein', percentage: proteinPct, color: '#FFA500' },
       ]);
     } else {
       setNutritionData([
-        { name: 'Fat', percentage: 0, color: '#9A7FFF' },
-        { name: 'Carb', percentage: 0, color: '#A98FFF' },
-        { name: 'Protein', percentage: 0, color: '#9A9CFF' },
+        { name: 'Fat', percentage: 0, color: '#66D3C8' },
+        { name: 'Carb', percentage: 0, color: '#9D6DEB' },
+        { name: 'Protein', percentage: 0, color: '#FFA500' },
       ]);
     }
     dispatch(setCalories(calories));
@@ -251,9 +251,9 @@ export default function Nutrition() {
           setTotalCarbs(0);
           setTotalProtein(0);
           setNutritionData([
-            { name: 'Fat', percentage: 0, color: '#9A7FFF' },
-            { name: 'Carb', percentage: 0, color: '#A98FFF' },
-            { name: 'Protein', percentage: 0, color: '#9A9CFF' },
+            { name: 'Fat', percentage: 0, color: '#66D3C8' },
+            { name: 'Carb', percentage: 0, color: '#9D6DEB' },
+            { name: 'Protein', percentage: 0, color: '#FFA500' },
           ]);
         }
       } catch (error) {
@@ -264,9 +264,9 @@ export default function Nutrition() {
         setTotalCarbs(0);
         setTotalProtein(0);
         setNutritionData([
-          { name: 'Fat', percentage: 0, color: '#9A7FFF' },
-          { name: 'Carb', percentage: 0, color: '#A98FFF' },
-          { name: 'Protein', percentage: 0, color: '#9A9CFF' },
+          { name: 'Fat', percentage: 0, color: '#66D3C8' },
+          { name: 'Carb', percentage: 0, color: '#9D6DEB' },
+          { name: 'Protein', percentage: 0, color: '#FFA500' },
         ]);
       }
     } else {
@@ -276,9 +276,9 @@ export default function Nutrition() {
       setTotalCarbs(0);
       setTotalProtein(0);
       setNutritionData([
-        { name: 'Fat', percentage: 0, color: '#9A7FFF' },
-        { name: 'Carb', percentage: 0, color: '#A98FFF' },
-        { name: 'Protein', percentage: 0, color: '#9A9CFF' },
+        { name: 'Fat', percentage: 0, color: '#66D3C8' },
+        { name: 'Carb', percentage: 0, color: '#9D6DEB' },
+        { name: 'Protein', percentage: 0, color: '#FFA500' },
       ]);
     }
   }

@@ -1,4 +1,4 @@
-import { View, Text, Dimensions, StyleSheet, SafeAreaView, TextInput, TouchableOpacity, Image } from 'react-native';
+import { View, Text, Dimensions, StyleSheet, SafeAreaView, TextInput, TouchableOpacity, Image, KeyboardAvoidingView, Platform } from 'react-native';
 import React, { useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -40,33 +40,39 @@ export default function Signup() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : -50} 
+      >
+        <View style={styles.container}>
 
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Image source={backIcon} style={styles.backIcon} />
-        </TouchableOpacity>
-
-        <View style={styles.centeredContent}>
-          <Image source={logo} style={styles.appLogo} resizeMode="contain" />
-
-          <Text style={styles.title}>What is your email address?</Text>
-
-          <View style={styles.inputContainer}>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter your email address"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              value={email}
-              onChangeText={setEmail}
-            />
-          </View>
-
-          <TouchableOpacity style={styles.button} onPress={() => handleContinue()}>
-            <Text style={styles.buttonText}>Continue</Text>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <Image source={backIcon} style={styles.backIcon} />
           </TouchableOpacity>
+
+          <View style={styles.centeredContent}>
+            <Image source={logo} style={styles.appLogo} resizeMode="contain" />
+
+            <Text style={styles.title}>What is your email address?</Text>
+
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter your email address"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                value={email}
+                onChangeText={setEmail}
+              />
+            </View>
+
+            <TouchableOpacity style={styles.button} onPress={() => handleContinue()}>
+              <Text style={styles.buttonText}>Continue</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

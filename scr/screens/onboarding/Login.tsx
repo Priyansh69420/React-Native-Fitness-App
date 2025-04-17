@@ -1,13 +1,14 @@
-import { View, Text, Dimensions, StyleSheet, SafeAreaView, TextInput, TouchableOpacity, Image, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, Dimensions, StyleSheet, SafeAreaView, TextInput, TouchableOpacity, Image, ActivityIndicator, Alert, ScrollView } from 'react-native';
 import React, { useState } from 'react';
 import { useNavigation } from "@react-navigation/native";
 import { RootStackParamList } from "../../navigations/RootStackParamList";
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { FacebookAuthProvider, GoogleAuthProvider, signInWithCredential, signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '../../../firebaseConfig';
-import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
+import { GoogleAuthProvider, signInWithCredential, signInWithEmailAndPassword } from 'firebase/auth';
+import { auth as authWeb, firestore } from '../../../firebaseConfig';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { RFValue } from 'react-native-responsive-fontsize';
+import { doc, getDoc, setDoc } from '@firebase/firestore';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, "GettingStarted">;
 
@@ -20,7 +21,7 @@ const userLogo = require('../../assets/user.png');
 const backIcon = require('../../assets/backIcon.png');
 
 GoogleSignin.configure({
-  webClientId: '602719973492-kpgm6n50gejr82a9nbvc4c976iql2dqn.apps.googleusercontent.com',
+  webClientId: '602719973492-fgvv5f7knj4u3q8pmlmkdku6qeaqlo97.apps.googleusercontent.com',
   iosClientId: '602719973492-nj6j3hu2akaqj7k02v3rdohp54v3rk2u.apps.googleusercontent.com',
   scopes: ['email', 'profile'],
   offlineAccess: true,
@@ -40,7 +41,7 @@ export default function LoginScreen() {
     setLoading(true);
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      await signInWithEmailAndPassword(authWeb, email, password);
       await AsyncStorage.setItem('justLoggedIn', 'true');
     } catch (error: any) {
       console.error('LoginScreen: Sign-in error:', error.message);
@@ -53,91 +54,88 @@ export default function LoginScreen() {
   const handleGoogleSignIn = async () => {
     setLoading(true);
     try {
-      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
-
+      await GoogleSignin.hasPlayServices();
       const userInfo = await GoogleSignin.signIn();
-      const { idToken } = await GoogleSignin.getTokens(); 
-  
-      if (!idToken) {
-        throw new Error("Google Sign-In failed: No ID token received.");
+      const tokens = await GoogleSignin.getTokens();
+      const googleCredential = GoogleAuthProvider.credential(tokens.idToken);
+      const creds = await signInWithCredential(authWeb, googleCredential);
+
+      await AsyncStorage.setItem('justLoggedIn', 'true');
+
+      if (creds?.user) {
+        const userDocRef = doc(firestore, 'users', creds.user.uid);
+        const userDoc = await getDoc(userDocRef);
+
+        if (!userDoc.exists()) {
+          await setDoc(userDocRef, {
+            email: creds.user.email || '',
+            name: creds.user.displayName || '',
+            profilePicture: creds.user.photoURL || '2',
+            goals: [],
+            interests: [],
+            gender: 'Male',
+            calories: 0,
+          });
+          console.log("LoginScreen: Created initial user document for Google Sign-in");
+        } else {
+          console.log("LoginScreen: User document already exists for Google Sign-in");
+        }
       }
-  
-      console.log("LoginScreen: Google Sign-In successful, idToken:", idToken);
-  
-      const googleCredential = GoogleAuthProvider.credential(idToken);
-      await signInWithCredential(auth, googleCredential);
-  
-      await AsyncStorage.setItem("lastLoginTimestamp", Date.now().toString());
-      console.log("LoginScreen: Firebase Sign-In with Google successful");
     } catch (error: any) {
-      console.error("LoginScreen: Google Sign-In error:", error);
-  
-      if (error.code === statusCodes.SIGN_IN_CANCELLED) {
-        Alert.alert("Cancelled", "Google Sign-In was cancelled");
-      } else if (error.code === statusCodes.IN_PROGRESS) {
-        Alert.alert("In Progress", "Google Sign-In is already in progress");
-      } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
-        Alert.alert("Error", "Google Play Services are not available");
-      } else {
-        Alert.alert("Error", "Google Sign-In failed: " + error.message);
-      }
+      console.error("Google Sign-In Error:", error);
+      Alert.alert("Error", error.message || "Google Sign-In failed");
     } finally {
       setLoading(false);
     }
-  };  
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
-
-      <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Image source={backIcon} style={styles.backIcon} />
-        </TouchableOpacity>
-
-      <View style={styles.container}>
-        <Image source={logo} style={styles.appLogo} />
-
-        <View style={styles.inputContainer}>
-          <Image source={userLogo} style={styles.iconPlaceholder} />
-          <TextInput 
-            style={styles.input} 
-            value={email}
-            onChangeText={(text) => setEmail(text)}
-            placeholder="Email Address" 
-            keyboardType="email-address" 
-            autoCapitalize='none' 
-          />
-        </View>
-
-        <View style={styles.inputContainer}>
-          <Image source={lockLogo} style={styles.iconPlaceholder} />
-          <TextInput 
-            style={styles.input} 
-            value={password}
-            onChangeText={(text) => setPassword(text)}
-            placeholder="Password" 
-            secureTextEntry 
-          />
-        </View>
-
-        <Text style={styles.signInWithText}>Sign in with</Text>
-
-        <View style={styles.socialIconsContainer}>
-          <TouchableOpacity style={styles.socialButton} >
-            <Image source={twitterLogo} style={styles.socialIconImage} />
+      
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <Image source={backIcon} style={styles.backIcon} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.socialButton}>
-            <Image source={facebookLogo} style={styles.socialIconImage} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.socialButton} onPress={handleGoogleSignIn}>
-            <Image source={googleLogo} style={styles.socialIconImage} />
+
+        <View style={styles.container}>
+          <Image source={logo} style={styles.appLogo} />
+
+          <View style={styles.inputContainer}>
+            <Image source={userLogo} style={styles.iconPlaceholder} />
+            <TextInput 
+              style={styles.input} 
+              value={email}
+              onChangeText={(text) => setEmail(text)}
+              placeholder="Email Address" 
+              keyboardType="email-address" 
+              autoCapitalize='none' 
+            />
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Image source={lockLogo} style={styles.iconPlaceholder} />
+            <TextInput 
+              style={styles.input} 
+              value={password}
+              onChangeText={(text) => setPassword(text)}
+              placeholder="Password" 
+              secureTextEntry 
+            />
+          </View>
+
+          <Text style={styles.signInWithText}>Sign in with</Text>
+
+          <View style={styles.socialIconsContainer}>
+            <TouchableOpacity style={styles.socialButton} onPress={handleGoogleSignIn}>
+              <Image source={googleLogo} style={styles.socialIconImage} />
+            </TouchableOpacity>
+          </View>
+
+          <TouchableOpacity style={styles.button} onPress={handleLogin}>
+            {loading ? <ActivityIndicator size='small' color='#FFF' /> :
+            <Text style={styles.buttonText}>Continue</Text>}
           </TouchableOpacity>
         </View>
-
-        <TouchableOpacity style={styles.button} onPress={handleLogin}>
-          {loading ? <ActivityIndicator size='small' color='#FFF' /> :
-          <Text style={styles.buttonText}>Continue</Text>}
-        </TouchableOpacity>
-      </View>
+      
     </SafeAreaView>
   );
 }

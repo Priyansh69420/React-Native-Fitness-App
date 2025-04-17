@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Dimensions,
   SafeAreaView,
+  ScrollView,
 } from 'react-native';
 import { auth } from '../../../firebaseConfig';
 import { HomeStackParamList } from '../../navigations/HomeStackParamList';
@@ -118,7 +119,8 @@ export default function Home() {
   const stepsProgress = steps / 10000;
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <ScrollView>
+      <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.drawerContainer}
@@ -272,7 +274,8 @@ export default function Home() {
           </View>
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </ScrollView>
   );
 }
 

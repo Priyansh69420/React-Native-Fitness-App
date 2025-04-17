@@ -1,4 +1,4 @@
-import { View, Text, Dimensions, StyleSheet, SafeAreaView, TextInput, TouchableOpacity, Image, Alert } from 'react-native';
+import { View, Text, Dimensions, StyleSheet, SafeAreaView, TextInput, TouchableOpacity, Image, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import React, { useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { RootStackParamList } from '../../navigations/RootStackParamList';
@@ -28,42 +28,48 @@ export default function SetNameScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : -50} // Adjust offset as needed
+      >
+        <View style={styles.container}>
 
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Image source={backIcon} style={styles.backIcon} />
-        </TouchableOpacity>
-
-        <View style={styles.centeredContent}>
-          <Image source={logo} style={styles.appLogo} resizeMode="contain" />
-
-          <Text style={styles.title}>What’s your name?</Text>
-
-          <View style={styles.inputContainer}>
-            <TextInput
-              style={styles.input}
-              value={firstName}
-              onChangeText={setFirstName}
-              placeholder="First Name"
-              autoCapitalize="words"
-            />
-          </View>
-
-          <View style={styles.inputContainer}>
-            <TextInput
-              style={styles.input}
-              value={lastName}
-              onChangeText={setLastName}
-              placeholder="Last Name"
-              autoCapitalize="words"
-            />
-          </View>
-
-          <TouchableOpacity style={styles.button} onPress={handleContinuePress}>
-            <Text style={styles.buttonText}>Continue</Text>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <Image source={backIcon} style={styles.backIcon} />
           </TouchableOpacity>
+
+          <View style={styles.centeredContent}>
+            <Image source={logo} style={styles.appLogo} resizeMode="contain" />
+
+            <Text style={styles.title}>What’s your name?</Text>
+
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.input}
+                value={firstName}
+                onChangeText={setFirstName}
+                placeholder="First Name"
+                autoCapitalize="words"
+              />
+            </View>
+
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.input}
+                value={lastName}
+                onChangeText={setLastName}
+                placeholder="Last Name"
+                autoCapitalize="words"
+              />
+            </View>
+
+            <TouchableOpacity style={styles.button} onPress={handleContinuePress}>
+              <Text style={styles.buttonText}>Continue</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

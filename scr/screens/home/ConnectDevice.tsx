@@ -3,9 +3,9 @@ import { View, Text, Button, FlatList, PermissionsAndroid, Platform, TouchableOp
 import { BleManager, Device } from 'react-native-ble-plx';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-const SMARTWATCH_SERVICE_UUID = '0000FE50-0000-1000-8000-00805F9B34FB'; // Example: Apple proprietary service (verify!)
-const SMARTWATCH_NAME_PREFIX = 'Apple Watch'; // Example: Common Apple Watch name (verify!)
-const SCAN_TIMEOUT = 10000; // 10 seconds
+const SMARTWATCH_SERVICE_UUID = '0000FE50-0000-1000-8000-00805F9B34FB'; 
+const SMARTWATCH_NAME_PREFIX = 'Apple Watch'; 
+const SCAN_TIMEOUT = 10000;
 
 interface DeviceItemProps {
     item: Device;
@@ -30,8 +30,8 @@ const ConnectDeviceScreen: React.FC = () => {
           console.log('Requesting Android Bluetooth permissions...');
           const granted = await PermissionsAndroid.requestMultiple([
               PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-              PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN, // Requires Android 12+
-              PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT, // Requires Android 12+
+              PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN, 
+              PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT, 
               PermissionsAndroid.PERMISSIONS.BLUETOOTH,
           ]);
           console.log('Permissions granted result:', granted);
@@ -103,18 +103,15 @@ const ConnectDeviceScreen: React.FC = () => {
             setConnectedDevice(connected);
             console.log('Connected to:', connected.name);
 
-            // Now you would discover services and characteristics
             const discoveredServices = await connected.discoverAllServicesAndCharacteristics();
             const services = await discoveredServices.services();
             console.log('Discovered Services:', services.map(s => s.uuid));
 
-            // Example: Get a specific service and its characteristics
             const targetService = services.find(service => service.uuid === SMARTWATCH_SERVICE_UUID);
             if (targetService) {
                 const characteristics = await targetService.characteristics();
                 console.log('Characteristics for service:', characteristics.map(c => c.uuid));
 
-                // Now you can interact with specific characteristics (read, write, notify)
             }
         } catch (error: any) {
             console.log('Error connecting to device:', error);

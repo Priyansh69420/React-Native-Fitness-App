@@ -1,4 +1,4 @@
-import { View, Text, Dimensions, StyleSheet, SafeAreaView, TextInput, TouchableOpacity, Image } from 'react-native';
+import { View, Text, Dimensions, StyleSheet, SafeAreaView, TextInput, TouchableOpacity, Image, KeyboardAvoidingView, Platform } from 'react-native';
 import React, { useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { RootStackParamList } from '../../navigations/RootStackParamList';
@@ -39,59 +39,65 @@ export default function SetPassword() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Image source={backIcon} style={styles.backIcon} />
-        </TouchableOpacity>
-
-        <View style={styles.centeredContent}>
-          <Image source={logo} style={styles.appLogo} resizeMode="contain" />
-
-          <Text style={styles.title}>Now let's set up your password</Text>
-
-          <View style={styles.inputContainer}>
-            <TextInput
-              style={styles.input}
-              value={password}
-              onChangeText={setPassword}
-              placeholder="••••••••"
-              secureTextEntry
-              autoCapitalize="none"
-            />
-          </View>
-
-          <View style={styles.requirementsContainer}>
-            <View style={styles.requirementRow}>
-              {minLength ? (
-                <View style={styles.checkedBox} />
-              ) : (
-                <View style={styles.uncheckedBox} />
-              )}
-              <Text style={styles.requirementText}>  8+ characters</Text>
-            </View>
-            <View style={styles.requirementRow}>
-              {hasUpperCase ? (
-                <View style={styles.checkedBox} />
-              ) : (
-                <View style={styles.uncheckedBox} />
-              )}
-              <Text style={styles.requirementText}>  At least 1 uppercase</Text>
-            </View>
-            <View style={styles.requirementRow}>
-              {hasNumber ? (
-                <View style={styles.checkedBox} />
-              ) : (
-                <View style={styles.uncheckedBox} />
-              )}
-              <Text style={styles.requirementText}>  At least 1 number</Text>
-            </View>
-          </View>
-
-          <TouchableOpacity style={styles.button} onPress={handleContinue}>
-            <Text style={styles.buttonText}>Continue</Text>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : -50} // Adjust offset as needed
+      >
+        <View style={styles.container}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <Image source={backIcon} style={styles.backIcon} />
           </TouchableOpacity>
+
+          <View style={styles.centeredContent}>
+            <Image source={logo} style={styles.appLogo} resizeMode="contain" />
+
+            <Text style={styles.title}>Now let's set up your password</Text>
+
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.input}
+                value={password}
+                onChangeText={setPassword}
+                placeholder="••••••••"
+                secureTextEntry
+                autoCapitalize="none"
+              />
+            </View>
+
+            <View style={styles.requirementsContainer}>
+              <View style={styles.requirementRow}>
+                {minLength ? (
+                  <View style={styles.checkedBox} />
+                ) : (
+                  <View style={styles.uncheckedBox} />
+                )}
+                <Text style={styles.requirementText}>  8+ characters</Text>
+              </View>
+              <View style={styles.requirementRow}>
+                {hasUpperCase ? (
+                  <View style={styles.checkedBox} />
+                ) : (
+                  <View style={styles.uncheckedBox} />
+                )}
+                <Text style={styles.requirementText}>  At least 1 uppercase</Text>
+              </View>
+              <View style={styles.requirementRow}>
+                {hasNumber ? (
+                  <View style={styles.checkedBox} />
+                ) : (
+                  <View style={styles.uncheckedBox} />
+                )}
+                <Text style={styles.requirementText}>  At least 1 number</Text>
+              </View>
+            </View>
+
+            <TouchableOpacity style={styles.button} onPress={handleContinue}>
+              <Text style={styles.buttonText}>Continue</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   )
 }

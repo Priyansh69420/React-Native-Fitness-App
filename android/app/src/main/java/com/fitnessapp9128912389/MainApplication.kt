@@ -1,4 +1,4 @@
-package com.fitnessapp
+package com.fitnessapp9128912389
 
 import android.app.Application
 import android.content.res.Configuration

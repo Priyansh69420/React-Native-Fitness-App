@@ -29,7 +29,7 @@
             "adaptiveIcon": {
                 "backgroundColor": "#ffffff"
             },
-            "package": "com.chicmictechnologies.fitnessapp",
+            "package": "com.fitnessapp9128912389",
             "googleServicesFile": "./android/app/google-services.json"
         },
         "web": {
