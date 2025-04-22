@@ -13,6 +13,7 @@ const backIcon = require('../../assets/backIcon.png');
 export default function SetPassword() {
   const navigation = useNavigation<NavigationProp>();
   const [password, setPassword] = useState('');
+  const [error, setError] = useState<String>('');
   const {updateOnboardingData, onboardingData} = useOnboarding();
   const email = onboardingData.email ?? "";
 
@@ -27,11 +28,12 @@ export default function SetPassword() {
     const {minLength, hasUpperCase, hasNumber} = checkPasswordRequirements(password);
 
     if(!minLength || !hasUpperCase || !hasNumber) {
-      alert("Password must be at least 8 characters long, contain an uppercase letter, and include a number.")
+      setError("Password must be at least 8 characters long, contain an uppercase letter, and include a number.")
       return;
     }
 
       updateOnboardingData({password});
+      setError('');
       navigation.navigate("SetName");
   }
 
@@ -42,7 +44,7 @@ export default function SetPassword() {
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : -50} // Adjust offset as needed
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : -80} 
       >
         <View style={styles.container}>
           <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
@@ -64,6 +66,8 @@ export default function SetPassword() {
                 autoCapitalize="none"
               />
             </View>
+
+            {error ? <Text style={{color: 'red', width: '85%', marginBottom: 20}}>Note: {error}</Text>: <></>}
 
             <View style={styles.requirementsContainer}>
               <View style={styles.requirementRow}>

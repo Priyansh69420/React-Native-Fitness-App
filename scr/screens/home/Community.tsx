@@ -127,7 +127,7 @@ const Community = () => {
     const fetchSuggestedUsers = async () => {
       try {
         const usersCollection = collection(firestore, 'users');
-        const usersQuery = query(usersCollection, limit(5));
+        const usersQuery = query(usersCollection, limit(20));
         const snapshot = await getDocs(usersQuery);
         const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
   
@@ -142,7 +142,6 @@ const Community = () => {
               }
   
               try {
-                // Handle Firestore Timestamp
                 if (story.timestamp?.toDate) {
                   return story.timestamp.toDate() > twentyFourHoursAgo;
                 } else {

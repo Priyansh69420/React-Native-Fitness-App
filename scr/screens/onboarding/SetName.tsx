@@ -31,7 +31,7 @@ export default function SetNameScreen() {
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : -50} // Adjust offset as needed
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : -80} 
       >
         <View style={styles.container}>
 

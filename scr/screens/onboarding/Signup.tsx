@@ -15,18 +15,19 @@ const backIcon = require('../../assets/backIcon.png');
 export default function Signup() {
   const navigation = useNavigation<NavigationProp>();
   const [email, setEmail] = useState('');
+  const [error, setError] = useState<String>('');
   const {updateOnboardingData} = useOnboarding();
 
   async function handleContinue() {
     if(!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      alert('Please enter a valid email address');
+      setError('Please enter a valid email address');
       return;
     }
 
     try {
       const methods = await fetchSignInMethodsForEmail(auth, email);
       if (Array.isArray(methods) && methods.length > 0) {
-        alert('Email already exists, please log in');
+        setError('Email already exists, please log in');
         return;
       }
       updateOnboardingData({ email });
@@ -35,6 +36,9 @@ export default function Signup() {
       console.log('Error code:', error.code); 
       console.log('Error message:', error.message); 
       alert(error.message);
+    }
+    finally {
+      setError('');
     }
   }
 

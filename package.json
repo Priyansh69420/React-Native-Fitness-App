@@ -20,6 +20,7 @@
     "@firebase/auth": "latest",
     "@firebase/firestore": "latest",
     "@kingstinct/react-native-healthkit": "^8.5.0",
+    "@notifee/react-native": "^9.1.8",
     "@react-native-async-storage/async-storage": "1.23.1",
     "@react-native-google-signin/google-signin": "^13.2.0",
     "@react-native/gradle-plugin": "^0.78.2",

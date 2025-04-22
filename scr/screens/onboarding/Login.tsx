@@ -1,10 +1,10 @@
-import { View, Text, Dimensions, StyleSheet, SafeAreaView, TextInput, TouchableOpacity, Image, ActivityIndicator, Alert, ScrollView } from 'react-native';
+import { View, Text, Dimensions, StyleSheet, SafeAreaView, TextInput, TouchableOpacity, Image, ActivityIndicator, Alert, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import React, { useState } from 'react';
 import { useNavigation } from "@react-navigation/native";
 import { RootStackParamList } from "../../navigations/RootStackParamList";
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { GoogleAuthProvider, signInWithCredential, signInWithEmailAndPassword } from 'firebase/auth';
-import { auth as authWeb, firestore } from '../../../firebaseConfig';
+import { auth, firestore } from '../../../firebaseConfig';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { RFValue } from 'react-native-responsive-fontsize';
@@ -32,22 +32,24 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<String>('');
 
   const handleLogin = async () => {
     if (!email || !password) {
-      alert('Please enter your email and password');
+      setError('Please enter your email and password');
       return;
     }
     setLoading(true);
 
     try {
-      await signInWithEmailAndPassword(authWeb, email, password);
+      await signInWithEmailAndPassword(auth, email, password);
       await AsyncStorage.setItem('justLoggedIn', 'true');
     } catch (error: any) {
       console.error('LoginScreen: Sign-in error:', error.message);
       alert(error.message);
     } finally {
       setLoading(false);
+      setError('');
     }
   };
 
@@ -58,7 +60,7 @@ export default function LoginScreen() {
       const userInfo = await GoogleSignin.signIn();
       const tokens = await GoogleSignin.getTokens();
       const googleCredential = GoogleAuthProvider.credential(tokens.idToken);
-      const creds = await signInWithCredential(authWeb, googleCredential);
+      const creds = await signInWithCredential(auth, googleCredential);
 
       await AsyncStorage.setItem('justLoggedIn', 'true');
 
@@ -71,10 +73,12 @@ export default function LoginScreen() {
             email: creds.user.email || '',
             name: creds.user.displayName || '',
             profilePicture: creds.user.photoURL || '2',
-            goals: [],
-            interests: [],
+            goals: [ 'Weight Loss' ],
+            interests: [ 'Fitness' ],
             gender: 'Male',
             calories: 0,
+            biometricAuthenticated: false,
+            faceId: false,
           });
           console.log("LoginScreen: Created initial user document for Google Sign-in");
         } else {
@@ -91,7 +95,11 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : -120}
+      >
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
             <Image source={backIcon} style={styles.backIcon} />
           </TouchableOpacity>
@@ -122,6 +130,8 @@ export default function LoginScreen() {
             />
           </View>
 
+          {error ? <Text style={{color: 'red', width: '85%'}}>Note: {error}</Text>: <></>}
+
           <Text style={styles.signInWithText}>Sign in with</Text>
 
           <View style={styles.socialIconsContainer}>
@@ -135,7 +145,7 @@ export default function LoginScreen() {
             <Text style={styles.buttonText}>Continue</Text>}
           </TouchableOpacity>
         </View>
-      
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -207,7 +217,7 @@ const styles = StyleSheet.create({
   },
   socialIconsContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     width: width * 0.38, 
     marginBottom: height * 0.0375, 
   },
