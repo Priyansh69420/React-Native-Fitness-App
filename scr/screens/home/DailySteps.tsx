@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions, ScrollView, Modal, Image } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions, ScrollView, Modal, Image, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
 import Svg, { Circle } from 'react-native-svg';
@@ -11,6 +11,7 @@ import { HomeStackParamList } from '../../navigations/HomeStackParamList';
 import { RFPercentage, RFValue } from 'react-native-responsive-fontsize';
 import LineGraph from '../../components/LineGraph';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Linking from 'expo-linking';
 
 type NavigationProp = DrawerNavigationProp<HomeStackParamList, 'DailySteps'>;
 
@@ -19,22 +20,6 @@ const CIRCLE_RADIUS = width * 0.35;
 const CIRCLE_CIRCUMFERENCE = 2 * Math.PI * CIRCLE_RADIUS;
 
 const graphData = [15.5, 31, 46.5, 62, 77.5, 46.5, 31]; 
-
-interface Avatar {
-  id: number;
-  source: any;
-}
-
-const avatars: Avatar[] = [
-  { id: 1, source: require('../../assets/avatar5.png') },
-  { id: 2, source: require('../../assets/avatar2.png') },
-  { id: 3, source: require('../../assets/avatar4.png') },
-];
-
-const getAvatarSource = (id: number): any => {
-  const avatar = avatars.find((item) => item.id === id);
-  return avatar ? avatar.source : null;
-};
 
 interface DailyStepsPerformance {
   day: string;
@@ -63,7 +48,7 @@ export default function DailySteps() {
   if (!loading && !error) {
     saveDailySteps();
   }
-}, [useSelector((state: RootState) => state.footsteps.steps), loading, error]);
+}, [steps, loading, error]);
 
   const progress = Math.min(steps / 10000, 1); 
   const strokeDashoffset = CIRCLE_CIRCUMFERENCE * (1 - progress);
@@ -80,51 +65,49 @@ export default function DailySteps() {
   });
   const pathData = `M0,${graphHeight} ${points.join(' L ')} L${graphWidth},${graphHeight} Z`;
 
-  const profileImageSource =
-      typeof userData?.profilePicture === 'string'
-        ? { uri: userData.profilePicture }
-        : userData?.profilePicture
-        ? getAvatarSource(userData.profilePicture)
-        : null;
-  
-    const isCustomImg = typeof profileImageSource === 'object';
-  
-    const profilePictureStyle = {
-      width: isCustomImg ? RFValue(50, height) : RFValue(60, height),
-      height: isCustomImg ? RFValue(50, height) : RFValue(60, height),
-      borderRadius: RFValue(50, height),
-      marginRight: RFPercentage(1),
-    };
+  const profileImageSource = typeof userData?.profilePicture === 'string'
+  ? { uri: userData.profilePicture }
+  : undefined;
 
-    const loadData = async () => {
-      try {
-        const storedDate = await AsyncStorage.getItem('stepsLastDate');
-        const storedWeeklySteps = await AsyncStorage.getItem('weeklyStepsPerformance');
-        const currentDate = new Date().toISOString().split('T')[0];
-    
-        if (storedDate && storedDate !== currentDate) {
-          setWeeklySteps([]);
-          await AsyncStorage.removeItem('weeklyStepsPerformance');
-          await AsyncStorage.setItem('stepsLastDate', currentDate);
-        }
-    
-        if (storedWeeklySteps) {
-          setWeeklySteps(JSON.parse(storedWeeklySteps));
-          updateBestAndWorstPerformance(JSON.parse(storedWeeklySteps));
-        } else if (storedDate === currentDate && steps > 0) {
-          const currentDay = getDayOfWeek(currentDate);
-          setWeeklySteps([{ day: currentDay, count: steps }]); 
-          await AsyncStorage.setItem('weeklyStepsPerformance', JSON.stringify([{ day: currentDay, count: steps }]));
-        }
-      } catch (error) {
-        console.error('Error loading steps data from AsyncStorage:', error);
-      } finally {
-        dispatch(fetchSteps());
+  const isCustomImg = typeof userData?.profilePicture === 'string'
+    && !userData.profilePicture.includes('avatar');
+  
+  const profilePictureStyle = {
+    width: isCustomImg ? RFValue(50, height) : RFValue(65, height),
+    height: isCustomImg ? RFValue(50, height) : RFValue(65, height),
+    borderRadius: RFValue(50, height),
+    marginRight: RFPercentage(1),
+  };
+
+  const loadData = async () => {
+    try {
+      const storedDate = await AsyncStorage.getItem('stepsLastDate');
+      const storedWeeklySteps = await AsyncStorage.getItem('weeklyStepsPerformance');
+      const currentDate = new Date().toISOString().split('T')[0];
+  
+      if (storedDate && storedDate !== currentDate) {
+        setWeeklySteps([]);
+        await AsyncStorage.removeItem('weeklyStepsPerformance');
+        await AsyncStorage.setItem('stepsLastDate', currentDate);
       }
-    };
+  
+      if (storedWeeklySteps) {
+        setWeeklySteps(JSON.parse(storedWeeklySteps));
+        updateBestAndWorstPerformance(JSON.parse(storedWeeklySteps));
+      } else if (storedDate === currentDate && steps > 0) {
+        const currentDay = getDayOfWeek(currentDate);
+        setWeeklySteps([{ day: currentDay, count: steps }]); 
+        await AsyncStorage.setItem('weeklyStepsPerformance', JSON.stringify([{ day: currentDay, count: steps }]));
+      }
+    } catch (error) {
+      console.error('Error loading steps data from AsyncStorage:', error);
+    } finally {
+      dispatch(fetchSteps());
+    }
+  };
 
-    const saveDailySteps = async () => {
-      if (steps > 0) { 
+  const saveDailySteps = async () => {
+    if (steps > 0) { 
     try {
       const currentDate = new Date().toISOString().split('T')[0];
       const currentDay = getDayOfWeek(currentDate);
@@ -141,41 +124,56 @@ export default function DailySteps() {
       setWeeklySteps(updatedPerformance);
       await AsyncStorage.setItem('weeklyStepsPerformance', JSON.stringify(updatedPerformance));
       updateBestAndWorstPerformance(updatedPerformance);
-    } catch (error) {
-      console.error('Error saving weekly steps performance to AsyncStorage:', error);
-    }
-  }
-    };
-    
-
-    const updateBestAndWorstPerformance = (performanceData: DailyStepsPerformance[]) => {
-      if (performanceData.length > 0) {
-        let best = performanceData[0];
-        let worst = performanceData[0];
-  
-        performanceData.forEach((dayData) => {
-          if (dayData.count > best.count) {
-            best = dayData;
-          }
-          if (dayData.count < worst.count) {
-            worst = dayData;
-          }
-        });
-  
-        setBestPerformance(best);
-        setWorstPerformance(worst);
-      } else {
-        setBestPerformance(null);
-        setWorstPerformance(null);
+      } catch (error) {
+        console.error('Error saving weekly steps performance to AsyncStorage:', error);
       }
-    };
-  
-    const getDayOfWeek = (dateString: string): string => {
-      const date = new Date(dateString);
-      const options: Intl.DateTimeFormatOptions = { weekday: 'long' };
-      return new Intl.DateTimeFormat('en-US', options).format(date);
-    };
+    }
+  };
 
+  const updateBestAndWorstPerformance = (performanceData: DailyStepsPerformance[]) => {
+    if (performanceData.length > 0) {
+      let best = performanceData[0];
+      let worst = performanceData[0];
+
+      performanceData.forEach((dayData) => {
+        if (dayData.count > best.count) {
+          best = dayData;
+        }
+        if (dayData.count < worst.count) {
+          worst = dayData;
+        }
+      });
+
+      setBestPerformance(best);
+      setWorstPerformance(worst);
+    } else {
+      setBestPerformance(null);
+      setWorstPerformance(null);
+    }
+  };
+
+  const getDayOfWeek = (dateString: string): string => {
+    const date = new Date(dateString);
+    const options: Intl.DateTimeFormatOptions = { weekday: 'long' };
+    return new Intl.DateTimeFormat('en-US', options).format(date);
+  };
+
+  const handleShareFriend = async () => {
+    try {
+      const message = `We have completed a total of: ${steps}`;
+      const encodedMessage = encodeURIComponent(message);
+
+      const url =
+        Platform.OS === 'android'
+          ? `sms:123?body=${encodedMessage}` 
+          : `sms:&body=${encodedMessage}`;  
+
+      await Linking.openURL(url);
+    } catch (error: any) {
+      console.error('Error', `Could not open SMS app: ${error.message}`);
+    }
+  };
+    
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -200,10 +198,11 @@ export default function DailySteps() {
         </View>
 
         <View style={styles.progressContainer}>
-          <Svg
-            height={CIRCLE_RADIUS * 1.5} 
-            width={CIRCLE_RADIUS * 1.5} 
-            style={styles.svg} 
+        <View style={{ width: CIRCLE_RADIUS * 1.5, height: CIRCLE_RADIUS * 1.5 }}>
+        <Svg
+          height={CIRCLE_RADIUS * 1.5} 
+          width={CIRCLE_RADIUS * 1.5} 
+          style={StyleSheet.absoluteFill} 
           >
             <Circle
               cx={CIRCLE_RADIUS * 0.75} 
@@ -225,34 +224,38 @@ export default function DailySteps() {
               strokeLinecap="round"
               transform={`rotate(-90 ${CIRCLE_RADIUS * 0.75} ${CIRCLE_RADIUS * 0.75})`} 
             />
-            <Image
-              source={require('../../assets/stepsIcon.png')}
-              style={{
-                position: 'absolute',
-                top: CIRCLE_RADIUS * 0.75 - 75,
-                left: CIRCLE_RADIUS * 0.75 - 20,
-                width: 40,
-                height: 40,
-              }}
-            />
-            <Text
-              style={{
-                position: 'absolute',
-                top: CIRCLE_RADIUS * 0.75 + 10,
-                left: 0,
-                right: 0,
-                textAlign: 'center',
-                fontSize: 20,
-                color: '#000',
-                fontWeight: 'bold',
-              }}
-            >
-              {Math.round(progress * 100)}%{'\n'}
-              <Text style={{ fontSize: 18, fontWeight: 'normal' }}>
-                of daily goal
-              </Text>
-            </Text>
           </Svg>
+
+          <Image
+            source={require('../../assets/stepsIcon.png')}
+            style={{
+              position: 'absolute',
+              top: CIRCLE_RADIUS * 0.75 - 75,
+              left: CIRCLE_RADIUS * 0.75 - 20,
+              width: 40,
+              height: 40,
+            }}
+          />
+
+          <Text
+            style={{
+              position: 'absolute',
+              top: CIRCLE_RADIUS * 0.75 + 10,
+              left: 0,
+              right: 0,
+              textAlign: 'center',
+              fontSize: 20,
+              color: '#000',
+              fontWeight: 'bold',
+            }}
+          >
+            {Math.round(progress * 100)}%{'\n'}
+            <Text style={{ fontSize: 18, fontWeight: 'normal' }}>
+              of daily goal
+            </Text>
+          </Text>
+        </View>
+
         </View>
 
         <View style={styles.statsContainer}>
@@ -304,89 +307,96 @@ export default function DailySteps() {
       </ScrollView>
 
       <Modal
-      animationType="slide"
-      transparent={true}
-      visible={modalVisible}
-      onRequestClose={() => setModalVisible(false)}
-      style={{height: height, width: width}}
-    >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContainer}>
-          <View style={styles.modalBackground}>
-            <View style={styles.topHalfBackground} />
-            <View style={styles.bottomHalfBackground} />
-          </View>
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+        style={{height: height, width: width}}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalBackground}>
+              <View style={styles.topHalfBackground} />
+              <View style={styles.bottomHalfBackground} />
+            </View>
 
-          <TouchableOpacity
-            style={styles.modalCloseButton} 
-            onPress={() => setModalVisible(false)}
-          >
-            <Text style={styles.modalCloseButtonText}>✕</Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.modalCloseButton} 
+              onPress={() => setModalVisible(false)}
+            >
+              <Text style={styles.modalCloseButtonText}>✕</Text>
+            </TouchableOpacity>
 
-          <View style={styles.modalHeaderArea}>
-            <Text style={styles.modalHeaderTitle}>{steps >= 10000 ? 'Goal Achieved!' : 'Goal Incomplete!'}</Text>
-            <Text style={styles.modalHeaderSubtitle}>{steps >= 10000 ? 'Share with friends!' : `Just ${10000 - steps} steps left`}</Text>
-          </View>
+            <View style={styles.modalHeaderArea}>
+              <Text style={styles.modalHeaderTitle}>{steps >= 10000 ? 'Goal Achieved!' : 'Goal Incomplete!'}</Text>
+              <Text style={styles.modalHeaderSubtitle}>{steps >= 10000 ? 'Share with friends!' : `Just ${10000 - steps} steps left`}</Text>
+            </View>
 
-          <View style={styles.floatingCardScrollView}>
-            <View style={styles.floatingCard}>
-                <View style={styles.userInfo}>
-                  <Image source={profileImageSource} style={profilePictureStyle} />
-                  <Text style={styles.userName}>{userData?.name}</Text>
-                  <Image
-                    source={require('../../assets/logo.png')} 
-                    style={styles.logo}
-                  />
-                </View>
-
-                <View style={styles.modalProgressContainer}>
-                  <Svg
-                    height={CIRCLE_RADIUS * 1.5}
-                    width={CIRCLE_RADIUS * 1.5}
-                    style={styles.modalSvg}
-                  >
-                    <Circle cx={CIRCLE_RADIUS * 0.75} cy={CIRCLE_RADIUS * 0.75} r={(CIRCLE_RADIUS - 10) * 0.75} stroke="#d9d9d9" strokeWidth={13} fill="none"/>
-                    <Circle cx={CIRCLE_RADIUS * 0.75} cy={CIRCLE_RADIUS * 0.75} r={(CIRCLE_RADIUS - 10) * 0.75} stroke="#7A5FFF" strokeWidth={9} fill="none" strokeDasharray={CIRCLE_CIRCUMFERENCE * 0.75} strokeDashoffset={strokeDashoffset * 0.75} strokeLinecap="round" transform={`rotate(-90 ${CIRCLE_RADIUS * 0.75} ${CIRCLE_RADIUS * 0.75})`}/>
-                  </Svg>
-                  <Image
-                    source={require('../../assets/stepsIcon.png')} 
-                    style={styles.progressIcon}
-                  />
-                  <View style={styles.progressTextContainer}>
-                    <Text style={styles.progressStepsValue}>{steps}</Text>
-                    <Text style={styles.progressStepsLabel}>steps today</Text>
+            <View style={styles.floatingCardScrollView}>
+              <View style={styles.floatingCard}>
+                  <View style={styles.userInfo}>
+                    <Image source={profileImageSource} style={profilePictureStyle} />
+                    <Text style={styles.userName}>{userData?.name}</Text>
+                    <Image
+                      source={require('../../assets/logo.png')} 
+                      style={styles.logo}
+                    />
                   </View>
-                </View>
 
-                <View style={styles.modalStatsRow}>
-                  <View style={styles.stat}>
-                    <Text style={styles.statValueGray}>{caloriesBurned}</Text>
-                    <Text style={styles.statLabel}>Cal Burned</Text>
+                  <View style={styles.modalProgressContainer}>
+                    <Svg
+                      height={CIRCLE_RADIUS * 1.5}
+                      width={CIRCLE_RADIUS * 1.5}
+                      style={styles.modalSvg}
+                    >
+                      <Circle cx={CIRCLE_RADIUS * 0.75} cy={CIRCLE_RADIUS * 0.75} r={(CIRCLE_RADIUS - 10) * 0.75} stroke="#d9d9d9" strokeWidth={13} fill="none"/>
+                      <Circle cx={CIRCLE_RADIUS * 0.75} cy={CIRCLE_RADIUS * 0.75} r={(CIRCLE_RADIUS - 10) * 0.75} stroke="#7A5FFF" strokeWidth={9} fill="none" strokeDasharray={CIRCLE_CIRCUMFERENCE * 0.75} strokeDashoffset={strokeDashoffset * 0.75} strokeLinecap="round" transform={`rotate(-90 ${CIRCLE_RADIUS * 0.75} ${CIRCLE_RADIUS * 0.75})`}/>
+                    </Svg>
+                    <Image
+                      source={require('../../assets/stepsIcon.png')} 
+                      style={styles.progressIcon}
+                    />
+                    <View style={styles.progressTextContainer}>
+                      <Text style={styles.progressStepsValue}>{steps}</Text>
+                      <Text style={styles.progressStepsLabel}>steps today</Text>
+                    </View>
                   </View>
-                  <View style={styles.divider} />
-                  <View style={styles.stat}>
-                    <Text style={styles.statValueGray}>10000</Text>
-                    <Text style={styles.statLabel}>Daily goal</Text>
+
+                  <View style={styles.modalStatsRow}>
+                    <View style={styles.stat}>
+                      <Text style={styles.statValueGray}>{caloriesBurned}</Text>
+                      <Text style={styles.statLabel}>Cal Burned</Text>
+                    </View>
+                    <View style={styles.divider} />
+                    <View style={styles.stat}>
+                      <Text style={styles.statValueGray}>10000</Text>
+                      <Text style={styles.statLabel}>Daily goal</Text>
+                    </View>
                   </View>
-                </View>
+              </View>
+            </View>
+
+            <View style={styles.modalFooterArea}>
+              <TouchableOpacity style={styles.shareButton} onPress={handleShareFriend}>
+                <Text style={styles.shareButtonText}>Share to friend</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setModalVisible(false)}>
+                <Text style={styles.notNowText}>Not now</Text>
+              </TouchableOpacity>
             </View>
           </View>
-
-          <View style={styles.modalFooterArea}>
-            <TouchableOpacity style={styles.shareButton}>
-              <Text style={styles.shareButtonText}>Share to friend</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => setModalVisible(false)}>
-              <Text style={styles.notNowText}>Not now</Text>
-            </TouchableOpacity>
-          </View>
         </View>
-      </View>
-    </Modal>
+      </Modal>
     </SafeAreaView>
   );
 }
+
+const REFERENCE_HEIGHT = 932; 
+
+const MIN_MODAL_WIDTH = 300; 
+const MAX_MODAL_WIDTH = 400; 
+const MIN_MODAL_HEIGHT = 500; 
+const MAX_MODAL_HEIGHT = 750; 
 
 const styles = StyleSheet.create({
   container: {
@@ -400,15 +410,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: RFPercentage(2),
     paddingVertical: RFPercentage(3),
     backgroundColor: '#F5F7FA',
-    marginBottom: RFPercentage(1.5),
+    marginTop: (height * 0.009),
   },
   backButtonContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   backIcon: {
-    width: RFValue(24, height),
-    height: RFValue(24, height),
+    width: RFValue(24, REFERENCE_HEIGHT),
+    height: RFValue(24, REFERENCE_HEIGHT),
     marginRight: -(width * 0.02),
   },
   backButton: {
@@ -417,8 +427,8 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   shareIcon: {
-    width: RFValue(30, height),
-    height: RFValue(30, height),
+    width: RFValue(30, REFERENCE_HEIGHT),
+    height: RFValue(30, REFERENCE_HEIGHT),
   },
   scrollContent: {
     paddingBottom: RFPercentage(5),
@@ -427,10 +437,10 @@ const styles = StyleSheet.create({
   stepsContainer: {
     alignItems: 'center',
     paddingHorizontal: RFPercentage(2.5),
-    paddingVertical: RFPercentage(3), 
+    paddingVertical: RFPercentage(3),
   },
   title: {
-    fontSize: RFPercentage(3.0), 
+    fontSize: RFPercentage(3.0),
     fontWeight: '700',
     color: '#1A1A1A',
     marginBottom: RFPercentage(0),
@@ -452,28 +462,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     width: '60%',
     marginTop: RFPercentage(3),
-  },   stat: {
-    alignItems: 'center',
-    justifyContent: 'center', 
   },
-  statValue: { 
+  statValue: {
     fontSize: RFPercentage(2.5),
     color: '#333',
-  },
-  statLabel: { 
-    fontSize: RFPercentage(1.7), 
-    color: '#888', 
-  },
-  statValueGray: { 
-    fontSize: RFPercentage(2.4), 
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: RFValue(3, height), 
-  },
-  divider: { 
-    width: 1,
-    height: '100%', 
-    backgroundColor: '#e0e0e0', 
   },
   statsContainer: {
     flexDirection: 'row',
@@ -492,7 +484,7 @@ const styles = StyleSheet.create({
     paddingVertical: RFPercentage(2),
   },
   graphTitle: {
-    fontSize: RFPercentage(2.5), 
+    fontSize: RFPercentage(2.5),
     fontWeight: '400',
     color: '#1A1A1A',
     marginVertical: RFPercentage(1),
@@ -522,8 +514,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   smileyIcon: {
-    width: RFValue(24, height),
-    height: RFValue(24, height),
+    width: RFValue(24, REFERENCE_HEIGHT),
+    height: RFValue(24, REFERENCE_HEIGHT),
     marginRight: width * 0.03,
   },
   performanceText: {
@@ -543,18 +535,18 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)', 
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: width * 0.05, 
+    paddingHorizontal: RFValue(16, REFERENCE_HEIGHT), 
   },
   modalContainer: {
-    width: width * 0.9, 
-    height: height * 0.85, 
-    borderRadius: RFValue(20, height),
-    overflow: 'hidden', 
-    position: 'relative', 
-    backgroundColor: 'transparent', 
+    width: Math.min(Math.max(width * 0.9, MIN_MODAL_WIDTH), MAX_MODAL_WIDTH), 
+    height: Math.min(Math.max(height * 0.85, MIN_MODAL_HEIGHT), MAX_MODAL_HEIGHT), 
+    borderRadius: RFValue(20, REFERENCE_HEIGHT),
+    overflow: 'hidden',
+    position: 'relative',
+    backgroundColor: 'transparent',
   },
   modalBackground: {
     position: 'absolute',
@@ -562,23 +554,23 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    flexDirection: 'column', 
-    zIndex: 0, 
+    flexDirection: 'column',
+    zIndex: 0,
   },
   topHalfBackground: {
     flex: 1,
     backgroundColor: '#7A5FFF',
   },
   bottomHalfBackground: {
-    flex: 1, 
+    flex: 1,
     backgroundColor: '#EFEFEF',
   },
   modalCloseButton: {
     position: 'absolute',
-    top: RFPercentage(1.5),
-    right: RFPercentage(1.5),
-    padding: 10, 
-    zIndex: 10, 
+    top: RFValue(12, REFERENCE_HEIGHT),
+    right: RFValue(12, REFERENCE_HEIGHT),
+    padding: 10,
+    zIndex: 10,
   },
   modalCloseButtonText: {
     fontSize: RFPercentage(2.8),
@@ -586,11 +578,11 @@ const styles = StyleSheet.create({
     fontWeight: 'normal',
   },
   modalHeaderArea: {
-    paddingTop: RFPercentage(4), 
-    paddingHorizontal: RFPercentage(2),
+    paddingTop: RFValue(32, REFERENCE_HEIGHT),
+    paddingHorizontal: RFValue(16, REFERENCE_HEIGHT),
     alignItems: 'center',
-    zIndex: 1, 
-    marginBottom: RFPercentage(4),
+    zIndex: 1,
+    marginBottom: RFValue(40, REFERENCE_HEIGHT),
   },
   modalHeaderTitle: {
     fontSize: RFPercentage(3.0),
@@ -602,125 +594,131 @@ const styles = StyleSheet.create({
     fontSize: RFPercentage(2.0),
     color: '#fff',
     textAlign: 'center',
-    marginTop: RFValue(5, height),
+    marginTop: RFValue(5, REFERENCE_HEIGHT),
   },
   floatingCardScrollView: {
-    flex: 1, 
+    flex: 1,
     alignItems: 'center',
-    zIndex: 1, 
-    marginHorizontal: width * 0.05, 
+    zIndex: 1,
+    marginHorizontal: RFValue(35, REFERENCE_HEIGHT), 
   },
   floatingCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: RFValue(15, height),
-    padding: RFPercentage(2.5),
+    borderRadius: RFValue(15, REFERENCE_HEIGHT),
+    padding: RFValue(20, REFERENCE_HEIGHT),
     alignItems: 'center',
     width: '100%',
-    marginBottom: RFPercentage(2), 
-    paddingBottom: RFPercentage(7),
+    marginBottom: RFValue(16, REFERENCE_HEIGHT),
+    paddingBottom: RFValue(56, REFERENCE_HEIGHT),
   },
   userInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: RFPercentage(2.5),
-    paddingBottom: RFPercentage(1.5),
+    marginBottom: RFValue(20, REFERENCE_HEIGHT),
+    paddingBottom: RFValue(12, REFERENCE_HEIGHT),
     borderBottomWidth: 0.5,
     borderBottomColor: '#e0e0e0',
     width: '100%',
   },
-  userName: { 
-    fontSize: RFPercentage(2), 
-    fontWeight: '400', 
-    color: '#1A1A1A', 
+  userName: {
+    fontSize: RFPercentage(2),
+    fontWeight: '400',
+    color: '#1A1A1A',
     flex: 1,
   },
-  logo: { 
-    width: RFValue(35, height), 
-    height: RFValue(35, height), 
+  logo: {
+    width: RFValue(35, REFERENCE_HEIGHT),
+    height: RFValue(35, REFERENCE_HEIGHT),
     resizeMode: 'contain',
   },
-  imageWrapper: {
-    justifyContent: 'center',
+  modalProgressContainer: {
     alignItems: 'center',
-    width: 100,
-    height: 100, 
-    borderRadius: 50, 
-    overflow: 'hidden', 
+    justifyContent: 'center',
     position: 'relative',
+    width: CIRCLE_RADIUS * 1.5,
+    height: CIRCLE_RADIUS * 1.5,
+    marginBottom: RFValue(24, REFERENCE_HEIGHT),
   },
-  activityIndicator: {
+  modalSvg: {},
+  progressIcon: {
     position: 'absolute',
-    zIndex: 1, 
+    width: RFValue(35, REFERENCE_HEIGHT),
+    height: RFValue(35, REFERENCE_HEIGHT),
+    resizeMode: 'contain',
+    top: '30%',
+    transform: [{ translateY: -RFValue(17.5, REFERENCE_HEIGHT) }],
   },
-  modalProgressContainer: { 
-    alignItems: 'center', 
-    justifyContent: 'center', 
-    position: 'relative', 
-    width: CIRCLE_RADIUS * 1.5, 
-    height: CIRCLE_RADIUS * 1.5, 
-    marginBottom: RFPercentage(3),
-  },
-  modalSvg: {}, 
-  progressIcon: { 
-    position: 'absolute', 
-    width: RFValue(35, height), 
-    height: RFValue(35, height), 
-    resizeMode: 'contain', 
-    top: '30%', 
-    transform: [{ translateY: -RFValue(17.5, height) }],
-  },
-  progressTextContainer: { 
-    position: 'absolute', 
-    alignItems: 'center', 
-    justifyContent: 'center', 
+  progressTextContainer: {
+    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
     top: '58%',
   },
-  progressStepsValue: { 
-    fontSize: RFPercentage(2.8), 
-    color: '#1A1A1A', 
-    fontWeight: 'bold', 
+  progressStepsValue: {
+    fontSize: RFPercentage(2.8),
+    color: '#1A1A1A',
+    fontWeight: 'bold',
     textAlign: 'center',
   },
-  progressStepsLabel: { 
-    fontSize: RFPercentage(1.8), 
-    color: '#555', 
-    textAlign: 'center', 
-    marginTop: RFValue(2, height),
+  progressStepsLabel: {
+    fontSize: RFPercentage(1.8),
+    color: '#555',
+    textAlign: 'center',
+    marginTop: RFValue(2, REFERENCE_HEIGHT),
   },
-  modalStatsRow: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-around', 
-    width: '90%', 
-    marginTop: RFPercentage(1), 
-    marginBottom: RFPercentage(1), 
+  modalStatsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    width: '90%',
+    marginTop: RFValue(8, REFERENCE_HEIGHT),
+    marginBottom: RFValue(8, REFERENCE_HEIGHT),
     alignItems: 'center',
+  },
+  stat: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statValueGray: {
+    fontSize: RFPercentage(2.4),
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: RFValue(3, REFERENCE_HEIGHT),
+  },
+  statLabel: {
+    fontSize: RFPercentage(1.7),
+    color: '#888',
+  },
+  divider: {
+    width: 1,
+    height: '100%',
+    backgroundColor: '#e0e0e0',
   },
   modalFooterArea: {
-    paddingBottom: RFPercentage(3), 
-    paddingHorizontal: RFPercentage(2),
+    paddingBottom: RFValue(24, REFERENCE_HEIGHT),
+    paddingHorizontal: RFValue(16, REFERENCE_HEIGHT),
     alignItems: 'center',
     width: '100%',
-    zIndex: 1, 
-    marginBottom: RFPercentage(1.3),
+    zIndex: 1,
+    marginBottom: RFValue(5, REFERENCE_HEIGHT),
   },
-  shareButton: { 
-    backgroundColor: '#7A5FFF', 
-    borderRadius: RFValue(40, height), 
-    paddingVertical: RFPercentage(1.5), 
-    width: '85%', 
-    alignItems: 'center', 
-    marginTop: RFPercentage(1), 
+  shareButton: {
+    backgroundColor: '#7A5FFF',
+    borderRadius: RFValue(40, REFERENCE_HEIGHT),
+    paddingVertical: RFValue(15, REFERENCE_HEIGHT),
+    width: '80%',
+    alignItems: 'center',
+    marginTop: RFValue(8, REFERENCE_HEIGHT),
   },
-  shareButtonText: { 
-    fontSize: RFPercentage(2.1), 
-    color: '#fff', 
+  shareButtonText: {
+    fontSize: RFPercentage(2.1),
+    color: '#fff',
     fontWeight: '700',
   },
-  notNowText: { 
-    fontSize: RFPercentage(2.1), 
-    color: '#7A5FFF', 
-    textAlign: 'center', 
-    marginTop: RFPercentage(1),
+  notNowText: {
+    fontSize: RFPercentage(2.1),
+    color: '#7A5FFF',
+    textAlign: 'center',
+    marginTop: RFValue(8, REFERENCE_HEIGHT),
     fontWeight: '700',
   },
 });

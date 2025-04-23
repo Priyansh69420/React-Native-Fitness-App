@@ -47,7 +47,7 @@ export default function Signup() {
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : -50} 
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : -100} 
       >
         <View style={styles.container}>
 
@@ -60,6 +60,7 @@ export default function Signup() {
 
             <Text style={styles.title}>What is your email address?</Text>
 
+            <View style={{marginBottom: height * 0.125, width: '100%', alignItems: 'center' }}>
             <View style={styles.inputContainer}>
               <TextInput
                 style={styles.input}
@@ -69,6 +70,9 @@ export default function Signup() {
                 value={email}
                 onChangeText={setEmail}
               />
+            </View>
+
+            {error ? <Text style={{color: 'red', width: '100%', textAlign: 'center'}}>Note: {error}</Text>: <></>}
             </View>
 
             <TouchableOpacity style={styles.button} onPress={() => handleContinue()}>
@@ -131,7 +135,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF',
     borderRadius: width * 0.025, 
     paddingHorizontal: width * 0.0375, 
-    marginBottom: height * 0.125, 
+    marginBottom: height * 0.01, 
     marginTop: height * 0.0125, 
     width: '90%',
     height: height * 0.0625, 

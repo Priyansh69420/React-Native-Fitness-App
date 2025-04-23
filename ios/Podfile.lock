@@ -1899,10 +1899,10 @@ PODS:
   - RNGoogleSignin (13.2.0):
     - GoogleSignIn (~> 7.1)
     - React-Core
-  - RNNotifee (9.1.8):
+  - RNNotifee (7.0.4):
     - React-Core
-    - RNNotifee/NotifeeCore (= 9.1.8)
-  - RNNotifee/NotifeeCore (9.1.8):
+    - RNNotifee/NotifeeCore (= 7.0.4)
+  - RNNotifee/NotifeeCore (7.0.4):
     - React-Core
   - RNReanimated (3.16.7):
     - DoubleConversion
@@ -2460,7 +2460,7 @@ SPEC CHECKSUMS:
   RNFS: 4ac0f0ea233904cb798630b3c077808c06931688
   RNGestureHandler: 783a0ed6c92de677e2346d4250c5de028a1db698
   RNGoogleSignin: ee2938633d996756819e3212c8e0f7f696b380d0
-  RNNotifee: 4a6ee5c7deaf00e005050052d73ee6315dff7ec9
+  RNNotifee: dcb2593127f40945c4ee5fc09f61d71bbd00b9cf
   RNReanimated: 3cdb86c3a93fd28e76b497f0ead4019fc502c1c1
   RNScreens: 02c4adf5b4820807807b1d7d4f8bc27eeaed8e11
   RNSha256: e1bc64e9e50b293d5282bb4caa1b2043931f1c9d

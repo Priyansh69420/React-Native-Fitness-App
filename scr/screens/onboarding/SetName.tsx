@@ -12,8 +12,9 @@ const backIcon = require('../../assets/backIcon.png');
 
 export default function SetNameScreen() {
   const navigation = useNavigation<NavigationProp>();
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
+  const [firstName, setFirstName] = useState<string>('');
+  const [lastName, setLastName] = useState<string>('');
+  const [error, setError] = useState<string>('');
   const {updateOnboardingData} = useOnboarding();
 
   const handleContinuePress = () => {
@@ -22,7 +23,7 @@ export default function SetNameScreen() {
       updateOnboardingData({lastName});
       navigation.navigate('FaceId'); 
     } else {
-      Alert.alert('Please enter both first and last name');
+      setError('Please enter both first and last name');
     }
   };
 
@@ -31,7 +32,7 @@ export default function SetNameScreen() {
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : -80} 
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : -100} 
       >
         <View style={styles.container}>
 
@@ -63,6 +64,8 @@ export default function SetNameScreen() {
                 autoCapitalize="words"
               />
             </View>
+
+            {error ? <Text style={{color: 'red', width: '85%'}}>Note: {error}</Text>: <></>}
 
             <TouchableOpacity style={styles.button} onPress={handleContinuePress}>
               <Text style={styles.buttonText}>Continue</Text>

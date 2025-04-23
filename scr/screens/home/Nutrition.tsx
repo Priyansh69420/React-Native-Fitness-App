@@ -4,7 +4,7 @@ import { RFPercentage, RFValue } from 'react-native-responsive-fontsize';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { HomeStackParamList } from '../../navigations/HomeStackParamList';
 import { useNavigation } from '@react-navigation/native';
-import Svg, { Circle } from 'react-native-svg';
+import Svg, { Circle, G } from 'react-native-svg';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { auth, firestore } from '../../../firebaseConfig';
 import { useDispatch } from 'react-redux';
@@ -316,7 +316,7 @@ export default function Nutrition() {
                 const rotation = -90;
 
                 return (
-                  <View key={`nutrition-arc-${index}`}>
+                  <G key={`nutrition-arc-${index}`}>
                     <Circle
                       key={`bg-circle-${index}`} 
                       cx={center}
@@ -340,7 +340,7 @@ export default function Nutrition() {
                       transform={`rotate(${rotation}, ${center}, ${center})`}
                       fill="none"
                     />
-                  </View>
+                  </G>
                 );
               })}
             </Svg>

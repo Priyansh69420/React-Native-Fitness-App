@@ -12,24 +12,9 @@ import { useDispatch, useSelector } from 'react-redux';
 import { clearUser } from '../store/slices/userSlice';
 import { persistor, RootState } from '../store/store';
 import { useNavigationState } from '@react-navigation/native';
+import { RFPercentage, RFValue } from 'react-native-responsive-fontsize';
 
 const Drawer = createDrawerNavigator<DrawerParamList>();
-
-interface Avatar {
-  id: number;
-  source: any;
-}
-
-const avatars: Avatar[] = [
-  { id: 1, source: require('../assets/avatar5.png') },
-  { id: 2, source: require('../assets/avatar2.png') },
-  { id: 3, source: require('../assets/avatar4.png') },
-];
-
-const getAvatarSource = (id: number): any => {
-  const avatar = avatars.find((item) => item.id === id);
-  return avatar ? avatar.source : null;
-};
 
 function CustomDrawerContent(props: any) {
   const dispatch = useDispatch();
@@ -47,17 +32,24 @@ function CustomDrawerContent(props: any) {
   const navigationState = useNavigationState(state => state);
   const currentRouteName = navigationState?.routes?.[navigationState.index]?.name;
 
-  const profileImageSource =
-    typeof userData?.profilePicture === 'string'
-      ? { uri: userData.profilePicture }
-      : userData?.profilePicture
-      ? getAvatarSource(userData.profilePicture)
-      : null;
+  const profileImageSource = typeof userData?.profilePicture === 'string'
+  ? { uri: userData.profilePicture }
+  : undefined;
+
+  const isCustomImg = typeof userData?.profilePicture === 'string'
+    && !userData.profilePicture.includes('avatar');
+
+    const profilePictureStyle = {
+      width: isCustomImg ? RFValue(70) : RFValue(110),
+      height: isCustomImg ? RFValue(70) : RFValue(110),
+      borderRadius: RFValue(60),
+      marginBottom: RFPercentage(1.5),
+    };
 
   return (
     <DrawerContentScrollView {...props} contentContainerStyle={styles.contentContainer}>
       <View style={styles.profileContainer}>
-        <Image source={ profileImageSource } style={styles.profileImage}/>
+        <Image source={ profileImageSource } style={profilePictureStyle}/>
         <Text style={styles.userName}>{userData?.name}</Text>
       </View>
       <View style={styles.menuContainer}>
@@ -117,12 +109,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#E0E0E0',
     marginBottom: 20,
-  },
-  profileImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    marginBottom: 10,
   },
   userName: {
     fontSize: 20,

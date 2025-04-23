@@ -32,6 +32,7 @@ const interests: items[] = [
 export default function Intrests() {
   const navigation = useNavigation<NavigationProp>();
   const [selectedInterest, setSelectedInterest] = useState<string[]>([]);
+  const [error, setError] = useState<string>('');
   const {updateOnboardingData} = useOnboarding();
 
   const handleInterestsPress = (interestId: number) => {
@@ -50,7 +51,7 @@ export default function Intrests() {
       updateOnboardingData({interests: selectedInterest});
       navigation.navigate('Gender');
     }
-    else Alert.alert('Please select at least one interest');
+    else setError('Please select at least one interest');
   }
 
   return (
@@ -88,6 +89,8 @@ export default function Intrests() {
                 <Text style={styles.interestLabel}>{item.label}</Text>
               </TouchableOpacity>
             ))}
+
+            {error ? <Text style={{color: 'red', width: '100%', textAlign: 'center'}}>Note: {error}</Text>: <></>}
           </View>
 
           <TouchableOpacity style={styles.button} onPress={handleContinuePress} >

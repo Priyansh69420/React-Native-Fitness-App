@@ -45,9 +45,9 @@ interface Avatar {
 }
 
 const avatars: Avatar[] = [
-  { id: 1, source: require('../../assets/avatar5.png') },
-  { id: 2, source: require('../../assets/avatar2.png') },
-  { id: 3, source: require('../../assets/avatar4.png') },
+  { id: 1, source: { uri: 'https://dojvycwbetqfeutcvsqe.supabase.co/storage/v1/object/public/profileimages/profile_pictures/avatar5.png' } },
+  { id: 2, source: { uri: 'https://dojvycwbetqfeutcvsqe.supabase.co/storage/v1/object/public/profileimages/profile_pictures/avatar2.png' } },
+  { id: 3, source: { uri: 'https://dojvycwbetqfeutcvsqe.supabase.co/storage/v1/object/public/profileimages/profile_pictures/avatar4.png' } },
 ];
 
 const getAvatarSource = (id: number): any => {
@@ -203,6 +203,8 @@ export default function Profile() {
   };
 
   const handleSave = async () => {
+    setLoading(true);
+
     try {
       const updatedUserData: Partial<UserData> = {
         name,
@@ -219,10 +221,12 @@ export default function Profile() {
         const userRefDoc = doc(firestore, 'users', user.uid);
         await setDoc(userRefDoc, updatedUserData, { merge: true });
       }
-      
-      alert('Profile updated successfully!');
+      navigation.navigate('Settings')
     } catch (error: any) {
       alert('Failed to update profile: ' + error.message);
+    }
+    finally {
+      setLoading(false);
     }
   };
 

@@ -288,13 +288,13 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#F5F7FA',
-    marginTop: (height * 0.015),
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: width * 0.04,
     paddingVertical: height * 0.02,
+    marginTop: (height * 0.015),
   },
   backButtonContainer: {
     flexDirection: 'row',

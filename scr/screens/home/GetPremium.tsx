@@ -34,7 +34,7 @@ const carouselItems: CarouselItem[] = [
   },
   {
     image: require('../../assets/premium2.jpg'),
-    title: 'Go premium, get unlimited access!',
+    title: 'Go premium, get full access!',
     description: 'When you subscribe, you get instant unlimited access to all resources.',
   },
   {

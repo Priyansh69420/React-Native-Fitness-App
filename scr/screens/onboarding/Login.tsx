@@ -98,7 +98,7 @@ export default function LoginScreen() {
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : -120}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : -130}
       >
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
             <Image source={backIcon} style={styles.backIcon} />

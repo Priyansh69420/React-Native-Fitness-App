@@ -400,7 +400,6 @@ const Community = () => {
               [newStoryId]: { imageUrl, timestamp: serverTimestamp() }
             }
           });           
-          Alert.alert("Story Added", "Your story has been posted!");
         } else {
           Alert.alert("Error", "Failed to add story.");
         }
@@ -741,7 +740,8 @@ const styles = StyleSheet.create({
   },
   drawerContainer: {
     marginTop: height * 0.006 * scaleFactor,
-    marginLeft: width * 0.007 * scaleFactor,
+    marginLeft: width * 0.001 * scaleFactor,
+    width: '10%'
   },
   drawerIcon: {
     width: RFValue(30 * scaleFactor, height),

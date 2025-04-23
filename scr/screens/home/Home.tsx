@@ -24,22 +24,6 @@ import { fetchSteps } from '../../store/slices/footstepSlice';
 
 type NavigationProp = DrawerNavigationProp<HomeStackParamList, 'Home'>;
 
-interface Avatar {
-  id: number;
-  source: any;
-}
-
-const avatars: Avatar[] = [
-  { id: 1, source: require('../../assets/avatar5.png') },
-  { id: 2, source: require('../../assets/avatar2.png') },
-  { id: 3, source: require('../../assets/avatar4.png') },
-];
-
-const getAvatarSource = (id: number): any => {
-  const avatar = avatars.find((item) => item.id === id);
-  return avatar ? avatar.source : null;
-};
-
 const { width, height } = Dimensions.get('window');
 
 export default function Home() {
@@ -99,19 +83,18 @@ export default function Home() {
     );
   }
 
-  const profileImageSource =
-    typeof userData.profilePicture === 'string'
-      ? { uri: userData.profilePicture }
-      : userData.profilePicture
-      ? getAvatarSource(userData.profilePicture)
-      : null;
-
-  const isCustomImg = typeof profileImageSource === 'object';
-
+  const profileImageSource = typeof userData?.profilePicture === 'string'
+    ? { uri: userData.profilePicture }
+    : undefined;
+  
+  const isCustomImg = typeof userData?.profilePicture === 'string'
+    && !userData.profilePicture.includes('avatar');
+  
   const profilePictureStyle = {
-    width: isCustomImg ? RFValue(65, height) : RFValue(75, height),
-    height: isCustomImg ? RFValue(65, height) : RFValue(75, height),
+    width: isCustomImg ? RFValue(60, height) : RFValue(74, height),
+    height: isCustomImg ? RFValue(60, height) : RFValue(74, height),
     borderRadius: RFValue(50, height),
+    marginRight: RFPercentage(1),
   };
 
   const nutritionProgress = userData?.calories / 2000;

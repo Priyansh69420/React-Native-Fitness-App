@@ -63,5 +63,7 @@
 	<array>
 		<dict/>
 	</array>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>We need access to your photo library to let you upload stories and posts.</string>
 </dict>
 </plist>

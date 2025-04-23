@@ -1,6 +1,6 @@
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { useNavigation } from '@react-navigation/native';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, Dimensions, Alert, Modal, TextInput, Platform } from 'react-native';
 import { Switch } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -11,6 +11,7 @@ import { useDispatch } from 'react-redux';
 import { persistor } from '../../store/store';
 import { clearUser } from '../../store/slices/userSlice';
 import * as Linking from 'expo-linking';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type NavigationProp = DrawerNavigationProp<SettingStackParamList, 'Settings'>;
 
@@ -24,6 +25,18 @@ export default function Settings() {
     const [isSupportModalVisible, setSupportModalVisible] = useState(false);
     const navigation = useNavigation<NavigationProp>();
     const dispatch = useDispatch();
+
+    useEffect(() => {
+      const savePushSetting = async () => {
+        try {
+          await AsyncStorage.setItem('pushEnabled', JSON.stringify(isPushEnabled));
+        } catch (error: any) {
+          console.log('Failed to save push setting:', error)
+        }
+      }
+
+      savePushSetting();
+    }, [isPushEnabled]);
 
     const appLink = Platform.select({
         ios: 'YOUR_IOS_APP_LINK',
@@ -94,8 +107,8 @@ export default function Settings() {
 
     return (
         <SafeAreaView style={styles.safeArea}>
-            <TouchableOpacity style={styles.menuContainer} onPress={() => navigation.openDrawer()}>
-                <Image source={require('../../assets/drawerIcon.png')} style={styles.menuIcon} />
+            <TouchableOpacity style={styles.drawerContainer} onPress={() => navigation.openDrawer()}>
+                <Image source={require('../../assets/drawerIcon.png')} style={styles.drawerIcon} />
             </TouchableOpacity>
 
             <Text style={styles.title}>Settings</Text>
@@ -113,7 +126,7 @@ export default function Settings() {
                     <Text style={styles.optionText}>Push Notification</Text>
                     <Switch
                         value={isPushEnabled}
-                        onValueChange={setPushEnabled}
+                        onValueChange={(value) => setPushEnabled(value)}
                     />
                 </View>
 
@@ -221,11 +234,12 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#F5F7FA',
     },
-    menuContainer: {
+    drawerContainer: {
         marginTop: height * 0.03,
-        marginLeft: width * 0.04,
+        marginLeft: width * 0.045,
+        width: '10%'
     },
-    menuIcon: {
+    drawerIcon: {
         height: RFValue(32, height),
         width: RFValue(32, height),
         marginBottom: height * 0.005

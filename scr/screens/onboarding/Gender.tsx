@@ -22,6 +22,7 @@ const genders = [
 export default function SetGenderScreen() {
   const navigation = useNavigation<NavigationProp>();
   const [selectedGender, setSelectedGender] = useState<string | null>(null);
+  const [error, setError] = useState<string>('');
   const { updateOnboardingData } = useOnboarding();
 
   const handleGenderPress = (genderLabel: string) => {
@@ -33,7 +34,7 @@ export default function SetGenderScreen() {
       updateOnboardingData({gender: selectedGender});
       navigation.navigate('ReadyToGo'); 
     } else {
-      Alert.alert('Please select a gender');
+      setError('Please select a gender');
     }
   };
 
@@ -76,6 +77,8 @@ export default function SetGenderScreen() {
           <Text style={styles.subtitle}>
             To give you a better experience we need to know your gender
           </Text>
+
+          {error ? <Text style={{color: 'red', width: '100%', textAlign: 'center', marginTop: -30, marginBottom: 12}}>Note: {error}</Text>: <></>}
 
           <TouchableOpacity style={styles.button} onPress={handleContinuePress}>
             <Text style={styles.buttonText}>Continue</Text>

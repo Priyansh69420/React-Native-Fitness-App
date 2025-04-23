@@ -19,9 +19,9 @@ interface item {
 }
 
 const avatars: item[] = [
-  { id: 1, source: require('../../assets/avatar5.png') },
-  { id: 2, source: require('../../assets/avatar2.png') },
-  { id: 3, source: require('../../assets/avatar4.png') },
+  { id: 1, source: { uri: 'https://dojvycwbetqfeutcvsqe.supabase.co/storage/v1/object/public/profileimages/profile_pictures/avatar5.png' } },
+  { id: 2, source: { uri: 'https://dojvycwbetqfeutcvsqe.supabase.co/storage/v1/object/public/profileimages/profile_pictures/avatar2.png' } },
+  { id: 3, source: { uri: 'https://dojvycwbetqfeutcvsqe.supabase.co/storage/v1/object/public/profileimages/profile_pictures/avatar4.png' } },
 ];
 
 export default function SetProfile() {
@@ -31,6 +31,7 @@ export default function SetProfile() {
   const [modalVisible, setModalVisible] = useState<boolean>(false);
   const [buttonLoading, setButtonLoading] = useState<boolean>(false);
   const [imageLoading, setImageLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string>('');
   const {updateOnboardingData} = useOnboarding();
 
   const handleAddCustomPhoto = async () => {
@@ -134,10 +135,13 @@ export default function SetProfile() {
       updateOnboardingData({ profilePicture: customImg });
       navigation.navigate('Goals');
     } else if (selectedAvatar) {
-      updateOnboardingData({ profilePicture: selectedAvatar });
+      const selectedAvatarObj = avatars.find(avatar => avatar.id === selectedAvatar);
+      if (selectedAvatarObj) {
+        updateOnboardingData({ profilePicture: selectedAvatarObj.source.uri });
+      }
       navigation.navigate('Goals');
     } else {
-      alert('Please select an avatar or add a Custom Photo');
+      setError('Please select an avatar or add a Custom Photo');
     }
   };
 
@@ -183,9 +187,13 @@ export default function SetProfile() {
             You can select photo from one of this emoji or add your own photo as profile picture
           </Text>
 
+          <View style={{marginBottom: height * 0.07, alignItems: 'center'}}>
           <TouchableOpacity style={styles.addPhotoButton} onPress={handleAddCustomPhoto} disabled={buttonLoading}>
             <Text style={styles.addPhotoText}>Add Custom Photo</Text>
           </TouchableOpacity>
+
+          {error ? <Text style={{color: 'red', width: '85%', textAlign: 'center', maxWidth: '70%'}}>Note: {error}</Text>: <></>}
+          </View>
 
           <TouchableOpacity style={styles.button} onPress={handleContinuePress}>
             {buttonLoading ? (
@@ -327,8 +335,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: width * 0.10, 
     borderRadius: width * 0.065, 
     width: '100%',
-    alignItems: 'center',
-    marginBottom: height * 0.07, 
+    alignItems: 'center', 
+    marginBottom: height * 0.001
   },
   addPhotoText: {
     color: '#7A5FFF',

@@ -22,6 +22,7 @@ const goals = [
 export default function SetGoalsScreen() {
   const navigation = useNavigation<NavigationProp>();
   const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
+  const [error, setError] = useState<string>('');
   const {updateOnboardingData} = useOnboarding();
 
   const handleGoalPress = (goalId: number) => {
@@ -40,7 +41,7 @@ export default function SetGoalsScreen() {
       updateOnboardingData({goals: selectedGoals});
       navigation.navigate('Intrests');
     } else {
-      Alert.alert('Please select at least one goal');
+      setError('Please select at least one goal');
     }
   };
 
@@ -79,6 +80,8 @@ export default function SetGoalsScreen() {
                 </View>
               </TouchableOpacity>
             ))}
+
+            {error ? <Text style={{color: 'red', width: '100%', textAlign: 'center'}}>Note: {error}</Text>: <></>}
           </View>
 
           <TouchableOpacity style={styles.button} onPress={handleContinuePress}>
