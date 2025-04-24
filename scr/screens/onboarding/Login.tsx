@@ -70,8 +70,8 @@ export default function LoginScreen() {
 
         if (!userDoc.exists()) {
           await setDoc(userDocRef, {
-            email: creds.user.email || '',
-            name: creds.user.displayName || '',
+            email: creds.user.email || 'user@gmail.com',
+            name: creds.user.displayName || 'User',
             profilePicture: creds.user.photoURL || '2',
             goals: [ 'Weight Loss' ],
             interests: [ 'Fitness' ],
@@ -130,7 +130,7 @@ export default function LoginScreen() {
             />
           </View>
 
-          {error ? <Text style={{color: 'red', width: '85%'}}>Note: {error}</Text>: <></>}
+          {error ? <Text style={{color: 'red', width: '85%', textAlign: 'center'}}>Note: {error}</Text>: <></>}
 
           <Text style={styles.signInWithText}>Sign in with</Text>
 
