@@ -7,7 +7,6 @@ import {
   FlatList,
   Image,
   Platform,
-  Alert,
   PermissionsAndroid,
   StyleSheet,
   Dimensions,
@@ -23,7 +22,6 @@ import { RFPercentage, RFValue } from 'react-native-responsive-fontsize';
 type NavigationProp = DrawerNavigationProp<SettingStackParamList, 'ConnectDevice'>;
 
 const SMARTWATCH_SERVICE_UUID = null; 
-const SMARTWATCH_NAME_PREFIX = 'Apple Watch'; 
 const SCAN_TIMEOUT = 20000;
 
 interface DeviceItemProps {
@@ -52,11 +50,8 @@ const ConnectDeviceScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
 
   const requestPermissions = useCallback(async (): Promise<boolean> => {
-    console.log('requestPermissions called');
     try {
       if (Platform.OS === 'android') {
-        console.log('Android platform detected, requesting permissions...');
-
         const permissionsToRequest = [];
         if (Platform.Version >= 31) {
           permissionsToRequest.push(
@@ -74,21 +69,14 @@ const ConnectDeviceScreen: React.FC = () => {
           );
         }
 
-        console.log('Permissions to request:', permissionsToRequest);
-
         const validPermissions = permissionsToRequest.filter(
           (perm) => perm !== undefined && typeof perm === 'string'
         );
         if (validPermissions.length !== permissionsToRequest.length) {
-          console.error('Invalid permissions detected:', permissionsToRequest);
           throw new Error('Invalid permissions in request array');
         }
 
-        console.log('Requesting permissions:', validPermissions);
-
         const granted = await PermissionsAndroid.requestMultiple(validPermissions);
-        console.log('Permissions granted result:', granted);
-
         let allPermissionsGranted = true;
         if (Platform.Version >= 31) {
           allPermissionsGranted =
@@ -107,26 +95,21 @@ const ConnectDeviceScreen: React.FC = () => {
         }
 
         if (!allPermissionsGranted) {
-          console.log('Bluetooth permissions NOT fully granted');
-          Alert.alert(
+          console.warn(
             'Bluetooth Permissions Required',
             'Please grant all necessary Bluetooth permissions in the app settings to connect to devices.'
           );
           return false;
         }
 
-        console.log('Bluetooth permissions FULLY granted');
         return true;
       } else if (Platform.OS === 'ios') {
-        console.log('iOS platform, assuming BLE permissions will be prompted by system');
         return true;
       }
 
-      console.log('Unsupported platform, assuming permissions granted');
       return true;
     } catch (error) {
-      console.error('Error requesting permissions:', error);
-      Alert.alert(
+      console.warn(
         'Permission Error',
         'An error occurred while requesting permissions. Please try again or check your settings.'
       );
@@ -135,45 +118,33 @@ const ConnectDeviceScreen: React.FC = () => {
   }, []);
 
   const scanForDevices = useCallback(async () => {
-    console.log('scanForDevices called. Scanning state:', scanning);
     if (scanning) {
-      console.log('Scan already in progress.');
       return;
     }
     setDevices([]);
     setScanning(true);
     const hasPermissions = await requestPermissions();
-    console.log('Permissions check result:', hasPermissions);
     if (!hasPermissions) {
       setScanning(false);
-      console.log('Permissions not granted, stopping scan attempt.');
       return;
     }
-  
-    console.log('Starting Bluetooth scan...');
-    bleManager.startDeviceScan(
-      null,
-      null,
-      (error, device) => {
-        if (error) {
-          console.log('Error during scan:', error);
-          setScanning(false);
-          return;
-        }
-  
-        if (device && device.name) {
-          if (!devices.some(d => d.id === device.id)) {
-            setDevices(prevDevices => [...prevDevices, device]);
-            console.log('Found device:', device.name, device.id);
-          }
+
+    bleManager.startDeviceScan(null, null, (error, device) => {
+      if (error) {
+        setScanning(false);
+        return;
+      }
+
+      if (device && device.name) {
+        if (!devices.some(d => d.id === device.id)) {
+          setDevices(prevDevices => [...prevDevices, device]);
         }
       }
-    );
-  
+    });
+
     setTimeout(() => {
       bleManager.stopDeviceScan();
       setScanning(false);
-      console.log('Scan stopped.');
     }, SCAN_TIMEOUT);
   }, [bleManager, requestPermissions, scanning, setDevices]);
 
@@ -183,26 +154,19 @@ const ConnectDeviceScreen: React.FC = () => {
         setScanning(false);
         bleManager.stopDeviceScan();
 
-        const deviceIdentifier = Platform.OS === 'android' ? device.id : device.id;
-        console.log(`Attempting to connect to device: ${deviceIdentifier}`);
-
         const connected = await bleManager.connectToDevice(device.id);
         setConnectedDevice(connected);
-        console.log('Connected to:', connected.name);
 
         const discoveredServices = await connected.discoverAllServicesAndCharacteristics();
         const services = await discoveredServices.services();
-        console.log('Discovered Services:', services.map(s => s.uuid));
 
         const targetService = services.find(service => service.uuid === SMARTWATCH_SERVICE_UUID);
         if (targetService) {
           const characteristics = await targetService.characteristics();
-          console.log('Characteristics for service:', characteristics.map(c => c.uuid));
         }
       } catch (error: any) {
-        console.log('Error connecting to device:', error);
         setConnectedDevice(null);
-        Alert.alert('Connection Error', `Failed to connect to ${device.name || device.id}: ${error.message}`);
+        console.warn('Connection Error', `Failed to connect to ${device.name || device.id}: ${error.message}`);
       }
     },
     [bleManager, setConnectedDevice, setScanning]
@@ -212,12 +176,10 @@ const ConnectDeviceScreen: React.FC = () => {
     if (!connectedDevice) return;
     try {
       await bleManager.cancelDeviceConnection(connectedDevice.id);
-      console.log('Disconnected from:', connectedDevice.name);
       setConnectedDevice(null);
       setDevices([]);
     } catch (error: any) {
-      console.error('Error disconnecting device:', error);
-      Alert.alert('Disconnection Error', `Failed to disconnect from ${connectedDevice.name}: ${error.message}`);
+      console.warn('Disconnection Error', `Failed to disconnect from ${connectedDevice.name}: ${error.message}`);
     }
   }, [bleManager, connectedDevice]);
 
@@ -246,7 +208,6 @@ const ConnectDeviceScreen: React.FC = () => {
 
       <Text style={styles.title}>Connect to Smartwatch</Text>
 
-      {/* Scan Button */}
       {!connectedDevice && (
         <TouchableOpacity
           onPress={scanForDevices}
@@ -264,22 +225,19 @@ const ConnectDeviceScreen: React.FC = () => {
         </TouchableOpacity>
       )}
 
-      {/* Device List */}
       {!connectedDevice && devices.length > 0 && (
         <FlatList
           data={devices}
           renderItem={({ item }) => <DeviceItem item={item} onConnect={connectToDevice} />}
-          keyExtractor={item => item.id}
+          keyExtractor={(item, index) => `${item.id}-${index}`}
           style={styles.deviceList}
         />
       )}
 
-      {/* No Devices */}
       {!connectedDevice && !scanning && devices.length === 0 && (
         <Text style={styles.noDevices}>No devices found. Tap to scan.</Text>
       )}
 
-      {/* Connected State */}
       {connectedDevice && (
         <View style={styles.connectedContainer}>
           <Ionicons name="checkmark-circle" size={48} color="#4caf50" />
@@ -303,7 +261,7 @@ const styles = StyleSheet.create({
   container: { 
     flex: 1,
     paddingTop: (height * 0.03),
-    backgroundColor: '#fff'
+    
   },
   header: {
     flexDirection: 'row',
@@ -415,9 +373,10 @@ const styles = StyleSheet.create({
     marginTop: 10 
   },
   disconnectButton: { 
-    marginTop: 12 
+    marginTop: 12,
   },
   disconnectText: { 
+    fontSize: 15,
     color: '#f44336', 
     fontWeight: '600' 
   },

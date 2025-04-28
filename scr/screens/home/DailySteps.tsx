@@ -111,15 +111,16 @@ export default function DailySteps() {
     try {
       const currentDate = new Date().toISOString().split('T')[0];
       const currentDay = getDayOfWeek(currentDate);
+      const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
-      const updatedPerformance = weeklySteps.map((item) =>
-        item.day === currentDay ? { ...item, count: steps } : item 
-      );
+      const updatedPerformance = DAYS.map((day) => {
+        if (day === currentDay) {
+          return { day, count: steps };
+        }
 
-      const dayExists = updatedPerformance.some((item) => item.day === currentDay);
-      if (!dayExists) {
-        updatedPerformance.push({ day: currentDay, count: steps }); 
-      }
+        const existing = weeklySteps.find((item) => item.day === day);
+        return existing ? existing : { day, count: 0 };
+      });
 
       setWeeklySteps(updatedPerformance);
       await AsyncStorage.setItem('weeklyStepsPerformance', JSON.stringify(updatedPerformance));

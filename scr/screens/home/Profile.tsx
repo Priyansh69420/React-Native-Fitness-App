@@ -103,103 +103,103 @@ export default function Profile() {
   };
 
   const handleAddCustomPhoto = async () => {
-      try {
-        setLoading(true);
-          const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-          if (!permissionResult.granted) {
-              alert('Permission Denied. Please grant permission to select an image.');
-              return;
-          }
+    try {
+      setLoading(true);
+        const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!permissionResult.granted) {
+          alert('Permission Denied. Please grant permission to select an image.');
+          return;
+        }
 
-          const result = await ImagePicker.launchImageLibraryAsync({
-              mediaTypes: ['images'],
-              allowsEditing: true,
-              aspect: [1, 1],
-              quality: 1,
+        const result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ['images'],
+          allowsEditing: true,
+          aspect: [1, 1],
+          quality: 1,
+        });
+
+      if (!result.canceled && result.assets.length > 0) {
+        const uri = result.assets[0].uri;
+        const fileName = uri.split('/').pop() || `profile_${Date.now()}.jpg`;
+        const fileType = result.assets[0].type?.split('/')[1] || fileName.split('.').pop() || 'jpeg';
+        const filePath = `profile_pictures/${fileName}`;
+
+        let base64Image: string | null = null;
+
+        if (Platform.OS === 'web') {
+          const response = await fetch(uri);
+          const blob = await response.blob();
+          base64Image = await new Promise<string | null>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              if (typeof reader.result === 'string') {
+                resolve(reader.result.split(',')[1]);
+              } else {
+                reject('Failed to read as Data URL');
+              }
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          });
+        } else {
+          base64Image = await RNFS.readFile(uri, 'base64');
+        }
+
+        if (!base64Image) {
+          throw new Error('Failed to convert image to Base64');
+        }
+
+        if (typeof profilePicture === 'string' && profilePicture.includes('supabase.co')) {
+          const oldFilePath = profilePicture.split('/storage/v1/object/public/profileimages/')[1]?.split('?')[0];
+          if (oldFilePath) {
+            console.log('Deleting old file:', oldFilePath);
+            const { error: deleteError } = await supabase.storage
+              .from('profileimages')
+              .remove([oldFilePath]);
+    
+            if (deleteError) {
+              console.log('Failed to delete old image:', deleteError.message);
+            } else {
+              console.log('Old image deleted successfully');
+            }
+          }
+        }
+
+        const binaryString = atob(base64Image);
+        const fileArray = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          fileArray[i] = binaryString.charCodeAt(i);
+        }
+
+        const { data, error: uploadError } = await supabase.storage
+          .from('profileimages')
+          .upload(filePath, fileArray, {
+            contentType: `image/${fileType}`,
+            upsert: true,
           });
 
-          if (!result.canceled && result.assets.length > 0) {
-              const uri = result.assets[0].uri;
-              const fileName = uri.split('/').pop() || `profile_${Date.now()}.jpg`;
-              const fileType = result.assets[0].type?.split('/')[1] || fileName.split('.').pop() || 'jpeg';
-              const filePath = `profile_pictures/${fileName}`;
+        if (uploadError) {
+          throw new Error(uploadError.message);
+        }
 
-              let base64Image: string | null = null;
+        const { data: urlData } = supabase.storage
+          .from('profileimages')
+          .getPublicUrl(filePath);
 
-              if (Platform.OS === 'web') {
-                  const response = await fetch(uri);
-                  const blob = await response.blob();
-                  base64Image = await new Promise<string | null>((resolve, reject) => {
-                      const reader = new FileReader();
-                      reader.onloadend = () => {
-                          if (typeof reader.result === 'string') {
-                              resolve(reader.result.split(',')[1]);
-                          } else {
-                              reject('Failed to read as Data URL');
-                          }
-                      };
-                      reader.onerror = reject;
-                      reader.readAsDataURL(blob);
-                  });
-              } else {
-                  base64Image = await RNFS.readFile(uri, 'base64');
-              }
+        if (!urlData.publicUrl) {
+          throw new Error('Failed to retrieve public URL');
+        }
 
-              if (!base64Image) {
-                  throw new Error('Failed to convert image to Base64');
-              }
+        const publicUrlWithCacheBust = `${urlData.publicUrl}?t=${Date.now()}`;
 
-              if (typeof profilePicture === 'string' && profilePicture.includes('supabase.co')) {
-                const oldFilePath = profilePicture.split('/storage/v1/object/public/profileimages/')[1]?.split('?')[0];
-                if (oldFilePath) {
-                    console.log('Deleting old file:', oldFilePath);
-                    const { error: deleteError } = await supabase.storage
-                        .from('profileimages')
-                        .remove([oldFilePath]);
-            
-                    if (deleteError) {
-                        console.log('Failed to delete old image:', deleteError.message);
-                    } else {
-                        console.log('Old image deleted successfully');
-                    }
-                }
-            }
-
-              const binaryString = atob(base64Image);
-              const fileArray = new Uint8Array(binaryString.length);
-              for (let i = 0; i < binaryString.length; i++) {
-                  fileArray[i] = binaryString.charCodeAt(i);
-              }
-
-              const { data, error: uploadError } = await supabase.storage
-                  .from('profileimages')
-                  .upload(filePath, fileArray, {
-                      contentType: `image/${fileType}`,
-                      upsert: true,
-                  });
-
-              if (uploadError) {
-                  throw new Error(uploadError.message);
-              }
-
-              const { data: urlData } = supabase.storage
-                  .from('profileimages')
-                  .getPublicUrl(filePath);
-
-              if (!urlData.publicUrl) {
-                  throw new Error('Failed to retrieve public URL');
-              }
-
-              const publicUrlWithCacheBust = `${urlData.publicUrl}?t=${Date.now()}`;
-
-              setProfilePicture(publicUrlWithCacheBust);
-              console.log('New profile picture updated:', publicUrlWithCacheBust);
-          }
-      } catch (error: any) {
-          alert('Error uploading image: ' + error.message);
-      } finally {
-        setLoading(false);
+        setProfilePicture(publicUrlWithCacheBust);
+        console.log('New profile picture updated:', publicUrlWithCacheBust);
       }
+    } catch (error: any) {
+        alert('Error uploading image: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSave = async () => {
@@ -359,7 +359,7 @@ export default function Profile() {
 
         <View style={{ paddingHorizontal: 60 }}>
           <TouchableOpacity onPress={handleSave} style={styles.saveButton}>
-            {loading ? <ActivityIndicator size='small' /> : <Text style={styles.buttonText}>Save Changes</Text>}
+            {loading ? <ActivityIndicator size='small' color='#d0d0d0'/> : <Text style={styles.buttonText}>Save Changes</Text>}
           </TouchableOpacity>
 
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.cancelButton}>
@@ -374,8 +374,7 @@ export default function Profile() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
-    marginTop: (height * 0.03),
+    paddingTop: (height * 0.03),
   },
   container: {
     flexGrow: 1, 
@@ -391,7 +390,7 @@ const styles = StyleSheet.create({
     padding: responsiveWidth(2), 
     flexDirection: 'row',
     alignItems: 'center',
-    left: width * 0.027,
+    left: width * 0.021,
     top: height * 0.0001,
   },
   backArrowIcon: {

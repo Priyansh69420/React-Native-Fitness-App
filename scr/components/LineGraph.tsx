@@ -1,25 +1,57 @@
-import React from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, Dimensions, Text } from 'react-native';
 import Svg, { Path, Defs, LinearGradient, Stop } from 'react-native-svg';
 
 const { width } = Dimensions.get('window');
 
+interface DailyStepsPerformance {
+  day: string;
+  count: number;
+}
+
 const LineGraphSVG = () => {
-  const data = [35, 20, 80, 50, 70, 30, 85, 40];
+  const [weeklySteps, setWeeklySteps] = useState<DailyStepsPerformance[]>([]);
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      const storedWeeklySteps = await AsyncStorage.getItem('weeklyStepsPerformance');
+      if (storedWeeklySteps) {
+        setWeeklySteps(JSON.parse(storedWeeklySteps));
+      }
+    } catch (error) {
+      console.error('Error loading weekly steps from AsyncStorage:', error);
+    }
+  };
+
+  const convertStepstoCalories = () => {
+    return weeklySteps.map(item => Math.round(item.count * 0.01));
+    
+  };
+
+  const data = convertStepstoCalories();
   const graphWidth = width * 0.8;
   const graphHeight = 200;
   const customYLabels = [300, 250, 200, 150, 100];
   const customYPositions = [20, 60, 100, 140, 180];
 
-  const points = data.map((value, index) => {
-    const x = (index / (data.length - 1)) * graphWidth;
-    const y = graphHeight - (value / Math.max(...data)) * graphHeight;
-    return { x, y };
-  });
+  const hasValidData = data.length > 1 && Math.max(...data) > 0;
+
+  const points = hasValidData
+    ? data.map((value, index) => {
+        const x = (index / (data.length - 1)) * graphWidth;
+        const y = graphHeight - (value / Math.max(...data)) * graphHeight;
+        return { x, y };
+      })
+    : [];
 
   const pathData = points.reduce((acc, point, index) => {
     if (index === 0) {
-      return `M0,${graphHeight} L${point.x},${point.y}`;
+      return `M${point.x},${point.y}`;
     } else {
       const prevPoint = points[index - 1];
       const controlPointX = (prevPoint.x + point.x) / 2;
@@ -27,7 +59,9 @@ const LineGraphSVG = () => {
     }
   }, '');
 
-  const pathDataWithFill = `${pathData} L${graphWidth},${graphHeight} L0,${graphHeight} Z`;
+  const pathDataWithFill = hasValidData
+    ? `${pathData} L${graphWidth},${graphHeight} L0,${graphHeight} Z`
+    : '';
 
   return (
     <View style={styles.container}>
@@ -48,8 +82,13 @@ const LineGraphSVG = () => {
             <Stop offset="100%" stopColor="orange" stopOpacity="1" />
           </LinearGradient>
         </Defs>
-        <Path d={pathDataWithFill} fill="url(#grad)" stroke="orange" strokeWidth="2" />
+        {hasValidData && (
+          <Path d={pathDataWithFill} fill="url(#grad)" stroke="orange" strokeWidth="2" />
+        )}
       </Svg>
+      {!hasValidData && (
+        <Text style={styles.noDataText}>Not enough data to show graph.</Text>
+      )}
     </View>
   );
 };
@@ -58,6 +97,7 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     backgroundColor: '#fff',
+    padding: 10,
   },
   yAxisContainer: {
     width: 50,
@@ -66,9 +106,18 @@ const styles = StyleSheet.create({
   yAxisLabel: {
     position: 'absolute',
     left: 0,
+    color: '#333',
+    fontSize: 12,
   },
   graphSvg: {
     marginLeft: 0,
+  },
+  noDataText: {
+    position: 'absolute',
+    top: '50%',
+    left: '30%',
+    fontSize: 14,
+    color: 'gray',
   },
 });
 

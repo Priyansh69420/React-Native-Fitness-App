@@ -6,7 +6,6 @@ import {
   Dimensions,
   TouchableOpacity,
   Image,
-  Button,
   ActivityIndicator,
 } from 'react-native';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
