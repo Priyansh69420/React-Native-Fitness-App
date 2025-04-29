@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Image, Dimensions, ScrollView, Modal, FlatList } from 'react-native'
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Image, Dimensions, ScrollView, Modal, FlatList, KeyboardAvoidingView, Platform } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import { RFPercentage, RFValue } from 'react-native-responsive-fontsize';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
@@ -10,6 +10,7 @@ import { auth, firestore } from '../../../firebaseConfig';
 import { useDispatch } from 'react-redux';
 import { setCalories } from '../../store/slices/userSlice';
 import { doc, updateDoc } from '@firebase/firestore';
+import { TextInput } from 'react-native-gesture-handler';
 
 type NavigationProp = DrawerNavigationProp<HomeStackParamList, 'Nutrition'>;
 
@@ -36,6 +37,7 @@ export default function Nutrition() {
   const [totalProtein, setTotalProtein] = useState(0);
 	const [selectedMeal, setSelectedMeal] = useState<string | null>('');
 	const [selectedFoods, setSelectedFoods] = useState<FoodItem[]>([]);
+  const [searchQuery, setSearchQuery] = useState<string>('');
 	const [nutritionData, setNutritionData] = useState([
     { name: 'Fat', percentage: 0, color: '#66D3C8' },
     { name: 'Carb', percentage: 0, color: '#9D6DEB' },
@@ -283,6 +285,10 @@ export default function Nutrition() {
     }
   }
 
+  const filteredNutritionInfo = nutritionInfo.filter((item) =>
+    item.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );  
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -427,53 +433,75 @@ export default function Nutrition() {
 					onRequestClose={() => setModalVisible(false)}
 					style={{height: height, width: width}}
 				>
-					<View style={styles.modalOverlay}>
-						<View style={styles.modalContainer}>
-							<View style={styles.modalHeader}>
-								<Image source={require('../../assets/plateIcon.png')} style={{height: RFValue(60), width: RFValue(55)}} />
-								<Text style={styles.modalTitle}>Choose Food</Text>
-								<Text style={styles.modalSubtitle}>Select your meal and your foods that you consume today</Text>
-							</View>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : undefined}
+            style={{ flex: 1 }}
+            keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+          >
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalContainer}>
+                <View style={styles.modalHeader}>
+                  <Image source={require('../../assets/plateIcon.png')} style={{height: RFValue(60), width: RFValue(55)}} />
+                  <Text style={styles.modalTitle}>Choose Food</Text>
+                  <Text style={styles.modalSubtitle}>Select your meal and your foods that you consume today</Text>
+                </View>
 
-							<View style={styles.mealTypeCheckboxes}>
-								{mealTypes.map((meal) => (
-									<TouchableOpacity
-										key={meal}
-										style={styles.mealCheckboxContainerVertical} 
-										onPress={() => handleMealTypeSelect(meal)}
-									>
-										<View style={styles.checkbox}>
-											{selectedMeal === meal && (
-												<Image
-													source={require('../../assets/check.png')}
-													style={styles.checkboxIcon} 
-													resizeMode="contain"
-												/>
-											)}
-										</View>
-										<Text style={styles.mealCheckboxText}>{meal}</Text>
-									</TouchableOpacity>
-								))}
-							</View>
+                <View style={styles.mealTypeCheckboxes}>
+                  {mealTypes.map((meal) => (
+                    <TouchableOpacity
+                      key={meal}
+                      style={styles.mealCheckboxContainerVertical} 
+                      onPress={() => handleMealTypeSelect(meal)}
+                    >
+                      <View style={styles.checkbox}>
+                        {selectedMeal === meal && (
+                          <Image
+                            source={require('../../assets/check.png')}
+                            style={styles.checkboxIcon} 
+                            resizeMode="contain"
+                          />
+                        )}
+                      </View>
+                      <Text style={styles.mealCheckboxText}>{meal}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
 
-							<FlatList 
-								data={nutritionInfo}
-								renderItem={renderFoodItem}
-								keyExtractor={(item) => item.name}
-								style={styles.foodList}
-							/>
+                <TextInput 
+                  placeholder='Search' 
+                  style={styles.inputContainer} 
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                />
 
-							{selectedFoods.length > 0 && (
-							<TouchableOpacity style={styles.addButton} onPress={handleAddButtonPress}>
-                <Text style={styles.addButtonText}>Add</Text>
-              </TouchableOpacity>
-							)}
+                {searchQuery ? (
+                  <FlatList 
+                  data={filteredNutritionInfo}
+                  renderItem={renderFoodItem}
+                  keyExtractor={(item) => item.name}
+                  style={styles.foodList}
+                />
+                ) : (
+                  <FlatList 
+                  data={nutritionInfo}
+                  renderItem={renderFoodItem}
+                  keyExtractor={(item) => item.name}
+                  style={styles.foodList}
+                />
+                )}
 
-							<TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
-								<Text style={{fontSize: RFValue(25), marginTop: -5}}>✕</Text>
-							</TouchableOpacity>
-						</View>
-					</View>
+                {selectedFoods.length > 0 && selectedMeal && (
+                <TouchableOpacity style={styles.addButton} onPress={handleAddButtonPress}>
+                  <Text style={styles.addButtonText}>Add</Text>
+                </TouchableOpacity>
+                )}
+
+                <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
+                  <Text style={{fontSize: RFValue(25), marginTop: -5}}>✕</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </KeyboardAvoidingView>
 				</Modal>
       </ScrollView>
     </SafeAreaView>
@@ -597,6 +625,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 12,
     right: 15,
+    paddingLeft: 200
   },
   deleteCardText: {
     fontSize: RFValue(16),
@@ -615,7 +644,7 @@ const styles = StyleSheet.create({
     borderRadius: RFValue(15),
     padding: RFPercentage(2),
     width: '95%',
-    maxHeight: '89%', 
+    height: '89%', 
   },
   modalHeader: {
     alignItems: 'center',
@@ -703,8 +732,8 @@ const styles = StyleSheet.create({
     color: '#444',
   },
   selectionIndicator: {
-    width: RFValue(20),
-    height: RFValue(20),
+    width: RFValue(18),
+    height: RFValue(19),
     borderRadius: RFValue(10),
     borderWidth: 0.5,
     borderColor: '#ccc',
@@ -732,5 +761,15 @@ const styles = StyleSheet.create({
     top: RFPercentage(1),
     right: RFPercentage(1),
     padding: RFPercentage(1),
+  },
+  inputContainer: {
+    backgroundColor: '#F5F5F5', 
+    borderRadius: width * 0.03,
+    paddingHorizontal: width * 0.04,
+    height: height * 0.05,
+    marginBottom: width * 0.005,
+    justifyContent: 'center', 
+    borderWidth: 1,
+    borderColor: '#E0E0E0', 
   },
 });

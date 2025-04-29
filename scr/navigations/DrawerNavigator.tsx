@@ -7,7 +7,7 @@ import Notifications from '../screens/home/Notifications';
 import SettingStack from './SettingStack';
 import GetPremium from '../screens/home/GetPremium';
 import { auth } from '../../firebaseConfig';
-import { View, Text, Image, StyleSheet, Animated } from 'react-native';
+import { View, Text, Image, StyleSheet, Animated, TouchableOpacity } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { clearUser } from '../store/slices/userSlice';
 import { persistor, RootState } from '../store/store';
@@ -48,10 +48,18 @@ function CustomDrawerContent(props: any) {
 
   return (
     <DrawerContentScrollView {...props} contentContainerStyle={styles.contentContainer}>
-      <View style={styles.profileContainer}>
+      <TouchableOpacity 
+        style={styles.profileContainer} 
+        onPress={() => {
+          props.navigation.navigate('SettingStack', {
+            screen: 'Profile', 
+          });
+        }}
+      >
         <Image source={ profileImageSource } style={profilePictureStyle}/>
         <Text style={styles.userName}>{userData?.name}</Text>
-      </View>
+      </TouchableOpacity>
+
       <View style={styles.menuContainer}>
         <DrawerItem
           label="Home"
@@ -60,6 +68,7 @@ function CustomDrawerContent(props: any) {
           labelStyle={[styles.label, currentRouteName === 'HomeStack' && styles.activeLabel]}
           style={currentRouteName === 'HomeStack' && styles.activeItem}
         />
+        
         <DrawerItem
           label="Community"
           onPress={() => props.navigation.navigate('Community')}
@@ -67,6 +76,7 @@ function CustomDrawerContent(props: any) {
           labelStyle={[styles.label, currentRouteName === 'Community' && styles.activeLabel]}
           style={currentRouteName === 'Community' && styles.activeItem}
         />
+
         <DrawerItem
           label="Notifications"
           onPress={() => props.navigation.navigate('Notifications')}
@@ -74,6 +84,7 @@ function CustomDrawerContent(props: any) {
           labelStyle={[styles.label, currentRouteName === 'Notifications' && styles.activeLabel]}
           style={currentRouteName === 'Notifications' && styles.activeItem}
         />
+
         <DrawerItem
           label="Settings"
           onPress={() => props.navigation.navigate('SettingStack')}
@@ -81,6 +92,7 @@ function CustomDrawerContent(props: any) {
           labelStyle={[styles.label, currentRouteName === 'SettingStack' && styles.activeLabel]}
           style={currentRouteName === 'SettingStack' && styles.activeItem}
         />
+
         <DrawerItem
           label="Get Premium"
           onPress={() => props.navigation.navigate('GetPremium')}
@@ -88,6 +100,7 @@ function CustomDrawerContent(props: any) {
           labelStyle={[styles.label, currentRouteName === 'GetPremium' && styles.activeLabel]}
           style={currentRouteName === 'GetPremium' && styles.activeItem}
         />
+
         <DrawerItem
           label="Logout"
           onPress={() => handleSignOut()}

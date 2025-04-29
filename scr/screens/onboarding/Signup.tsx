@@ -72,15 +72,17 @@ export default function Signup() {
               />
             </View>
 
-            {error ? <Text style={{color: 'red', width: '100%', textAlign: 'center'}}>Note: {error}</Text>: <></>}
+            {error ? <Text style={{color: 'red', width: '100%', textAlign: 'center'}}>{error}</Text>: <></>}
             </View>
 
             <TouchableOpacity style={styles.button} onPress={() => handleContinue()}>
               <Text style={styles.buttonText}>Continue</Text>
             </TouchableOpacity>
+            
           </View>
         </View>
       </KeyboardAvoidingView>
+      <View style={{marginBottom: height * 0.18, }}/>
     </SafeAreaView>
   );
 }
@@ -114,7 +116,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: width * 0.05, 
-    marginTop: -height * 0.18, 
+    
   },
   appLogo: {
     width: width * 0.13, 

@@ -4,4 +4,5 @@ export type DrawerParamList = {
     Notifications: undefined;
     SettingStack: undefined;
     GetPremium: undefined;
+    Profile: undefined;
 };

@@ -78,7 +78,7 @@ export default function SetGenderScreen() {
             To give you a better experience we need to know your gender
           </Text>
 
-          {error ? <Text style={{color: 'red', width: '100%', textAlign: 'center', marginTop: -30, marginBottom: 12}}>Note: {error}</Text>: <></>}
+          {error ? <Text style={{color: 'red', width: '100%', textAlign: 'center', marginTop: -30, marginBottom: 12}}>{error}</Text>: <></>}
 
           <TouchableOpacity style={styles.button} onPress={handleContinuePress}>
             <Text style={styles.buttonText}>Continue</Text>
@@ -202,7 +202,7 @@ const styles = StyleSheet.create({
   },
   button: {
     backgroundColor: '#7A5FFF',
-    paddingVertical: height * 0.02,
+    paddingVertical: height * 0.018,
     paddingHorizontal: width * 0.1,
     borderRadius: scale(50),
     width: width * 0.75,

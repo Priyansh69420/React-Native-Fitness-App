@@ -113,10 +113,12 @@ const styles = StyleSheet.create({
   signInText: {
     fontSize: RFValue(15, height), 
     color: "#666",
+    lineHeight: RFValue(20, height),
   },
   linkText: {
-    fontSize: RFValue(14, height), 
+    fontSize: RFValue(15, height), 
     color: "#6B48FF",
     fontWeight: "bold",
+    lineHeight: RFValue(19.5, height),
   },
 });

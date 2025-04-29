@@ -65,7 +65,7 @@ export default function SetNameScreen() {
               />
             </View>
 
-            {error ? <Text style={{color: 'red', width: '85%'}}>Note: {error}</Text>: <></>}
+            {error ? <Text style={{color: 'red', width: '85%', textAlign: 'center'}}>{error}</Text>: <></>}
 
             <TouchableOpacity style={styles.button} onPress={handleContinuePress}>
               <Text style={styles.buttonText}>Continue</Text>
@@ -73,6 +73,7 @@ export default function SetNameScreen() {
           </View>
         </View>
       </KeyboardAvoidingView>
+      <View style={{marginBottom: height * 0.09,}}/>
     </SafeAreaView>
   );
 }
@@ -106,7 +107,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: width * 0.05, 
-    marginTop: -height * 0.09, 
+     
   },
   appLogo: {
     width: width * 0.13, 

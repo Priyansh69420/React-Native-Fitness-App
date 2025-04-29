@@ -54,15 +54,13 @@ const NotificationsScreen = () => {
     const body = item.body || (item.type === 'comment' ? 'New comment' : '');
 
     return (
-      <TouchableOpacity>
-        <View style={styles.notificationItem}>
-          <View style={styles.notificationTextContainer}>
-            <Text style={styles.notificationTitle}>{title} <Text style={styles.notificationBody}>{body}</Text></Text>
-          </View>
-          <Text style={styles.notificationTime}>{time}</Text>
-          {!item.timestamp && <View style={styles.unreadDot} />}
+      <View style={styles.notificationItem}>
+        <View style={styles.notificationTextContainer}>
+          <Text style={styles.notificationTitle}>{title} <Text style={styles.notificationBody}>{body}</Text></Text>
         </View>
-      </TouchableOpacity>
+        <Text style={styles.notificationTime}>{time}</Text>
+        {!item.timestamp && <View style={styles.unreadDot} />}
+      </View>
     );
   };
 
@@ -77,12 +75,18 @@ const NotificationsScreen = () => {
 
       <View style={styles.notificationContainer}>
         {isPushEnabled ? (
-          <FlatList
-          data={notifications}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContent}
-          renderItem={renderNotificationItem}
-        />
+          notifications.length > 0 ? (
+            <FlatList
+              data={notifications}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={styles.listContent}
+              renderItem={renderNotificationItem}
+            />
+          ) : (
+            <Text style={styles.noNotificationsText}>
+              No notifications available.
+            </Text>
+          )
         ) : (
           <Text style={styles.notificationDisabledText}>
             Enable Notifications to receive updates about likes, comments, and more.
@@ -178,5 +182,11 @@ const styles = StyleSheet.create({
     color: '#999',
     paddingHorizontal: width * 0.1,
     paddingTop: height * 0.25,
+  },
+  noNotificationsText: {
+    fontSize: RFPercentage(2.2 * scaleFactor),
+    color: '#999',
+    textAlign: 'center',
+    marginTop: height * 0.25,
   },
 });

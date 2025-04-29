@@ -1,4 +1,4 @@
-import { View, Text, Image, StyleSheet, SafeAreaView, TouchableOpacity, Alert, TextInput, FlatList, Dimensions, ActivityIndicator } from 'react-native';
+import { View, Text, Image, StyleSheet, SafeAreaView, TouchableOpacity, Alert, TextInput, FlatList, Dimensions, ActivityIndicator, ScrollView } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { PostScreenRouteProp } from '../../navigations/CommunityStack';
@@ -229,56 +229,59 @@ export default function Post() {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.postContainer}>
-        <View style={styles.postHeader}>
-          {profilePic ? (
-            <Image source={{ uri: profilePic }} style={styles.avatar} />
-          ) : (
-            <View style={styles.avatarPlaceholder} />
-          )}
-          <View style={styles.userInfo}>
-            <Text style={styles.userName}>{name || 'User'}</Text>
-            <Text style={styles.timestamp}>
-              {getTimeAgo(post.timestamp)}
-            </Text>
+      <ScrollView>
+        <View style={styles.postContainer}>
+          <View style={styles.postHeader}>
+            {profilePic ? (
+              <Image source={{ uri: profilePic }} style={styles.avatar} />
+            ) : (
+              <View style={styles.avatarPlaceholder} />
+            )}
+            <View style={styles.userInfo}>
+              <Text style={styles.userName}>{name || 'User'}</Text>
+              <Text style={styles.timestamp}>
+                {getTimeAgo(post.timestamp)}
+              </Text>
+            </View>
+          </View>
+
+          <Text style={styles.content}>{post.content}</Text>
+
+          <View style={{ justifyContent: 'center', alignItems: 'center' }}>
+            {post.imageUrl && (
+              <Image source={{ uri: post.imageUrl }} style={styles.postImage} resizeMode="cover" />
+            )}
+          </View>
+
+          <View style={styles.postActions}>
+            <TouchableOpacity style={styles.actionButton} onPress={handleLikePost}>
+              <Image source={isLiked ? require('../../assets/likedIcon.png') : require('../../assets/likeIcon.png')} style={[styles.likeIcon]} />
+              <Text style={styles.actionText}>{post.likes ? post.likes.length : 0}</Text>
+            </TouchableOpacity>
+            <View style={styles.actionButton}>
+              <SimpleLineIcons name="bubble" size={20} color="#d3d3d3" />
+              <Text style={styles.actionText}>{post.commentCount || 0}</Text>
+            </View>
           </View>
         </View>
 
-        <Text style={styles.content}>{post.content}</Text>
-
-        <View style={{ justifyContent: 'center', alignItems: 'center' }}>
-          {post.imageUrl && (
-            <Image source={{ uri: post.imageUrl }} style={styles.postImage} resizeMode="cover" />
-          )}
+        <View style={styles.commentsHeader}>
+          <Text style={styles.commentsHeaderText}>Comments</Text>
         </View>
-
-        <View style={styles.postActions}>
-          <TouchableOpacity style={styles.actionButton} onPress={handleLikePost}>
-            <Image source={isLiked ? require('../../assets/likedIcon.png') : require('../../assets/likeIcon.png')} style={[styles.likeIcon]} />
-            <Text style={styles.actionText}>{post.likes ? post.likes.length : 0}</Text>
-          </TouchableOpacity>
-          <View style={styles.actionButton}>
-            <SimpleLineIcons name="bubble" size={20} color="#d3d3d3" />
-            <Text style={styles.actionText}>{post.commentCount || 0}</Text>
+        {loadingComments ? (
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+            <ActivityIndicator size="small" color="#7A5FFF" />
           </View>
-        </View>
-      </View>
+        ) : (
+          <FlatList
+            data={comments}
+            keyExtractor={(comment) => comment.id}
+            renderItem={renderCommentItem}
+            style={styles.commentsList}
+          />
+        )}
 
-      <View style={styles.commentsHeader}>
-        <Text style={styles.commentsHeaderText}>Comments</Text>
-      </View>
-      {loadingComments ? (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <ActivityIndicator size="small" color="#7A5FFF" />
-        </View>
-      ) : (
-        <FlatList
-          data={comments}
-          keyExtractor={(comment) => comment.id}
-          renderItem={renderCommentItem}
-          style={styles.commentsList}
-        />
-      )}
+      </ScrollView>
 
       <View style={styles.newAddCommentContainer}>
         <TextInput

@@ -90,7 +90,7 @@ export default function Intrests() {
               </TouchableOpacity>
             ))}
 
-            {error ? <Text style={{color: 'red', width: '100%', textAlign: 'center'}}>Note: {error}</Text>: <></>}
+            {error ? <Text style={{color: 'red', width: '100%', textAlign: 'center'}}>{error}</Text>: <></>}
           </View>
 
           <TouchableOpacity style={styles.button} onPress={handleContinuePress} >
@@ -198,7 +198,7 @@ const styles = StyleSheet.create({
     paddingVertical: height * 0.018, 
     paddingHorizontal: width * 0.15,
     borderRadius: scale(50),
-    width: width * 0.8, 
+    width: width * 0.75, 
     alignItems: 'center',
   },
   buttonText: {

@@ -121,6 +121,7 @@ export default function SetProfile() {
     if(customImg) {
       setSelectedAvatar(null);
       setModalVisible(false);
+      navigation.navigate('Goals');
     }
     else alert('No Image, Please select an image before confirming.');
   }
@@ -166,7 +167,8 @@ export default function SetProfile() {
                   style={[
                     styles.avatarContainer,
                     selectedAvatar === item.id && styles.selectedAvatarContainer,
-                  ]}
+                    !selectedAvatar && error && styles.errorAvatar,  
+                  ]}                
                 >
                   <Image
                     source={item.source}
@@ -192,7 +194,7 @@ export default function SetProfile() {
             <Text style={styles.addPhotoText}>Add Custom Photo</Text>
           </TouchableOpacity>
 
-          {error ? <Text style={{color: 'red', width: '85%', textAlign: 'center', maxWidth: '70%'}}>Note: {error}</Text>: <></>}
+          {error ? <Text style={{color: 'red', width: '85%', textAlign: 'center', maxWidth: '70%'}}>{error}</Text>: <></>}
           </View>
 
           <TouchableOpacity style={styles.button} onPress={handleContinuePress}>
@@ -315,6 +317,10 @@ const styles = StyleSheet.create({
   selectedAvatar: {
     borderWidth: 2,
     borderColor: '#FFF',
+  },
+  errorAvatar: {
+    borderWidth: 3,
+    borderColor: 'red',
   },
   title: {
     fontSize: RFValue(28, height), 

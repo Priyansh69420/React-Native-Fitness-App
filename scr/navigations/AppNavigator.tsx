@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import OnboardingStack from "./OnboardingStack";
 import DrawerNavigator from "./DrawerNavigator";
@@ -6,7 +6,7 @@ import { onAuthStateChanged, User } from "firebase/auth";
 import { auth, firestore } from "../../firebaseConfig";
 import { doc, getDoc, collection, collectionGroup, query, where, orderBy, limit, onSnapshot, Timestamp } from "firebase/firestore";
 import notifee, { AndroidImportance, EventType, RepeatFrequency, TimestampTrigger, TriggerType } from "@notifee/react-native";
-import { ActivityIndicator, View, StyleSheet } from "react-native";
+import { ActivityIndicator, View, StyleSheet, AppState, AppStateStatus } from "react-native";
 import ReactNativeBiometrics from "react-native-biometrics";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { UserData } from "../store/slices/userSlice";
@@ -18,32 +18,54 @@ const isWithinLast24Hours = (createdAt: any) => {
   return Timestamp.fromDate(yesterday);
 };
 
+
+const rnBiometrics = new ReactNativeBiometrics();
+
+
 const AppNavigator = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [isPushEnabled, setPushEnabled] = useState(true);
+  const [isBiometricChecked, setBiometricChecked] = useState(false); 
 
   const { addNotification } = useNotifications();
+  const appState = useRef<AppStateStatus>(AppState.currentState);
+
+  const performBiometricCheck = async (uid: string) => {
+    const userDoc = await getDoc(doc(firestore, "users", uid));
+    if (!userDoc.exists() || !userDoc.data()?.faceId) return;
+
+    try {
+      const { success } = await rnBiometrics.simplePrompt({
+        promptMessage: "Authenticate to continue",
+      });
+      if (!success) {
+        await auth.signOut();
+        setUser(null);
+      }
+    } catch (e) {
+      console.error("Biometric prompt error", e);
+      await auth.signOut();
+      setUser(null);
+    }
+  };
 
   useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, async currentUser => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setLoading(true);
       if (currentUser) {
-        const userDoc = await getDoc(doc(firestore, "users", currentUser.uid));
-        const justLogged = (await AsyncStorage.getItem("justLoggedIn")) === "true";
-        if (userDoc.exists() && userDoc.data()?.faceId && !justLogged) {
-          const success = await new ReactNativeBiometrics().simplePrompt({ promptMessage: "Authenticate to continue" });
-          setUser(success ? currentUser : null);
-        } else {
-          setUser(currentUser);
+        setUser(currentUser);
+        if (!isBiometricChecked) {
+          await performBiometricCheck(currentUser.uid);
+          setBiometricChecked(true); 
         }
       } else {
         setUser(null);
       }
       setLoading(false);
     });
-    return () => unsubscribeAuth();
-  }, []);
+    return unsubscribe;
+  }, [isBiometricChecked]); 
 
   useEffect(() => {
     if(!isPushEnabled) return;

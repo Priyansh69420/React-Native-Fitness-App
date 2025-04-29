@@ -130,7 +130,7 @@ export default function LoginScreen() {
             />
           </View>
 
-          {error ? <Text style={{color: 'red', width: '85%', textAlign: 'center'}}>Note: {error}</Text>: <></>}
+          {error ? <Text style={{color: 'red', width: '85%', textAlign: 'center'}}>{error}</Text>: <></>}
 
           <Text style={styles.signInWithText}>Sign in with</Text>
 
@@ -146,6 +146,7 @@ export default function LoginScreen() {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
+      <View style={{marginBottom: height * 0.12, }}/>
     </SafeAreaView>
   );
 }
@@ -164,7 +165,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: width * 0.05, 
     paddingTop: height * 0.025,
-    marginTop: -height * 0.12, 
+    
   },
   backButton: {
     position: 'absolute',

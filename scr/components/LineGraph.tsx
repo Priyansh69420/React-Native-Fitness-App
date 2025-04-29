@@ -30,7 +30,6 @@ const LineGraphSVG = () => {
 
   const convertStepstoCalories = () => {
     return weeklySteps.map(item => Math.round(item.count * 0.01));
-    
   };
 
   const data = convertStepstoCalories();
@@ -65,16 +64,18 @@ const LineGraphSVG = () => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.yAxisContainer}>
-        {customYLabels.map((yValue, index) => {
-          const yPos = customYPositions[index];
-          return (
-            <Text key={index} style={[styles.yAxisLabel, { top: yPos }]}>
-              {yValue}
-            </Text>
-          );
-        })}
-      </View>
+      {hasValidData && (
+        <View style={styles.yAxisContainer}>
+          {customYLabels.map((yValue, index) => {
+            const yPos = customYPositions[index];
+            return (
+              <Text key={index} style={[styles.yAxisLabel, { top: yPos }]}> 
+                {yValue}
+              </Text>
+            );
+          })}
+        </View>
+      )}
       <Svg width={graphWidth} height={graphHeight} style={styles.graphSvg}>
         <Defs>
           <LinearGradient id="grad" x1="0%" y1="0%" x2="0%" y2="100%">
@@ -83,11 +84,16 @@ const LineGraphSVG = () => {
           </LinearGradient>
         </Defs>
         {hasValidData && (
-          <Path d={pathDataWithFill} fill="url(#grad)" stroke="orange" strokeWidth="2" />
+          <Path
+            d={pathDataWithFill}
+            fill="url(#grad)"
+            stroke="orange"
+            strokeWidth="2"
+          />
         )}
       </Svg>
       {!hasValidData && (
-        <Text style={styles.noDataText}>Not enough data to show graph.</Text>
+        <Text style={styles.noDataText}>Not enough data to show stats.</Text>
       )}
     </View>
   );
@@ -115,7 +121,7 @@ const styles = StyleSheet.create({
   noDataText: {
     position: 'absolute',
     top: '50%',
-    left: '30%',
+    left: '22%',
     fontSize: 14,
     color: 'gray',
   },

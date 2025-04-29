@@ -195,7 +195,7 @@ export default function DailySteps() {
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.stepsContainer}>
-          <Text style={styles.title}>You walked <Text style={styles.highlight}>{loading ? '...' : error ? 'Error' : steps}</Text> steps today</Text>
+          <Text style={styles.title}>You walked <Text style={styles.highlight}>{loading ? '...' : steps }</Text> steps today</Text>
         </View>
 
         <View style={styles.progressContainer}>

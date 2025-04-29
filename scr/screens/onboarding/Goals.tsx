@@ -81,7 +81,7 @@ export default function SetGoalsScreen() {
               </TouchableOpacity>
             ))}
 
-            {error ? <Text style={{color: 'red', width: '100%', textAlign: 'center'}}>Note: {error}</Text>: <></>}
+            {error ? <Text style={{color: 'red', width: '100%', textAlign: 'center'}}>{error}</Text>: <></>}
           </View>
 
           <TouchableOpacity style={styles.button} onPress={handleContinuePress}>
@@ -195,10 +195,10 @@ const styles = StyleSheet.create({
   },
   button: {
     backgroundColor: '#7A5FFF',
-    paddingVertical: height * 0.02,
+    paddingVertical: height * 0.018,
     paddingHorizontal: width * 0.1,
     borderRadius: 50 * widthRatio,
-    width: '80%',
+    width: width * 0.75,
     alignItems: 'center',
   },
   buttonText: {

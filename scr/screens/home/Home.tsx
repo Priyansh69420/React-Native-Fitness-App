@@ -125,18 +125,18 @@ export default function Home() {
             )}
             
             {profileImageSource ? (
-              <Image 
+              <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
+                <Image 
                 source={profileImageSource} 
                 style={profilePictureStyle} 
                 onLoad={() => setImageLoading(false)} 
                 onError={() => setImageLoading(false)} 
               />
+              </TouchableOpacity>
             ) : (
               <View style={styles.placeholderProfile} />
             )}
           </View>
-          
-          <View style={styles.onlineDot} /> 
         </View>
       </View>
 
@@ -309,17 +309,6 @@ const styles = StyleSheet.create({
     height: RFValue(65, height),
     borderRadius: RFValue(33, height),
     backgroundColor: '#D6D6D6',
-  },
-  onlineDot: {
-    width: RFValue(14, height),
-    height: RFValue(14, height),
-    borderRadius: RFValue(8, height),
-    backgroundColor: '#32CD32',
-    position: 'absolute',
-    bottom: -1,
-    left: -5,
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
   },
   imageWrapper: {
     justifyContent: 'center',
