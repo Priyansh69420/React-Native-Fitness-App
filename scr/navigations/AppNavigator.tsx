@@ -18,9 +18,7 @@ const isWithinLast24Hours = (createdAt: any) => {
   return Timestamp.fromDate(yesterday);
 };
 
-
 const rnBiometrics = new ReactNativeBiometrics();
-
 
 const AppNavigator = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -29,7 +27,6 @@ const AppNavigator = () => {
   const [isBiometricChecked, setBiometricChecked] = useState(false); 
 
   const { addNotification } = useNotifications();
-  const appState = useRef<AppStateStatus>(AppState.currentState);
 
   const performBiometricCheck = async (uid: string) => {
     const userDoc = await getDoc(doc(firestore, "users", uid));
@@ -122,7 +119,6 @@ const AppNavigator = () => {
     loadPushSetting();
   }, [])
   
-
   const scheduleDailyWaterReminders = async () => {
     if(!isPushEnabled) return;
 
@@ -153,6 +149,16 @@ const AppNavigator = () => {
           channelId: 'reminder',
         }
       }, trigger);
+
+      addNotification({
+        id: `${Date.now()}`,
+        title: 'Stay Hydrated 💧',
+        body,
+        type: 'reminder', 
+        timestamp: Date.now(),
+        postId: ''
+      });
+  
     }
 
     await scheduleAtTime(12, 0, 'water-1', 'Don’t forget to stay hydrated!')

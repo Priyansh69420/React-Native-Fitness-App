@@ -5412,6 +5412,21 @@ __metadata:
   languageName: node
   linkType: hard
 
+"expo-av@npm:~15.0.2":
+  version: 15.0.2
+  resolution: "expo-av@npm:15.0.2"
+  peerDependencies:
+    expo: "*"
+    react: "*"
+    react-native: "*"
+    react-native-web: "*"
+  peerDependenciesMeta:
+    react-native-web:
+      optional: true
+  checksum: f4ffdfe2bd7b07c9dc08d8c30289968d2e15e4cb70cfc4a1c4659a86ceed86553d5aceac04809f33bdcc7dd93883b59c204e71bf1d4a3f21bfea02a9cbd3a90b
+  languageName: node
+  linkType: hard
+
 "expo-constants@npm:~17.0.5, expo-constants@npm:~17.0.8":
   version: 17.0.8
   resolution: "expo-constants@npm:17.0.8"
@@ -5928,6 +5943,7 @@ __metadata:
     "@types/react-native": ^0.73.0
     expo: ^52.0.44
     expo-application: ~6.0.2
+    expo-av: ~15.0.2
     expo-constants: ~17.0.8
     expo-crypto: ~14.0.2
     expo-dev-client: ~5.0.14
@@ -5947,8 +5963,10 @@ __metadata:
     react-native-dev-menu: ^4.1.1
     react-native-fs: ^2.20.0
     react-native-gesture-handler: ~2.20.2
+    react-native-gifted-charts: ^1.4.60
     react-native-google-fit: ^0.21.0
     react-native-masked-view: ^0.2.0
+    react-native-material-menu: ^2.0.0
     react-native-permissions: ^5.3.0
     react-native-reanimated: ~3.16.1
     react-native-reanimated-carousel: ^4.0.2
@@ -6184,6 +6202,16 @@ __metadata:
   version: 1.0.0
   resolution: "getenv@npm:1.0.0"
   checksum: 19ae5cad603a1cf1bcb8fa3bed48e00d062eb0572a4404c02334b67f3b3499f238383082b064bb42515e9e25c2b08aef1a3e3d2b6852347721aa8b174825bd56
+  languageName: node
+  linkType: hard
+
+"gifted-charts-core@npm:0.1.62":
+  version: 0.1.62
+  resolution: "gifted-charts-core@npm:0.1.62"
+  peerDependencies:
+    react: "*"
+    react-native: "*"
+  checksum: dfc9056a74c3900fa9ed08ada2847d6f06a3c329352880c048fcdb6f3dda28c6bdd78d42f568d7742ce00f0f8a7c1cb2ebdcb089e628edf7edf0967b805fd916
   languageName: node
   linkType: hard
 
@@ -8718,6 +8746,26 @@ __metadata:
   languageName: node
   linkType: hard
 
+"react-native-gifted-charts@npm:^1.4.60":
+  version: 1.4.60
+  resolution: "react-native-gifted-charts@npm:1.4.60"
+  dependencies:
+    gifted-charts-core: 0.1.62
+  peerDependencies:
+    expo-linear-gradient: "*"
+    react: "*"
+    react-native: "*"
+    react-native-linear-gradient: "*"
+    react-native-svg: "*"
+  peerDependenciesMeta:
+    expo-linear-gradient:
+      optional: true
+    react-native-linear-gradient:
+      optional: true
+  checksum: 3e5d2f965c7943dad2bc8f3545e31695c269006dcc70d6dcb9f5f32ed47cf7cb22a480992712af81860831d61458259add5f7f9677a7d4583ad1f284ec90c960
+  languageName: node
+  linkType: hard
+
 "react-native-google-fit@npm:^0.21.0":
   version: 0.21.0
   resolution: "react-native-google-fit@npm:0.21.0"
@@ -8744,6 +8792,16 @@ __metadata:
   peerDependencies:
     react-native: ^0.10.1
   checksum: 536a28aa9b72043f2a7b1855c818e34fc48ba9981d60d8c3f187a29b0498d2e95c38090c68cc4053919630d9974901ccafde2d98d47ce757607a727c9431bde3
+  languageName: node
+  linkType: hard
+
+"react-native-material-menu@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "react-native-material-menu@npm:2.0.0"
+  peerDependencies:
+    react: "*"
+    react-native: "*"
+  checksum: 6aaf1f53f41c03803b37c84bde5d4b4994f76092e992a91523ab09879e042d0df931c0ba8d5f7ef24074ca5cb88fdd7defbfabb68aef209e1a0ad8202562aab1
   languageName: node
   linkType: hard
 

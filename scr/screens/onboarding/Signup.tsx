@@ -19,7 +19,7 @@ export default function Signup() {
   const {updateOnboardingData} = useOnboarding();
 
   async function handleContinue() {
-    if(!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if(!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && email.trim()) {
       setError('Please enter a valid email address');
       return;
     }

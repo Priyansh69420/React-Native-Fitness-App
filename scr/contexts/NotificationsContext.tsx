@@ -5,7 +5,7 @@ type NotificationItem = {
   title?: string;
   body?: string;
   postId: string;
-  type: 'like' | 'comment' | 'new_post';
+  type: 'like' | 'comment' | 'new_post' | 'reminder';
   timestamp?: number;
 };
 

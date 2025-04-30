@@ -14,7 +14,8 @@ export default function SetNameScreen() {
   const navigation = useNavigation<NavigationProp>();
   const [firstName, setFirstName] = useState<string>('');
   const [lastName, setLastName] = useState<string>('');
-  const [error, setError] = useState<string>('');
+  const [error1, setError1] = useState<string>('');
+  const [error2, setError2] = useState<string>('');
   const {updateOnboardingData} = useOnboarding();
 
   const handleContinuePress = () => {
@@ -23,7 +24,12 @@ export default function SetNameScreen() {
       updateOnboardingData({lastName});
       navigation.navigate('FaceId'); 
     } else {
-      setError('Please enter both first and last name');
+      if(firstName.trim()) setError2('Please enter your last name.');
+      if(lastName.trim()) setError1('Please enter your first name.');
+      if (!firstName.trim() && !lastName.trim()) {
+        setError1('Please enter your first name.');
+        setError2('Please enter your last name.');
+      }
     }
   };
 
@@ -55,6 +61,8 @@ export default function SetNameScreen() {
               />
             </View>
 
+            {error1 ? <Text style={{color: 'red', width: '85%', textAlign: 'center'}}>{error1}</Text>: <></>}
+
             <View style={styles.inputContainer}>
               <TextInput
                 style={styles.input}
@@ -65,7 +73,7 @@ export default function SetNameScreen() {
               />
             </View>
 
-            {error ? <Text style={{color: 'red', width: '85%', textAlign: 'center'}}>{error}</Text>: <></>}
+            {error2 ? <Text style={{color: 'red', width: '85%', textAlign: 'center'}}>{error2}</Text>: <></>}
 
             <TouchableOpacity style={styles.button} onPress={handleContinuePress}>
               <Text style={styles.buttonText}>Continue</Text>

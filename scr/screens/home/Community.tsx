@@ -13,8 +13,9 @@ import {
   Dimensions,
   ActivityIndicator,
   Modal,
+  Animated,
 } from 'react-native';
-import { collection, query, orderBy, onSnapshot, doc, updateDoc, arrayUnion, arrayRemove, addDoc, serverTimestamp, getDoc, where, limit, getDocs } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, doc, updateDoc, arrayUnion, arrayRemove, addDoc, serverTimestamp, getDoc, where, limit, getDocs, deleteDoc } from 'firebase/firestore';
 import { auth, firestore } from '../../../firebaseConfig';
 import { useNavigation } from '@react-navigation/native';
 import { User } from '@firebase/auth';
@@ -25,6 +26,9 @@ import { CommunityStackParamList } from '../../navigations/CommunityStackParamLi
 import * as ImagePicker from 'expo-image-picker';
 import RNFS from 'react-native-fs';
 import { supabase } from '../../../supabaseConfig'; 
+import { TapGestureHandler } from 'react-native-gesture-handler';
+import { Menu, MenuItem } from 'react-native-material-menu';
+import { ResizeMode, Video } from 'expo-av';
 
 type NavigationProp = DrawerNavigationProp<CommunityStackParamList, 'Community'>;
 
@@ -33,6 +37,7 @@ export interface Post {
   userId: string;
   content: string;
   imageUrl?: string;
+  videoUrl?: string;
   timestamp?: any;
   likes?: string[];
   commentCount?: number;
@@ -74,16 +79,24 @@ const getTimeAgo = (timestamp: any) => {
 const Community = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
+  const [postLoading, setPostLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [suggestedUsers, setSuggestedUsers] = useState<UserData[]>([]);
   const [userDataMap, setUserDataMap] = useState<Record<string, UserData>>({});
   const [isAddPostModalVisible, setIsAddPostModalVisible] = useState(false);
   const [newPostContent, setNewPostContent] = useState('');
   const [newPostImage, setNewPostImage] = useState<string | null>(null); 
+  const [newPostVideo, setNewPostVideo] = useState<string | null>(null); 
   const [uploadingImage, setUploadingImage] = useState(false); 
   const [currentStoryUrl, setCurrentStoryUrl] = useState<string>('');
   const [isStoryModalVisible, setIsStoryModalVisible] = useState<boolean>(false);
-  const navigation = useNavigation<NavigationProp>();
+  const [showHeart, setShowHeart] = useState<boolean>(false);
+  const [visiblePostId, setVisiblePostId] = useState<string | null>(null);
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [editingPost, setEditingPost] = useState<Post | null>(null);
+  const [editedContent, setEditedContent] = useState<string>('');
+
+  const navigation = useNavigation<NavigationProp>();setNewPostVideo
 
   useEffect(() => {
     const postsCollection = collection(firestore, 'posts');
@@ -135,7 +148,7 @@ const Community = () => {
           const user = doc.data() as UserData;
   
           if (user?.stories) {
-            const filteredStories = Object.values(user.stories).filter((story: any) => { // Iterate over object values
+            const filteredStories = Object.values(user.stories).filter((story: any) => { 
               if (!story) {
                 console.warn('Story object is null or undefined');
                 return false;
@@ -171,26 +184,32 @@ const Community = () => {
     };
   }, []);
 
-  const handlePickImage = async () => {
+  const handlePickMedia = async () => {
     try {
       const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!permissionResult.granted) {
-        Alert.alert('Permission Denied', 'Please grant permission to access your photo library.');
+        Alert.alert('Permission Denied', 'Please grant permission to access your media library.');
         return;
       }
-
+  
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
+        mediaTypes: ImagePicker.MediaTypeOptions.All,  
         allowsEditing: true,
-        aspect: [4, 3], 
+        aspect: [4, 3],
         quality: 0.8,
       });
-
+  
       if (!result.canceled && result.assets.length > 0) {
-        setNewPostImage(result.assets[0].uri);
+        const selected = result.assets[0];
+        
+        if (selected.type === 'video') {
+          setNewPostVideo(selected.uri);
+        } else {
+          setNewPostImage(selected.uri);
+        }
       }
     } catch (error: any) {
-      console.error('Error picking image:', error.message);
+      console.error('Error picking media:', error.message);
     }
   };
 
@@ -241,6 +260,46 @@ const Community = () => {
     }
   };
 
+  const uploadVideoForPosts = async (uri: string): Promise<string | null> => {
+    setUploadingImage(true);
+    try {
+      const fileName = uri.split('/').pop() || `post_${Date.now()}.mp4`;
+      const fileType = uri.split('.').pop() || 'mp4';
+      const filePath = `userposts/videos/${fileName}`;
+  
+      const base64Data = await RNFS.readFile(uri, 'base64');
+      if (!base64Data) throw new Error('Failed to convert video to Base64');
+  
+      const binaryString = atob(base64Data);
+      const fileArray = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        fileArray[i] = binaryString.charCodeAt(i);
+      }
+  
+      const { error: uploadError } = await supabase
+        .storage
+        .from('userposts')
+        .upload(filePath, fileArray, {
+          contentType: `video/${fileType}`,
+          upsert: false,
+        });
+      if (uploadError) throw new Error(uploadError.message);
+  
+      const { data: urlData } = supabase
+        .storage
+        .from('userposts')
+        .getPublicUrl(filePath);
+      if (!urlData?.publicUrl) throw new Error('Failed to retrieve public URL');
+  
+      return urlData.publicUrl;
+    } catch (err: any) {
+      console.error('Error uploading video to Supabase:', err.message);
+      return null;
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   const uploadImageForStory = async (uri: string): Promise<string | null> => {
     try {
       const fileName = uri.split('/').pop() || `post_${Date.now()}.jpg`;
@@ -285,45 +344,53 @@ const Community = () => {
     } 
   };
 
-  const handleCreateNewPostWithImage = async () => {
-    if (!newPostContent.trim() && !newPostImage) {
+  const handleCreateNewPost = async () => {
+    setPostLoading(true);
+  
+    if (!newPostContent.trim() && !newPostImage && !newPostVideo) {
+      setPostLoading(false);
       return;
     }
-
+  
     try {
       const user = auth.currentUser;
       if (!user) {
-        Alert.alert(
-          'Authentication Required',
-          'You need to be logged in to create a post.'
-        );
+        Alert.alert('Authentication Required', 'You need to be logged in to create a post.');
         return;
       }
-
+  
       let imageUrl: string | null = null;
+      let videoUrl: string | null = null;
+  
       if (newPostImage) {
         imageUrl = await uploadImageForPosts(newPostImage);
-        if (!imageUrl) {
-          return; 
-        }
+        if (!imageUrl) return;
       }
-
+  
+      if (newPostVideo) {
+        videoUrl = await uploadVideoForPosts(newPostVideo);
+        if (!videoUrl) return;
+      }
+  
       const postsCollectionRef = collection(firestore, 'posts');
       await addDoc(postsCollectionRef, {
         userId: user.uid,
         content: newPostContent,
-        imageUrl: imageUrl,
+        imageUrl,  
+        videoUrl,   
         timestamp: serverTimestamp(),
         likes: [],
         commentCount: 0,
       });
-
+  
       setNewPostContent('');
       setNewPostImage(null);
+      setNewPostVideo(null);
       setIsAddPostModalVisible(false);
-
     } catch (error: any) {
       console.error('Error creating post:', error.message);
+    } finally {
+      setPostLoading(false);
     }
   };
 
@@ -470,51 +537,159 @@ const Community = () => {
     }
   };
 
+  const handleDeletePost = async (postId: string) => {
+    try {
+      await deleteDoc(doc(firestore, 'posts', postId));
+    } catch (error: any) {
+      console.error('Error deleting post:', error);
+    }
+  }
+
   const renderPostItem = ({ item }: { item: Post }) => {
     const userData = userDataMap[item.userId] || { name: 'User', profilePicture: undefined };
     const user = auth.currentUser;
     const isLiked = user ? item.likes?.includes(user.uid) : false;
     const name = userData?.name;
     const profilePic = userData?.profilePicture;
-
+  
     return (
       <View style={styles.postContainer}>
         <View style={styles.postHeader}>
-          {userData.profilePicture ? (
-            <TouchableOpacity onPress={() => navigation.navigate('UserInfo', {user: userData})}>
-              <Image source={{ uri: userData.profilePicture }} style={styles.avatar} />
-            </TouchableOpacity>
-          ) : (
-            <View style={styles.avatarPlaceholder} />
-          )}
-          <View style={styles.userInfo}>
-            <Text style={styles.userName}>{userData.name}</Text>
-            <Text style={styles.timestamp}>
-              {getTimeAgo(item.timestamp)}
-            </Text>
+          <View style={styles.leftSection}>
+            {userData.profilePicture ? (
+              <TouchableOpacity onPress={() => navigation.navigate('UserInfo', { user: userData })}>
+                <Image source={{ uri: userData.profilePicture }} style={styles.avatar} />
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.avatarPlaceholder} />
+            )}
+            <View style={styles.userInfo}>
+              <Text style={styles.userName}>{userData.name}</Text>
+              <Text style={styles.timestamp}>{getTimeAgo(item.timestamp)}</Text>
+            </View>
+          </View>
+  
+          <View>
+            {user?.uid === item.userId && (
+              <Menu
+                visible={visiblePostId === item.id}
+                onRequestClose={() => setVisiblePostId(null)}
+                anchor={
+                  <TouchableOpacity onPress={() => setVisiblePostId(item.id)}>
+                    <SimpleLineIcons name="options-vertical" size={18} color="#555" />
+                  </TouchableOpacity>
+                }
+              >
+                <MenuItem
+                  onPress={() => {
+                    setVisiblePostId(null);
+                    setEditingPost(item);
+                    setEditedContent(item.content);
+                    setEditModalVisible(true);
+                  }}
+                >
+                  Edit Post
+                </MenuItem>
+                <MenuItem
+                  onPress={() => {
+                    Alert.alert(
+                      'Delete Post',
+                      'Are you sure you want to delete this post?',
+                      [
+                        { text: 'Cancel', style: 'cancel' },
+                        {
+                          text: 'Yes',
+                          onPress: () => handleDeletePost(item.id),
+                          style: 'destructive',
+                        },
+                      ],
+                      { cancelable: true }
+                    );
+                  }}
+                  textStyle={{ color: 'red' }}
+                >
+                  Delete Post
+                </MenuItem>
+              </Menu>
+            )}
           </View>
         </View>
-
+  
         <Text style={styles.content}>{item.content}</Text>
-
+  
         <View style={{ justifyContent: 'center', alignItems: 'center' }}>
-          {item.imageUrl && (
-            <Image
-              source={{ uri: item.imageUrl }}
-              style={styles.postImage}
-              resizeMode="cover"
-            />
-          )}
+          {item.videoUrl ? (
+            <TapGestureHandler
+            numberOfTaps={2}
+            onActivated={() => {
+              handleLikePost(item.id);
+              setShowHeart(true);
+              setTimeout(() => setShowHeart(false), 600);
+            }}
+          >
+            <View>
+              <Video
+                source={{ uri: item.videoUrl }}
+                style={styles.postMedia}              
+                resizeMode={ResizeMode.COVER}         
+                useNativeControls={true}                 
+                shouldPlay={true}                    
+                isLooping={false}      
+              />
+              {showHeart && (
+                <Animated.View>
+                  <View style={styles.heartOverlay}>
+                    <Image
+                      source={require('../../assets/likedIcon.png')}
+                      style={{ width: 50, height: 50, tintColor: 'white' }}
+                    />
+                  </View>
+                </Animated.View>
+              )}
+            </View>
+          </TapGestureHandler>
+          ) : item.imageUrl ? (
+            <TapGestureHandler
+              numberOfTaps={2}
+              onActivated={() => {
+                handleLikePost(item.id);
+                setShowHeart(true);
+                setTimeout(() => setShowHeart(false), 600);
+              }}
+            >
+              <View>
+                <Image
+                  source={{ uri: item.imageUrl }}
+                  style={styles.postMedia}
+                  resizeMode="cover"
+                />
+                {showHeart && (
+                  <Animated.View>
+                    <View style={styles.heartOverlay}>
+                      <Image
+                        source={require('../../assets/likedIcon.png')}
+                        style={{ width: 50, height: 50, tintColor: 'white' }}
+                      />
+                    </View>
+                  </Animated.View>
+                )}
+              </View>
+            </TapGestureHandler>
+          ) : null}
         </View>
-
+  
         <View style={styles.postActions}>
           <TouchableOpacity
             style={styles.actionButton}
             onPress={() => handleLikePost(item.id)}
           >
             <Image
-              source={isLiked ? require('../../assets/likedIcon.png') : require('../../assets/likeIcon.png')}
-              style={[styles.likeIcon]}
+              source={
+                isLiked
+                  ? require('../../assets/likedIcon.png')
+                  : require('../../assets/likeIcon.png')
+              }
+              style={styles.likeIcon}
             />
             <Text style={styles.actionText}>
               {item.likes ? item.likes.length : 0}
@@ -524,12 +699,48 @@ const Community = () => {
             style={styles.actionButton}
             onPress={() => navigation.navigate('Post', { item, name, profilePic })}
           >
-            <SimpleLineIcons name="bubble" size={20} color='#d3d3d3' />
+            <SimpleLineIcons name="bubble" size={20} color="#d3d3d3" />
             <Text style={styles.actionText}>
               {item.commentCount || 0}
             </Text>
           </TouchableOpacity>
         </View>
+  
+        <Modal
+          visible={editModalVisible}
+          transparent
+          animationType="none"
+          onRequestClose={() => setEditModalVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.editModalContainer}>
+              <Text style={styles.editModalTitle}>Edit Post</Text>
+              <TextInput
+                style={styles.editInput}
+                value={editedContent}
+                onChangeText={setEditedContent}
+                multiline
+              />
+              <View style={styles.modalButtons}>
+                <TouchableOpacity onPress={() => setEditModalVisible(false)}>
+                  <Text style={[styles.modalButtonText, { color: '#a8a8a8', marginRight: 15 }]}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={async () => {
+                    if (editingPost) {
+                      await updateDoc(doc(firestore, 'posts', editingPost.id), {
+                        content: editedContent.trim(),
+                      });
+                    }
+                    setEditModalVisible(false);
+                  }}
+                >
+                  <Text style={[styles.modalButtonText, { color: 'blue', marginTop: 0.5 }]}>Save</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
       </View>
     );
   };
@@ -683,7 +894,7 @@ const Community = () => {
               onChangeText={setNewPostContent}
             />
 
-            <TouchableOpacity style={styles.modalImagePlaceholder} onPress={handlePickImage}>
+            <TouchableOpacity style={styles.modalImagePlaceholder} onPress={handlePickMedia}>
               <Text style={{ color: '#757575' }}>Tap to add image</Text>
               {uploadingImage && <ActivityIndicator size="small" color="#7A5FFF" />}
               {newPostImage && <Image source={{ uri: newPostImage }} style={styles.modalImagePreview} />}
@@ -692,16 +903,19 @@ const Community = () => {
             <View style={styles.modalButtonsContainer}>
               <TouchableOpacity
                 style={[styles.modalButton, styles.modalCancelButton]}
-                onPress={() => setIsAddPostModalVisible(false)}
+                onPress={() => {
+                  setIsAddPostModalVisible(false)
+                  setNewPostImage(null)
+                }}
               >
                 <Text style={styles.modalButtonText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalButton, styles.modalPostButton]}
-                onPress={handleCreateNewPostWithImage}
+                onPress={handleCreateNewPost}
                 disabled={uploadingImage}
               >
-                <Text style={styles.modalButtonText}>{uploadingImage ? 'Posting...' : 'Post'}</Text>
+                {postLoading ? <ActivityIndicator size='small' color='#d3d3d3' /> : <Text style={styles.modalButtonText}>{uploadingImage ? 'Posting...' : 'Post'}</Text>}
               </TouchableOpacity>
             </View>
           </View>
@@ -826,7 +1040,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: height * 0.024 * scaleFactor,
+    justifyContent: 'space-between'
   },
+  leftSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },  
   avatar: {
     width: RFValue(50 * scaleFactor, height),
     height: RFValue(50 * scaleFactor, height),
@@ -858,11 +1077,19 @@ const styles = StyleSheet.create({
     lineHeight: RFValue(20 * scaleFactor, height),
     marginBottom: height * 0.027 * scaleFactor,
   },
-  postImage: {
+  postMedia: {
     width: '100%',
     aspectRatio: 1.25,
     borderRadius: RFValue(10 * scaleFactor, height),
     maxHeight: height * 0.31 * scaleFactor,
+  },
+  heartOverlay: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    marginLeft: -25,
+    marginTop: -160,
+    zIndex: 10,
   },
   postActions: {
     flexDirection: 'row',
@@ -981,6 +1208,61 @@ const styles = StyleSheet.create({
     marginBottom: height * 0.006 * scaleFactor,
     borderWidth: 2 * scaleFactor,
     borderColor: 'transparent',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'transparent',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: 15
+  },
+  editModalContainer: {
+    backgroundColor: 'white',
+    padding: 20,
+    borderRadius: 10,
+    width: '90%',
+  },
+  editModalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  editInput: {
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 5,
+    padding: 10,
+    height: 80,
+    textAlignVertical: 'top',
+    marginBottom: 15,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end'
+  },
+  previewContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.85)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  previewMedia: {
+    width: '90%',
+    height: 300,
+    borderRadius: 12,
+  },
+  previewButtons: {
+    flexDirection: 'row',
+    marginTop: 20,
+    gap: 20,
+  },
+  cancelText: {
+    color: 'red',
+    fontSize: 16,
+  },
+  uploadText: {
+    color: 'blue',
+    fontSize: 16,
   },
 });
 

@@ -86,14 +86,18 @@ export default function DailySteps() {
       const currentDate = new Date().toISOString().split('T')[0];
   
       if (storedDate && storedDate !== currentDate) {
-        setWeeklySteps([]);
-        await AsyncStorage.removeItem('weeklyStepsPerformance');
+        const currentDayOfWeek = new Date(currentDate).getDay(); 
+        if (currentDayOfWeek === 1) { 
+          setWeeklySteps([]);
+          await AsyncStorage.removeItem('weeklyStepsPerformance');
+        }
         await AsyncStorage.setItem('stepsLastDate', currentDate);
       }
   
       if (storedWeeklySteps) {
-        setWeeklySteps(JSON.parse(storedWeeklySteps));
-        updateBestAndWorstPerformance(JSON.parse(storedWeeklySteps));
+        const parsedData = JSON.parse(storedWeeklySteps);
+        setWeeklySteps(parsedData);
+        updateBestAndWorstPerformance(parsedData);
       } else if (storedDate === currentDate && steps > 0) {
         const currentDay = getDayOfWeek(currentDate);
         setWeeklySteps([{ day: currentDay, count: steps }]); 
@@ -107,36 +111,41 @@ export default function DailySteps() {
   };
 
   const saveDailySteps = async () => {
-    if (steps > 0) { 
-    try {
-      const currentDate = new Date().toISOString().split('T')[0];
-      const currentDay = getDayOfWeek(currentDate);
-      const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-
-      const updatedPerformance = DAYS.map((day) => {
-        if (day === currentDay) {
-          return { day, count: steps };
-        }
-
-        const existing = weeklySteps.find((item) => item.day === day);
-        return existing ? existing : { day, count: 0 };
-      });
-
-      setWeeklySteps(updatedPerformance);
-      await AsyncStorage.setItem('weeklyStepsPerformance', JSON.stringify(updatedPerformance));
-      updateBestAndWorstPerformance(updatedPerformance);
+    if (steps > 0) {
+      try {
+        const currentDate = new Date().toISOString().split('T')[0];
+        const currentDay = getDayOfWeek(currentDate);
+        const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  
+        const stored = await AsyncStorage.getItem('weeklyStepsPerformance');
+        let existingData: DailyStepsPerformance[] = stored ? JSON.parse(stored) : [];
+  
+        const baseData = DAYS.map((day) => {
+          const existing = existingData.find((item) => item.day === day);
+          return existing ? existing : { day, count: 0 };
+        });
+  
+        const updatedPerformance = baseData.map((item) =>
+          item.day === currentDay ? { ...item, count: steps } : item
+        );
+  
+        setWeeklySteps(updatedPerformance);
+        await AsyncStorage.setItem('weeklyStepsPerformance', JSON.stringify(updatedPerformance));
+        updateBestAndWorstPerformance(updatedPerformance);
       } catch (error) {
         console.error('Error saving weekly steps performance to AsyncStorage:', error);
       }
     }
-  };
+  };  
 
   const updateBestAndWorstPerformance = (performanceData: DailyStepsPerformance[]) => {
-    if (performanceData.length > 0) {
-      let best = performanceData[0];
-      let worst = performanceData[0];
-
-      performanceData.forEach((dayData) => {
+    const nonZeroData = performanceData.filter(day => day.count > 0);
+  
+    if (nonZeroData.length > 0) {
+      let best = nonZeroData[0];
+      let worst = nonZeroData[0];
+  
+      nonZeroData.forEach((dayData) => {
         if (dayData.count > best.count) {
           best = dayData;
         }
@@ -144,7 +153,7 @@ export default function DailySteps() {
           worst = dayData;
         }
       });
-
+  
       setBestPerformance(best);
       setWorstPerformance(worst);
     } else {
@@ -300,7 +309,7 @@ export default function DailySteps() {
                 />
               </View>
               <Text style={styles.performanceText}>Worst Performance</Text>
-              <Text style={styles.performanceValue}>{worstPerformance?.count || '-'}</Text>
+              <Text style={styles.performanceValue}>{worstPerformance?.count || 0}</Text>
             </View>
             <Text style={styles.performanceDay}>{worstPerformance?.day || '-'}</Text>
           </View>
@@ -708,7 +717,7 @@ const styles = StyleSheet.create({
     paddingVertical: RFValue(15, REFERENCE_HEIGHT),
     width: '80%',
     alignItems: 'center',
-    marginTop: RFValue(8, REFERENCE_HEIGHT),
+    marginTop: RFValue(12, REFERENCE_HEIGHT),
   },
   shareButtonText: {
     fontSize: RFPercentage(2.1),
@@ -719,7 +728,7 @@ const styles = StyleSheet.create({
     fontSize: RFPercentage(2.1),
     color: '#7A5FFF',
     textAlign: 'center',
-    marginTop: RFValue(8, REFERENCE_HEIGHT),
+    marginTop: RFValue(12, REFERENCE_HEIGHT),
     fontWeight: '700',
   },
 });

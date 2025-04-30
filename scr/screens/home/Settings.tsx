@@ -127,6 +127,8 @@ export default function Settings() {
                     <Switch
                         value={isPushEnabled}
                         onValueChange={(value) => setPushEnabled(value)}
+                        trackColor={{ false: '#767577', true: '#B4A3FF' }} 
+                        thumbColor={isPushEnabled ? '#7A5FFF' : '#f4f3f4'}
                     />
                 </View>
 
@@ -146,7 +148,17 @@ export default function Settings() {
                     <Text style={styles.optionText}>About Us</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.option} onPress={() => handleSignOut()}>
+                <TouchableOpacity style={styles.option} onPress={() => {
+                    Alert.alert(
+                        'Confirm Logout',
+                        'Are you sure you want to log out?',
+                        [
+                          { text: 'Cancel', style: 'cancel' },
+                          { text: 'Log Out', style: 'destructive', onPress: handleSignOut }
+                        ],
+                        { cancelable: true }
+                    );
+                }}>
                     <Text style={styles.logoutButton}>Log Out</Text>
                 </TouchableOpacity>
             </View>

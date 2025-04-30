@@ -16,6 +16,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useSelector, useDispatch } from 'react-redux';
 import { doc, setDoc } from 'firebase/firestore';
 import { auth, firestore } from '../../../firebaseConfig';
+import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth';
 import { updateUser } from '../../store/slices/userSlice';
 import { AppDispatch, RootState } from '../../store/store';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
@@ -25,6 +26,7 @@ import { RFPercentage, RFValue } from 'react-native-responsive-fontsize';
 import { supabase } from '../../../supabaseConfig';
 import * as ImagePicker from 'expo-image-picker';
 import RNFS from 'react-native-fs';
+import { current } from '@reduxjs/toolkit';
 
 type NavigationProp = DrawerNavigationProp<SettingStackParamList, 'Profile'>;
 
@@ -75,6 +77,12 @@ export default function Profile() {
   const [interests, setInterests] = useState<string[]>(userData?.interests || []);
   const [gender, setGender] = useState<string>(userData?.gender || '');
   const [loading, setLoading] = useState<boolean>(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [error, setError] = useState<string>('');
+  const [updatingPassword, setUpdatingPassword] = useState<boolean>(false);
+
 
   useEffect(() => {
     if (userData) {
@@ -230,6 +238,42 @@ export default function Profile() {
     }
   };
 
+  const handleChangePassword = async () => {
+    if(!currentPassword || !newPassword || !confirmNewPassword) {
+      setError('Please fill in all password fields.');
+      return;
+    }
+
+    if(newPassword !== confirmNewPassword) {
+      setError('New passwords do not match.');
+      return;
+    }
+
+    const user = auth.currentUser;
+    if(!user || !user.email) {
+      setError('No user is currently signed in.');
+      return;
+    }
+
+    try {
+      setUpdatingPassword(true);
+
+      const credential = EmailAuthProvider.credential(user.email, currentPassword);
+      await reauthenticateWithCredential(user, credential);
+
+      await updatePassword(user, newPassword);
+      alert('Password updated successfully.');
+
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmNewPassword('');
+    } catch (error: any) {
+      setError('Wrong Password');
+    } finally {
+      setUpdatingPassword(false);
+    }  
+  }
+
   const profileImageSource =
     typeof profilePicture === 'string'
       ? { uri: profilePicture }
@@ -338,7 +382,7 @@ export default function Profile() {
           </View>
         </View>
 
-        <View style={styles.genderSection}>
+        <View style={styles.section}>
           <Text style={styles.sectionTitle}>Gender</Text>
           <View style={styles.toggleContainer}>
             {genderOptions.map((option) => (
@@ -354,6 +398,41 @@ export default function Profile() {
                 </Text>
               </TouchableOpacity>
             ))}
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, {marginBottom: responsiveHeight(2)}]}>Change Password</Text>
+          <TextInput
+            style={styles.textInput}
+            placeholder="Current Password"
+            placeholderTextColor="#999"
+            secureTextEntry
+            value={currentPassword}
+            onChangeText={setCurrentPassword}
+          />
+          <TextInput
+            style={styles.textInput}
+            placeholder="New Password"
+            placeholderTextColor="#999"
+            secureTextEntry
+            value={newPassword}
+            onChangeText={setNewPassword}
+          />
+          <TextInput
+            style={styles.textInput}
+            placeholder="Confirm New Password"
+            placeholderTextColor="#999"
+            secureTextEntry
+            value={confirmNewPassword}
+            onChangeText={setConfirmNewPassword}
+          />
+          {error ? <Text style={{color: 'red', textAlign: 'center'}}>{error}</Text>: <></>}
+
+          <View style={{flexDirection: 'row', justifyContent: 'flex-end'}}>
+          <TouchableOpacity onPress={handleChangePassword}  style={[styles.addPhotoButton, {borderRadius: 20, width: '50%'}]}>
+          {updatingPassword ? <ActivityIndicator size='small' color='#d0d0d0'/> : <Text style={styles.addPhotoText}>Update Password</Text>}
+          </TouchableOpacity>
           </View>
         </View>
 
@@ -420,16 +499,11 @@ const styles = StyleSheet.create({
     borderBottomColor: '#999',
     marginBottom: 10,
   },
-  genderSection: {
-    backgroundColor: '#FFF',
-    padding: responsiveWidth(4), 
-  },
   sectionTitle: {
-    fontSize: RFValue(14),
+    fontSize: RFValue(18),
     fontWeight: '600',
     color: '#333',
     marginBottom: responsiveHeight(1),
-    
   },
   textInput: {
     borderWidth: 1,
@@ -439,6 +513,7 @@ const styles = StyleSheet.create({
     fontSize: RFValue(12),
     backgroundColor: '#F9F9F9',
     color: '#333',
+    marginBottom: responsiveHeight(1)
   },
   profilePictureContainer: {
     flexDirection: 'row',
@@ -531,9 +606,9 @@ const styles = StyleSheet.create({
   addPhotoButton: {
     marginTop: 10,
     padding: 10,
-    backgroundColor: '#007AFF',
-    borderRadius: 5,
-    alignItems: 'center',
+    backgroundColor: '#7A5FFF',
+    borderRadius: 10,
+    alignItems: 'center', 
   },
   addPhotoText: {
     color: '#fff',

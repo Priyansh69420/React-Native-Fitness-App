@@ -7,7 +7,7 @@ import Notifications from '../screens/home/Notifications';
 import SettingStack from './SettingStack';
 import GetPremium from '../screens/home/GetPremium';
 import { auth } from '../../firebaseConfig';
-import { View, Text, Image, StyleSheet, Animated, TouchableOpacity } from 'react-native';
+import { View, Text, Image, StyleSheet, Animated, TouchableOpacity, Alert } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { clearUser } from '../store/slices/userSlice';
 import { persistor, RootState } from '../store/store';
@@ -103,7 +103,17 @@ function CustomDrawerContent(props: any) {
 
         <DrawerItem
           label="Logout"
-          onPress={() => handleSignOut()}
+          onPress={() => {
+            Alert.alert(
+              'Confirm Logout',
+              'Are you sure you want to log out?',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Log Out', style: 'destructive', onPress: handleSignOut }
+              ],
+              { cancelable: true }
+            );
+          }}
           icon={() => <Image source={require('../assets/LogoutIcon.png')} style={styles.icon} />}
           labelStyle={styles.label}
         />

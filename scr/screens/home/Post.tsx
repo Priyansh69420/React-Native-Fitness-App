@@ -8,6 +8,7 @@ import { SimpleLineIcons } from '@expo/vector-icons';
 import { RFPercentage, RFValue } from 'react-native-responsive-fontsize';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { CommunityStackParamList } from '../../navigations/CommunityStackParamList';
+import { ResizeMode, Video } from 'expo-av';
 
 type NavigationProp = DrawerNavigationProp<CommunityStackParamList, 'Community'>;
 
@@ -16,6 +17,7 @@ export interface Post {
   userId: string;
   content: string;
   imageUrl?: string;
+  videoUrl?: string;
   timestamp?: any;
   likes?: string[];
   commentCount?: number;
@@ -248,6 +250,17 @@ export default function Post() {
           <Text style={styles.content}>{post.content}</Text>
 
           <View style={{ justifyContent: 'center', alignItems: 'center' }}>
+            {post.videoUrl && (
+              <Video
+                source={{ uri: post.videoUrl }}
+                  style={styles.postImage}              
+                  resizeMode={ResizeMode.COVER}         
+                  useNativeControls={true}                 
+                  shouldPlay={true}                    
+                  isLooping={false}                    
+              />
+            )}
+
             {post.imageUrl && (
               <Image source={{ uri: post.imageUrl }} style={styles.postImage} resizeMode="cover" />
             )}

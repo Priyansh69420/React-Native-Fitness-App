@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, Dimensions, Text } from 'react-native';
-import Svg, { Path, Defs, LinearGradient, Stop } from 'react-native-svg';
+import { LineChart } from 'react-native-gifted-charts';
 
 const { width } = Dimensions.get('window');
 
@@ -21,7 +21,8 @@ const LineGraphSVG = () => {
     try {
       const storedWeeklySteps = await AsyncStorage.getItem('weeklyStepsPerformance');
       if (storedWeeklySteps) {
-        setWeeklySteps(JSON.parse(storedWeeklySteps));
+        const parsedData: DailyStepsPerformance[] = JSON.parse(storedWeeklySteps);
+        setWeeklySteps(parsedData);
       }
     } catch (error) {
       console.error('Error loading weekly steps from AsyncStorage:', error);
@@ -29,101 +30,67 @@ const LineGraphSVG = () => {
   };
 
   const convertStepstoCalories = () => {
-    return weeklySteps.map(item => Math.round(item.count * 0.01));
+    return weeklySteps.map((item) => ({
+      value: Math.round(item.count * 0.01),
+      label: item.day,
+    }));
   };
 
   const data = convertStepstoCalories();
   const graphWidth = width * 0.8;
   const graphHeight = 200;
-  const customYLabels = [300, 250, 200, 150, 100];
-  const customYPositions = [20, 60, 100, 140, 180];
-
-  const hasValidData = data.length > 1 && Math.max(...data) > 0;
-
-  const points = hasValidData
-    ? data.map((value, index) => {
-        const x = (index / (data.length - 1)) * graphWidth;
-        const y = graphHeight - (value / Math.max(...data)) * graphHeight;
-        return { x, y };
-      })
-    : [];
-
-  const pathData = points.reduce((acc, point, index) => {
-    if (index === 0) {
-      return `M${point.x},${point.y}`;
-    } else {
-      const prevPoint = points[index - 1];
-      const controlPointX = (prevPoint.x + point.x) / 2;
-      return `${acc} C${controlPointX},${prevPoint.y} ${controlPointX},${point.y} ${point.x},${point.y}`;
-    }
-  }, '');
-
-  const pathDataWithFill = hasValidData
-    ? `${pathData} L${graphWidth},${graphHeight} L0,${graphHeight} Z`
-    : '';
+  const hasValidData = data.length > 1 && data.some(item => item.value > 0);
 
   return (
     <View style={styles.container}>
-      {hasValidData && (
-        <View style={styles.yAxisContainer}>
-          {customYLabels.map((yValue, index) => {
-            const yPos = customYPositions[index];
-            return (
-              <Text key={index} style={[styles.yAxisLabel, { top: yPos }]}> 
-                {yValue}
-              </Text>
-            );
-          })}
-        </View>
-      )}
-      <Svg width={graphWidth} height={graphHeight} style={styles.graphSvg}>
-        <Defs>
-          <LinearGradient id="grad" x1="0%" y1="0%" x2="0%" y2="100%">
-            <Stop offset="0%" stopColor="orange" stopOpacity="0.2" />
-            <Stop offset="100%" stopColor="orange" stopOpacity="1" />
-          </LinearGradient>
-        </Defs>
-        {hasValidData && (
-          <Path
-            d={pathDataWithFill}
-            fill="url(#grad)"
-            stroke="orange"
-            strokeWidth="2"
+      <View style={{ height: graphHeight, width: graphWidth }}>
+        {hasValidData ? (
+          <LineChart
+            data={data}
+            height={graphHeight}
+            width={graphWidth}
+            thickness={2}
+            color="orange"
+            hideRules
+            yAxisColor="transparent"
+            xAxisColor="transparent"
+            showVerticalLines={false}
+            areaChart
+            startFillColor="orange"
+            endFillColor="orange"
+            startOpacity={0.1}
+            endOpacity={1}
+            noOfSections={4}
+            spacing={graphWidth / (data.length - 1)}
+            hideDataPoints
+            curved
           />
+        ) : (
+          <View style={styles.emptyGraphPlaceholder}>
+            <Text style={styles.noDataText}>Not enough data to show stats.</Text>
+          </View>
         )}
-      </Svg>
-      {!hasValidData && (
-        <Text style={styles.noDataText}>Not enough data to show stats.</Text>
-      )}
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
     backgroundColor: '#fff',
-    padding: 10,
-  },
-  yAxisContainer: {
-    width: 50,
-    paddingRight: 10,
-  },
-  yAxisLabel: {
-    position: 'absolute',
-    left: 0,
-    color: '#333',
-    fontSize: 12,
-  },
-  graphSvg: {
-    marginLeft: 0,
+    paddingBottom: 30,
+    marginLeft: -10,
   },
   noDataText: {
-    position: 'absolute',
-    top: '50%',
-    left: '22%',
     fontSize: 14,
     color: 'gray',
+    paddingLeft: 60,
+  },
+  emptyGraphPlaceholder: {
+    height: '100%',
+    width: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 

@@ -1,4 +1,4 @@
-import { View, Text, Dimensions, StyleSheet, SafeAreaView, TextInput, TouchableOpacity, Image, ActivityIndicator, Alert, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, Dimensions, StyleSheet, SafeAreaView, TextInput, TouchableOpacity, Image, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import React, { useState } from 'react';
 import { useNavigation } from "@react-navigation/native";
 import { RootStackParamList } from "../../navigations/RootStackParamList";
@@ -9,6 +9,7 @@ import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { RFValue } from 'react-native-responsive-fontsize';
 import { doc, getDoc, setDoc } from '@firebase/firestore';
+import { Ionicons } from '@expo/vector-icons';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, "GettingStarted">;
 
@@ -33,6 +34,7 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<String>('');
+  const [isVisible, setVisible] = useState<boolean>(false);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -121,13 +123,24 @@ export default function LoginScreen() {
 
           <View style={styles.inputContainer}>
             <Image source={lockLogo} style={styles.iconPlaceholder} />
-            <TextInput 
-              style={styles.input} 
+            <TextInput
+              style={styles.input}
               value={password}
-              onChangeText={(text) => setPassword(text)}
-              placeholder="Password" 
-              secureTextEntry 
+              onChangeText={setPassword}
+              placeholder="Password"
+              secureTextEntry={!isVisible} 
             />
+            <TouchableOpacity
+              onPress={() => setVisible(v => !v)}
+              style={styles.eyeButton}
+              accessibilityLabel={isVisible ? "Hide password" : "Show password"}
+            >
+              <Ionicons
+                name={isVisible ? "eye-off-outline" : "eye-outline"}
+                size={24}
+                color="#666"
+              />
+            </TouchableOpacity>
           </View>
 
           {error ? <Text style={{color: 'red', width: '85%', textAlign: 'center'}}>{error}</Text>: <></>}
@@ -253,5 +266,8 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: RFValue(18, height), 
     fontWeight: 'bold',
+  },
+  eyeButton: {
+    padding: 8,
   },
 });
