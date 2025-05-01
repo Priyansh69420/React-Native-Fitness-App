@@ -309,7 +309,7 @@ export default function DailySteps() {
                 />
               </View>
               <Text style={styles.performanceText}>Worst Performance</Text>
-              <Text style={styles.performanceValue}>{worstPerformance?.count || 0}</Text>
+              <Text style={styles.performanceValue}>{worstPerformance?.count || '-'}</Text>
             </View>
             <Text style={styles.performanceDay}>{worstPerformance?.day || '-'}</Text>
           </View>

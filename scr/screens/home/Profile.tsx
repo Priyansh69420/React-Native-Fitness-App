@@ -19,16 +19,15 @@ import { auth, firestore } from '../../../firebaseConfig';
 import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth';
 import { updateUser } from '../../store/slices/userSlice';
 import { AppDispatch, RootState } from '../../store/store';
-import { DrawerNavigationProp } from '@react-navigation/drawer';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { SettingStackParamList } from '../../navigations/SettingStackParamList';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RFPercentage, RFValue } from 'react-native-responsive-fontsize';
 import { supabase } from '../../../supabaseConfig';
 import * as ImagePicker from 'expo-image-picker';
 import RNFS from 'react-native-fs';
-import { current } from '@reduxjs/toolkit';
 
-type NavigationProp = DrawerNavigationProp<SettingStackParamList, 'Profile'>;
+type NavigationProp = StackNavigationProp<SettingStackParamList, 'Profile'>;
 
 interface UserData {
   email: string;
@@ -285,7 +284,7 @@ export default function Profile() {
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.pop()}>
             <Image source={require('../../assets/backArrowIcon.png')} style={styles.backArrowIcon} />
             <Text style={styles.backButtonText}>Back</Text>
           </TouchableOpacity>

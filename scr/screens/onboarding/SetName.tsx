@@ -1,5 +1,5 @@
 import { View, Text, Dimensions, StyleSheet, SafeAreaView, TextInput, TouchableOpacity, Image, KeyboardAvoidingView, Platform } from 'react-native';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { RootStackParamList } from '../../navigations/RootStackParamList';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -16,7 +16,14 @@ export default function SetNameScreen() {
   const [lastName, setLastName] = useState<string>('');
   const [error1, setError1] = useState<string>('');
   const [error2, setError2] = useState<string>('');
-  const {updateOnboardingData} = useOnboarding();
+  const {updateOnboardingData, onboardingData} = useOnboarding();
+
+  useEffect(() => {
+    if(onboardingData.firstName) setFirstName(onboardingData.firstName);
+
+    if(onboardingData.lastName) setLastName(onboardingData.lastName);
+  }, [])
+  
 
   const handleContinuePress = () => {
     if (firstName.trim() && lastName.trim()) {

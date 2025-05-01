@@ -8,7 +8,6 @@ import {
   Alert,
   SafeAreaView,
   Image,
-  ScrollView,
   StyleSheet,
   Dimensions,
   ActivityIndicator,
@@ -29,6 +28,7 @@ import { supabase } from '../../../supabaseConfig';
 import { TapGestureHandler } from 'react-native-gesture-handler';
 import { Menu, MenuItem } from 'react-native-material-menu';
 import { ResizeMode, Video } from 'expo-av';
+import InstaStory, { IUserStory, IUserStoryItem } from 'react-native-insta-story';
 
 type NavigationProp = DrawerNavigationProp<CommunityStackParamList, 'Community'>;
 
@@ -52,7 +52,7 @@ export interface UserData {
   interests?: string[];
   gender?: string;
   calories?: number;
-  stories?: {imageUrl: string; timestamp: any}[];
+  stories?: Record<string, { imageUrl: string; timestamp: any }>;
 }
 
 const getTimeAgo = (timestamp: any) => {
@@ -88,13 +88,13 @@ const Community = () => {
   const [newPostImage, setNewPostImage] = useState<string | null>(null); 
   const [newPostVideo, setNewPostVideo] = useState<string | null>(null); 
   const [uploadingImage, setUploadingImage] = useState(false); 
-  const [currentStoryUrl, setCurrentStoryUrl] = useState<string>('');
-  const [isStoryModalVisible, setIsStoryModalVisible] = useState<boolean>(false);
+  const [storiesData, setStoriesData] = useState<any[]>([]);
   const [showHeart, setShowHeart] = useState<boolean>(false);
   const [visiblePostId, setVisiblePostId] = useState<string | null>(null);
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [editingPost, setEditingPost] = useState<Post | null>(null);
   const [editedContent, setEditedContent] = useState<string>('');
+  const [newStoryImage, setNewStoryImage] = useState<string | null>(null);
 
   const navigation = useNavigation<NavigationProp>();setNewPostVideo
 
@@ -142,36 +142,11 @@ const Community = () => {
         const usersCollection = collection(firestore, 'users');
         const usersQuery = query(usersCollection, limit(20));
         const snapshot = await getDocs(usersQuery);
-        const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-  
+    
         const updatedSuggestedUsers = snapshot.docs.map((doc) => {
-          const user = doc.data() as UserData;
-  
-          if (user?.stories) {
-            const filteredStories = Object.values(user.stories).filter((story: any) => { 
-              if (!story) {
-                console.warn('Story object is null or undefined');
-                return false;
-              }
-  
-              try {
-                if (story.timestamp?.toDate) {
-                  return story.timestamp.toDate() > twentyFourHoursAgo;
-                } else {
-                  console.warn('Invalid timestamp format:', story.timestamp);
-                  return false;
-                }
-              } catch (e) {
-                console.error('Error processing story timestamp:', e);
-                return false;
-              }
-            });
-  
-            return { ...user, stories: filteredStories };
-          }
-          return user;
+          return doc.data() as UserData;
         });
-  
+    
         setSuggestedUsers(updatedSuggestedUsers);
       } catch (e) {
         console.error('Error fetching suggested users', e);
@@ -182,6 +157,49 @@ const Community = () => {
     return () => {
       unsubscribePosts();
     };
+  }, []);
+
+  useEffect(() => {
+    const fetchRecentStories = async () => {
+      try {
+        const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        const usersCollection = collection(firestore, 'users');
+        const snapshot = await getDocs(usersCollection);
+        const allStories: IUserStory[] = []; 
+  
+        for (const userDoc of snapshot.docs) {
+          const userData = userDoc.data() as UserData;
+          if (userData?.stories) {
+            const userStoryItems: IUserStoryItem[] = []; 
+            let storyIdCounter = 0; 
+  
+            for (const storyKey in userData.stories) {
+              const story = userData.stories[storyKey];
+              if (story?.timestamp?.toDate() > twentyFourHoursAgo && story?.imageUrl) {
+                userStoryItems.push({
+                  story_id: storyIdCounter++, 
+                  story_image: story.imageUrl,
+                });
+              }
+            }
+  
+            if (userStoryItems.length > 0) {
+              allStories.push({
+                user_id: userDoc.id as any, 
+                user_name: userData.name || 'User',
+                user_image: userData.profilePicture,
+                stories: userStoryItems,
+              });
+            }
+          }
+        }
+        setStoriesData(allStories);
+      } catch (error) {
+        console.error('Error fetching recent stories:', error);
+      }
+    };
+  
+    fetchRecentStories();
   }, []);
 
   const handlePickMedia = async () => {
@@ -210,6 +228,89 @@ const Community = () => {
       }
     } catch (error: any) {
       console.error('Error picking media:', error.message);
+    }
+  };
+
+  const handlePickStoryMedia = async () => {
+    try {
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permissionResult.granted) {
+        Alert.alert('Permission Denied', 'Please grant permission to access your media library.');
+        return;
+      }
+  
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images, 
+        allowsEditing: true,
+        aspect: [9, 16], 
+        quality: 0.7,
+      });
+  
+      if (!result.canceled && result.assets.length > 0) {
+        setNewStoryImage(result.assets[0].uri);
+        handleUploadNewStory(result.assets[0].uri); 
+      }
+    } catch (error: any) {
+      console.error('Error picking story media:', error.message);
+    }
+  };
+  
+  const handleUploadNewStory = async (uri: string) => {
+    setUploadingImage(true);
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        Alert.alert('Authentication Required', 'You need to be logged in to add a story.');
+        return;
+      }
+  
+      const fileName = uri.split('/').pop() || `story_${Date.now()}.jpg`;
+      const fileType = uri.split('.').pop() || 'jpeg';
+      const filePath = `stories/${fileName}`; 
+  
+      const base64Image = await RNFS.readFile(uri, 'base64');
+  
+      if (!base64Image) {
+        throw new Error('Failed to convert image to Base64');
+      }
+  
+      const binaryString = atob(base64Image);
+      const fileArray = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        fileArray[i] = binaryString.charCodeAt(i);
+      }
+  
+      const { data, error: uploadError } = await supabase.storage
+        .from('stories')
+        .upload(filePath, fileArray, {
+          contentType: `image/${fileType}`,
+          upsert: false,
+        });
+  
+      if (uploadError) {
+        throw new Error(uploadError.message);
+      }
+  
+      const { data: urlData } = supabase.storage
+        .from('stories')
+        .getPublicUrl(filePath);
+  
+      if (!urlData?.publicUrl) {
+        throw new Error('Failed to retrieve public URL');
+      }
+  
+      const userRef = doc(firestore, 'users', user.uid);
+      const timestamp = serverTimestamp();
+      await updateDoc(userRef, {
+        [`stories.${Date.now()}`]: { imageUrl: urlData.publicUrl, timestamp }, 
+      });
+  
+      setNewStoryImage(null); 
+    } catch (error: any) {
+      console.error('Error uploading story:', error.message);
+      Alert.alert('Error', 'Failed to upload story.');
+    } finally {
+      setUploadingImage(false);
     }
   };
 
@@ -300,50 +401,6 @@ const Community = () => {
     }
   };
 
-  const uploadImageForStory = async (uri: string): Promise<string | null> => {
-    try {
-      const fileName = uri.split('/').pop() || `post_${Date.now()}.jpg`;
-      const fileType = uri.split('.').pop() || 'jpeg';
-      const filePath = `stories/${fileName}`;
-
-      const base64Image = await RNFS.readFile(uri, 'base64');
-
-      if (!base64Image) {
-        throw new Error('Failed to convert image to Base64');
-      }
-
-      const binaryString = atob(base64Image);
-      const fileArray = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        fileArray[i] = binaryString.charCodeAt(i);
-      }
-
-      const { data, error: uploadError } = await supabase.storage
-        .from('stories')
-        .upload(filePath, fileArray, {
-          contentType: `image/${fileType}`,
-          upsert: false, 
-        });
-
-      if (uploadError) {
-        throw new Error(uploadError.message);
-      }
-
-      const { data: urlData } = supabase.storage
-        .from('stories')
-        .getPublicUrl(filePath);
-
-      if (!urlData?.publicUrl) {
-        throw new Error('Failed to retrieve public URL');
-      }
-
-      return urlData.publicUrl;
-    } catch (error: any) {
-      console.error('Error uploading image to Supabase:', error.message);
-      return null;
-    } 
-  };
-
   const handleCreateNewPost = async () => {
     setPostLoading(true);
   
@@ -429,111 +486,6 @@ const Community = () => {
       });
     } catch (error: any) {
       console.error('Error liking post:', error.message);
-    }
-  };
-
-  const handleAddStory = async () => {
-    try {
-      const permissionResult =
-        await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!permissionResult.granted) {
-        Alert.alert(
-          'Permission Denied',
-          'Please grant permission to access your photo library.'
-        );
-        return;
-      }
-
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
-        allowsEditing: true,
-        aspect: [9, 16], 
-        quality: 0.7,
-      });
-
-      if (!result.canceled && result.assets.length > 0) {
-        const imageUrl = await uploadImageForStory(result.assets[0].uri);
-        if (imageUrl && auth.currentUser) {
-          const userRef = doc(firestore, 'users', auth.currentUser.uid);
-          const timestamp = serverTimestamp(); 
- 
-          const userSnap = await getDoc(userRef);
-          const existingStories = userSnap.data()?.stories || [];
- 
-          const newStoryId = Date.now().toString(); 
-          await updateDoc(userRef, {
-            stories: {
-              ...existingStories, 
-              [newStoryId]: { imageUrl, timestamp: serverTimestamp() }
-            }
-          });           
-        } else {
-          Alert.alert("Error", "Failed to add story.");
-        }
-      }
-    } catch (error: any) {
-      console.error("Error adding story:", error.message);
-      Alert.alert("Error", "Could not add story.");
-    }
-  };
-
-  const handleStoryPress = async (userEmail: string) => {
-    try {
-      const usersCollection = collection(firestore, 'users');
-      const q = query(usersCollection, where('email', '==', userEmail), limit(1));
-      const snapshot = await getDocs(q);
- 
-      if (!snapshot.empty) {
-        const userData = snapshot.docs[0].data() as UserData;
- 
-        if (!userData.stories || Object.keys(userData.stories).length === 0) { 
-          return;
-        }
- 
-        const recentStories = Object.values(userData.stories).filter((story: any) => {
-          if (!story) {
-            return false;
-          }
-          if (!story.timestamp) {
-            console.warn('Story timestamp is null or undefined:', story);
-            return false;
-          }
-          if (typeof story.timestamp?.toDate !== 'function') {
-            console.warn('Story timestamp is not a valid Timestamp:', story);
-            return false;
-          }
-          try {
-            const storyTimestamp = story.timestamp.toDate().getTime();
-            const isRecent = Date.now() - storyTimestamp < 24 * 60 * 60 * 1000;
-            return isRecent;
-          } catch (e) {
-            console.error('Error processing timestamp:', e);
-            return false;
-          }
-        });
-  
-        if (recentStories && recentStories.length > 0) {
-          const latestStory = recentStories.reduce((latest: any, current: any) => {
-            if (!latest || !latest.timestamp || !latest.timestamp.toDate) return current;
-            if (!current || !current.timestamp || !current.timestamp.toDate) return latest;
-            try {
-              const latestTime = latest.timestamp.toDate().getTime();
-              const currentTime = current.timestamp.toDate().getTime();
-              return latestTime > currentTime ? latest : current;
-            } catch (e) {
-              console.error('Error comparing timestamps:', e);
-              return latest;
-            }
-          });
- 
-          setCurrentStoryUrl(latestStory.imageUrl);
-          setIsStoryModalVisible(true);
-        } 
-      } else {
-        console.warn("Could not find user with email:", userEmail);
-      }
-    } catch (error) {
-      console.error("Error fetching user data:", error);
     }
   };
 
@@ -745,72 +697,6 @@ const Community = () => {
     );
   };
 
-  const renderStoryView = () => {
-    if (!currentStoryUrl) return null;
- 
-    return (
-      <Modal
-        animationType="fade"
-        transparent={true}
-        visible={isStoryModalVisible}
-        onRequestClose={() => setIsStoryModalVisible(false)}
-      >
-        <TouchableOpacity
-          style={styles.storyModalContainer}
-          onPress={() => setIsStoryModalVisible(false)}
-        >
-          <Image
-            source={{ uri: currentStoryUrl }}
-            style={styles.storyImage}
-            resizeMode="contain"
-          />
-        </TouchableOpacity>
-      </Modal>
-    );
-  };
-
-  const renderSuggestedUserItem = (user: UserData): React.ReactNode => {
-    const hasRecentStory =
-      user.stories &&
-      user.stories.some((story) => {
-        if (!story) return false;
-        if (!story.timestamp) return false;
-        if (typeof story.timestamp?.toDate !== 'function') return false;
-        try {
-          return (
-            Date.now() - story.timestamp.toDate().getTime() < 24 * 60 * 60 * 1000
-          );
-        } catch (e) {
-          console.error('Error processing timestamp in suggested user:', e);
-          return false;
-        }
-      });
-   
-    return (
-      <TouchableOpacity
-        key={user.email}  
-        style={styles.suggestedUserItem}
-        onPress={() => handleStoryPress(user.email!)}
-      >
-        <View
-          style={[
-            styles.suggestedUserAvatarContainer,
-            hasRecentStory && {borderWidth: 2, borderColor: '#7A5FFF'},
-          ]}
-        >
-          {user?.profilePicture ? (
-            <Image
-              source={{ uri: user.profilePicture }}
-              style={styles.suggestedUserAvatar}
-            />
-          ) : (
-            <View style={styles.suggestedUserAvatarPlaceholder} />
-          )}
-        </View>
-      </TouchableOpacity>
-    );
-  };
-
   if (loading) {
     return (
       <SafeAreaView style={styles.safeArea}>
@@ -847,7 +733,7 @@ const Community = () => {
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <Text style={styles.headerTitle}>Community</Text>
           <View style={{ flexDirection: 'row', marginTop: height * 0.008 }}>
-            <TouchableOpacity onPress={handleAddStory} style={{ paddingVertical: height * 0.03, paddingHorizontal: width * 0.02 }}>
+            <TouchableOpacity onPress={handlePickStoryMedia} style={{ paddingVertical: height * 0.03, paddingHorizontal: width * 0.02 }}>
               <Feather name="plus-square" size={24} color="#222" />
             </TouchableOpacity>
             <TouchableOpacity
@@ -861,12 +747,22 @@ const Community = () => {
       </View>
 
       <View style={styles.suggestedUsersContainer}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {suggestedUsers.map(renderSuggestedUserItem)}
-        </ScrollView>
+        <InstaStory
+          data={storiesData}
+          duration={10}
+          avatarSize={RFValue(65 * scaleFactor, height)} 
+          avatarTextStyle={{
+            fontSize: RFValue(0 * scaleFactor, height), 
+          }}
+          unPressedBorderColor="#EEEEEE"
+          pressedBorderColor="#7A5FFF"
+          avatarWrapperStyle={{
+            alignItems: 'center',
+            marginHorizontal: width * 0.009 * scaleFactor, 
+            paddingHorizontal: 0,
+          }}
+        />
       </View>
-
-      {renderStoryView()}
 
       <FlatList
         data={posts}
@@ -970,23 +866,6 @@ const styles = StyleSheet.create({
   suggestedUsersContainer: {
     paddingBottom: RFValue(25 * scaleFactor, height),
     paddingHorizontal: RFValue(7 * scaleFactor, width),
-  },
-  suggestedUserItem: {
-    alignItems: 'center',
-    marginHorizontal: width * 0.02 * scaleFactor,
-  },
-  suggestedUserAvatar: {
-    width: RFValue(66 * scaleFactor, height),
-    height: RFValue(66 * scaleFactor, height),
-    borderRadius: RFValue(35 * scaleFactor, height),
-    marginBottom: height * 0.006 * scaleFactor,
-  },
-  suggestedUserAvatarPlaceholder: {
-    width: RFValue(50 * scaleFactor, height),
-    height: RFValue(50 * scaleFactor, height),
-    borderRadius: RFValue(25 * scaleFactor, height),
-    backgroundColor: '#EEEEEE',
-    marginBottom: height * 0.006 * scaleFactor,
   },
   title: {
     fontSize: RFPercentage(3.5 * scaleFactor),

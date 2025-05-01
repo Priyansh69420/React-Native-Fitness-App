@@ -1,5 +1,5 @@
 import { View, Text, Dimensions, StyleSheet, SafeAreaView, TextInput, TouchableOpacity, Image, KeyboardAvoidingView, Platform } from 'react-native';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigations/RootStackParamList';
@@ -16,7 +16,12 @@ export default function Signup() {
   const navigation = useNavigation<NavigationProp>();
   const [email, setEmail] = useState('');
   const [error, setError] = useState<String>('');
-  const {updateOnboardingData} = useOnboarding();
+  const {updateOnboardingData, onboardingData} = useOnboarding();
+  
+  useEffect(() => {
+    if(onboardingData.email) setEmail(onboardingData.email);
+  }, [])
+  
 
   async function handleContinue() {
     if(!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && email.trim()) {

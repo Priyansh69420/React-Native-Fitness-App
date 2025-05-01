@@ -14,6 +14,10 @@ import { DrawerNavigationProp } from '@react-navigation/drawer';
 import Carousel, { ICarouselInstance } from 'react-native-reanimated-carousel';
 import { DrawerParamList } from '../../navigations/DrawerParamList';
 import { RFPercentage, RFValue } from 'react-native-responsive-fontsize';
+import { useDispatch } from 'react-redux';
+import { updateUser } from '../../store/slices/userSlice';
+import { auth, firestore } from '../../../firebaseConfig';
+import { doc, setDoc } from '@firebase/firestore';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 const BUTTON_HORIZONTAL_MARGIN_PERCENTAGE = 6;
@@ -51,6 +55,60 @@ export default function GetPremium() {
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('yearly');
   const [activeSlide, setActiveSlide] = useState(0);
   const carouselRef = useRef<ICarouselInstance>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+  const dispatch = useDispatch();
+
+  const getSelectedPlanDetails = () => {
+    if (selectedPlan === 'monthly') {
+      return { name: 'Monthly', price: '$4.99' };
+    } else if (selectedPlan === 'yearly') {
+      return { name: 'Yearly', price: '$89.99' };
+    }
+    return null;
+  };
+
+  const handlePurchase = async () => {
+    setLoading(true);
+
+    const planDetails = getSelectedPlanDetails();
+    if (planDetails) {
+      Alert.alert(
+        'Confirm Purchase',
+        `Are you sure you want to purchase the ${planDetails.name} plan for ${planDetails.price}?`,
+        [
+          {
+            text: 'Cancel',
+            style: 'cancel',
+          },
+          {
+            text: 'Yes',
+            onPress: async () => {
+              const user = auth.currentUser;
+              if(!user) alert('User not logged in');
+
+              try {
+                if(user) {
+                  await setDoc(doc(firestore, 'users', user.uid), {
+                    isPremium: true,
+                  }, { merge: true });
+                }
+
+                dispatch(updateUser({ isPremium: true }));
+                Alert.alert('Purchase Successful', 'You are now a premium member!');
+              } catch {
+                Alert.alert('Error', 'Something went wrong while processing your purchase.');
+              } finally {
+                setLoading(false);
+              }
+            },
+          },
+        ],
+        { cancelable: false }
+      );
+    } else {
+      Alert.alert('Error', 'Please select a plan before purchasing.');
+    } 
+  };
 
   const renderCarouselItem = ({ item }: { item: CarouselItem }) => (
     <View style={styles.carouselItem}>
@@ -61,10 +119,6 @@ export default function GetPremium() {
       </View>
     </View>
   );
-
-  const handlePurchase = () => {
-    Alert.alert('Purchase', 'This feature is coming soon!');
-  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -172,24 +226,24 @@ const styles = StyleSheet.create({
   },
   carouselItem: {
     alignItems: 'center',
-    flex: 1, 
+    flex: 1,
   },
   carouselImage: {
     width: screenWidth,
-    height: CAROUSEL_HEIGHT * 0.7, 
+    height: CAROUSEL_HEIGHT * 0.7,
     resizeMode: 'cover',
-    marginBottom: 15
+    marginBottom: 15,
   },
   carouselTextContainer: {
-    flex: 1, 
-    justifyContent: 'center', 
-    paddingBottom: 20, 
-    width: '90%'
+    flex: 1,
+    justifyContent: 'center',
+    paddingBottom: 20,
+    width: '90%',
   },
   header: {
     position: 'absolute',
     top: RFPercentage(1.8),
-    left: RFPercentage(2.5), 
+    left: RFPercentage(2.5),
     zIndex: 1,
   },
   backButtonContainer: {
@@ -212,21 +266,21 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333',
     textAlign: 'center',
-    marginTop: RFPercentage(1.2), 
-    marginBottom: RFPercentage(0.6), 
-    paddingHorizontal: RFPercentage(2.5), 
+    marginTop: RFPercentage(1.2),
+    marginBottom: RFPercentage(0.6),
+    paddingHorizontal: RFPercentage(2.5),
   },
   carouselDescription: {
     fontSize: RFValue(16, screenHeight),
     color: '#666',
     textAlign: 'center',
-    paddingHorizontal: RFPercentage(2.5), 
+    paddingHorizontal: RFPercentage(2.5),
   },
   paginationContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    paddingVertical: RFPercentage(1.2), 
-    marginBottom: RFPercentage(1.2), 
+    paddingVertical: RFPercentage(1.2),
+    marginBottom: RFPercentage(1.2),
   },
   dotStyle: {
     width: RFValue(10, screenHeight),
@@ -244,9 +298,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#F5F7FA',
     borderRadius: RFValue(10, screenHeight),
-    padding: RFPercentage(3.1), 
-    marginBottom: RFPercentage(2.8), 
-    marginHorizontal: RFPercentage(2.5), 
+    padding: RFPercentage(3.1),
+    marginBottom: RFPercentage(2.8),
+    marginHorizontal: RFPercentage(2.5),
     shadowColor: '#000',
     shadowOffset: { width: 0, height: RFValue(2, screenHeight) },
     shadowOpacity: 0.1,
@@ -275,7 +329,7 @@ const styles = StyleSheet.create({
     borderRadius: RFValue(10, screenHeight),
     borderWidth: RFValue(2, screenHeight),
     borderColor: '#7A5FFF',
-    marginRight: RFValue(10, screenWidth), 
+    marginRight: RFValue(10, screenWidth),
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -293,8 +347,8 @@ const styles = StyleSheet.create({
   freeTrialBadge: {
     backgroundColor: '#E6E6FA',
     borderRadius: RFValue(15, screenHeight),
-    paddingHorizontal: RFPercentage(1.2), 
-    paddingVertical: RFPercentage(0.6), 
+    paddingHorizontal: RFPercentage(1.2),
+    paddingVertical: RFPercentage(0.6),
   },
   freeTrialText: {
     fontSize: RFValue(14, screenHeight),
@@ -313,12 +367,12 @@ const styles = StyleSheet.create({
     color: '#666',
     textAlign: 'center',
     marginBottom: RFPercentage(2.5),
-    paddingHorizontal: RFPercentage(2.5), 
+    paddingHorizontal: RFPercentage(2.5),
   },
   purchaseButton: {
     backgroundColor: '#7A5FFF',
     borderRadius: RFValue(25, screenHeight),
-    paddingVertical: RFPercentage(1.8), 
+    paddingVertical: RFPercentage(1.8),
     alignItems: 'center',
     marginHorizontal: RFPercentage(BUTTON_HORIZONTAL_MARGIN_PERCENTAGE),
   },

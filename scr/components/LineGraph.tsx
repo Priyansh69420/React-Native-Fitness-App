@@ -31,8 +31,8 @@ const LineGraphSVG = () => {
 
   const convertStepstoCalories = () => {
     return weeklySteps.map((item) => ({
-      value: Math.round(item.count * 0.01),
-      label: item.day,
+      value: Math.round(item.count * 0.03),
+      label: item.day.slice(0, 3),
     }));
   };
 
@@ -43,33 +43,38 @@ const LineGraphSVG = () => {
 
   return (
     <View style={styles.container}>
-      <View style={{ height: graphHeight, width: graphWidth }}>
-        {hasValidData ? (
-          <LineChart
-            data={data}
-            height={graphHeight}
-            width={graphWidth}
-            thickness={2}
-            color="orange"
-            hideRules
-            yAxisColor="transparent"
-            xAxisColor="transparent"
-            showVerticalLines={false}
-            areaChart
-            startFillColor="orange"
-            endFillColor="orange"
-            startOpacity={0.1}
-            endOpacity={1}
-            noOfSections={4}
-            spacing={graphWidth / (data.length - 1)}
-            hideDataPoints
-            curved
-          />
-        ) : (
-          <View style={styles.emptyGraphPlaceholder}>
-            <Text style={styles.noDataText}>Not enough data to show stats.</Text>
-          </View>
-        )}
+      <View style={styles.chartContainer}>
+        <Text style={styles.yAxisLabel}>Calories</Text>
+        <View style={{ height: graphHeight, width: graphWidth }}>
+          {hasValidData ? (
+            <LineChart
+              data={data}
+              height={graphHeight}
+              width={graphWidth}
+              thickness={2}
+              color="orange"
+              hideRules
+              yAxisColor="transparent"
+              xAxisColor="transparent"
+              showVerticalLines={false}
+              areaChart
+              startFillColor="orange"
+              endFillColor="orange"
+              startOpacity={0.9}
+              endOpacity={0.2}
+              noOfSections={4}
+              spacing={graphWidth / (data.length - 1)}
+              hideDataPoints
+              curved
+              curvature={0.1}
+              yAxisOffset={-11}
+            />
+          ) : (
+            <View style={styles.emptyGraphPlaceholder}>
+              <Text style={styles.noDataText}>Not enough data to show stats.</Text>
+            </View>
+          )}
+        </View>
       </View>
     </View>
   );
@@ -79,7 +84,18 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: '#fff',
     paddingBottom: 30,
-    marginLeft: -10,
+  },
+  chartContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  yAxisLabel: {
+    position: 'absolute',
+    left: -35, 
+    top: '50%',
+    transform: [{ rotate: '-90deg' }], 
+    fontSize: 14,
+    color: 'gray',
   },
   noDataText: {
     fontSize: 14,

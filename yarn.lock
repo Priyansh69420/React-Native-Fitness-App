@@ -5965,6 +5965,7 @@ __metadata:
     react-native-gesture-handler: ~2.20.2
     react-native-gifted-charts: ^1.4.60
     react-native-google-fit: ^0.21.0
+    react-native-insta-story: ^1.1.9
     react-native-masked-view: ^0.2.0
     react-native-material-menu: ^2.0.0
     react-native-permissions: ^5.3.0
@@ -8524,7 +8525,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"prop-types@npm:^15.7.2, prop-types@npm:^15.8.1":
+"prop-types@npm:^15.5.10, prop-types@npm:^15.6.2, prop-types@npm:^15.7.2, prop-types@npm:^15.8.1":
   version: 15.8.1
   resolution: "prop-types@npm:15.8.1"
   dependencies:
@@ -8777,6 +8778,20 @@ __metadata:
   languageName: node
   linkType: hard
 
+"react-native-insta-story@npm:^1.1.9":
+  version: 1.1.9
+  resolution: "react-native-insta-story@npm:1.1.9"
+  dependencies:
+    prop-types: ^15.6.2
+    react-native-modalbox: ^2.0.2
+    react-native-swipe-gestures: ^1.0.5
+  peerDependencies:
+    react: ">=16.8.1"
+    react-native: ">=0.60.0-rc.0 <1.0.x"
+  checksum: c4e8d488700caca4acb425cd8c3f15a9006ff7f4d46a66a085574f65ae264da6d97927acf9d7df6c919dbeb4c939bcbaf48a71b600f1e35e06d1d25d54c7b634
+  languageName: node
+  linkType: hard
+
 "react-native-iphone-x-helper@npm:^1.3.1":
   version: 1.3.1
   resolution: "react-native-iphone-x-helper@npm:1.3.1"
@@ -8802,6 +8817,15 @@ __metadata:
     react: "*"
     react-native: "*"
   checksum: 6aaf1f53f41c03803b37c84bde5d4b4994f76092e992a91523ab09879e042d0df931c0ba8d5f7ef24074ca5cb88fdd7defbfabb68aef209e1a0ad8202562aab1
+  languageName: node
+  linkType: hard
+
+"react-native-modalbox@npm:^2.0.2":
+  version: 2.0.2
+  resolution: "react-native-modalbox@npm:2.0.2"
+  dependencies:
+    prop-types: ^15.5.10
+  checksum: cd1d367c74b67f7aa4efe945cccea5f211d49acd56c054cc151b5741553b479d013a9f2f80d8f8fb3972799af14f1f56668ee7781972b2e26e4af91db0fc191b
   languageName: node
   linkType: hard
 
@@ -8906,6 +8930,13 @@ __metadata:
     react: "*"
     react-native: "*"
   checksum: ad9d6093f3aef0d53c5e2a562afb7805009f2bf50fd4ec6e77f8c18a6cb7e06a7793d55cc66d523c7d30c77cae170ee26767c72ad5b1a1f07032420ccf4162fe
+  languageName: node
+  linkType: hard
+
+"react-native-swipe-gestures@npm:^1.0.5":
+  version: 1.0.5
+  resolution: "react-native-swipe-gestures@npm:1.0.5"
+  checksum: d637bc40baa50fa0ce3b6cf2b494efeceaea03cc3875cb7cf7d76922914a21d5e6b098d4a084fb291ce61bfbb0a241c03cff24b15bebf0cfae1c146f4ad10d92
   languageName: node
   linkType: hard
 

@@ -45,7 +45,7 @@ function CustomDrawerContent(props: any) {
       borderRadius: RFValue(60),
       marginBottom: RFPercentage(1.5),
     };
-
+    
   return (
     <DrawerContentScrollView {...props} contentContainerStyle={styles.contentContainer}>
       <TouchableOpacity 
@@ -70,8 +70,40 @@ function CustomDrawerContent(props: any) {
         />
         
         <DrawerItem
-          label="Community"
-          onPress={() => props.navigation.navigate('Community')}
+          label={() => (
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flex: 1 }}>
+              <Text style={[styles.label, currentRouteName === 'Community' && styles.activeLabel]}>
+                Community
+              </Text>
+              {!userData?.isPremium && (
+                <Image source={require('../assets/lockIcon.png')} style={styles.lockIcon} />
+              )}
+            </View>
+          )}
+          onPress={() => {
+            if(!userData?.isPremium) {
+              Alert.alert(
+                'Premium Feature',
+                'Unlock all features of the app by upgrading to Premium.',
+                [
+                  {
+                    text: 'Maybe Later',
+                    style: 'cancel',
+                  },
+                  {
+                    text: 'Buy Premium',
+                    onPress: () => {
+                     props.navigation.navigate('GetPremium');
+                    },
+                    style: 'default',
+                  },
+                ],
+                { cancelable: true }
+              );
+              return;
+            }
+            props.navigation.navigate('Community')
+          }}
           icon={() => <Image source={require('../assets/CommunityIcon.png')} style={styles.icon} />}
           labelStyle={[styles.label, currentRouteName === 'Community' && styles.activeLabel]}
           style={currentRouteName === 'Community' && styles.activeItem}
@@ -151,6 +183,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     color: '#333',
+    fontWeight: '500'
   },
   activeItem: {
     backgroundColor: '#f0f0f0', 
@@ -160,6 +193,13 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#7A5FFF',
   },
+  lockIcon: {
+    width: 20,
+    height: 20,
+    marginLeft: 8,
+    tintColor: '#000'
+  },
+
 })
 export default function DrawerNavigator() {
   return (

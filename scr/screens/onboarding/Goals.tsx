@@ -1,5 +1,5 @@
 import { View, Text, Dimensions, StyleSheet, SafeAreaView, TouchableOpacity, Image, Alert } from 'react-native';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { RootStackParamList } from '../../navigations/RootStackParamList';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -23,7 +23,11 @@ export default function SetGoalsScreen() {
   const navigation = useNavigation<NavigationProp>();
   const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
   const [error, setError] = useState<string>('');
-  const {updateOnboardingData} = useOnboarding();
+  const {updateOnboardingData, onboardingData} = useOnboarding();
+
+  useEffect(() => {
+    if(onboardingData.goals) setSelectedGoals(onboardingData.goals)
+  }, [])
 
   const handleGoalPress = (goalId: number) => {
     const selectedGoal = goals.find(goal => goal.id === goalId);

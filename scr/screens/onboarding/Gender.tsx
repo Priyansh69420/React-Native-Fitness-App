@@ -1,5 +1,5 @@
 import { View, Text, Dimensions, StyleSheet, SafeAreaView, TouchableOpacity, Image, Alert } from 'react-native';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { RootStackParamList } from '../../navigations/RootStackParamList';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -23,7 +23,11 @@ export default function SetGenderScreen() {
   const navigation = useNavigation<NavigationProp>();
   const [selectedGender, setSelectedGender] = useState<string | null>(null);
   const [error, setError] = useState<string>('');
-  const { updateOnboardingData } = useOnboarding();
+  const { updateOnboardingData, onboardingData} = useOnboarding();
+
+  useEffect(() => {
+    if(onboardingData.gender) setSelectedGender(onboardingData.gender);
+  }, [])
 
   const handleGenderPress = (genderLabel: string) => {
     setSelectedGender(genderLabel);

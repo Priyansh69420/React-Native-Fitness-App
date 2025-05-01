@@ -11,6 +11,7 @@ export interface UserData {
     interests: string[];
     gender: string;
     calories: number;
+    isPremium: boolean;
 }
 
 interface UserState {
