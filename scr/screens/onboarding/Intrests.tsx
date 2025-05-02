@@ -94,7 +94,7 @@ export default function Intrests() {
               </TouchableOpacity>
             ))}
 
-            {error ? <Text style={{color: 'red', width: '100%', textAlign: 'center'}}>{error}</Text>: <></>}
+            {error ? <Text style={{color: 'gray', width: '100%', textAlign: 'center'}}>{error}</Text>: <></>}
           </View>
 
           <TouchableOpacity style={styles.button} onPress={handleContinuePress} >

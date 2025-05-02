@@ -26,6 +26,12 @@ type NavigationProp = DrawerNavigationProp<HomeStackParamList, 'Home'>;
 
 const { width, height } = Dimensions.get('window');
 
+const avatars = [
+  { id: 1, source: require('../../assets/avatar5.png') },
+  { id: 2, source: require('../../assets/avatar2.png') },
+  { id: 3, source: require('../../assets/avatar4.png') },
+];
+
 export default function Home() {
   const { userData, loading } = useSelector((state: RootState) => state.user);
   const { steps } = useSelector((state: RootState) => state.footsteps);
@@ -83,12 +89,17 @@ export default function Home() {
     );
   }
 
-  const profileImageSource = typeof userData?.profilePicture === 'string'
-    ? { uri: userData.profilePicture }
+  const isProfilePicNumber = typeof userData?.profilePicture === 'number';
+  const localAvatar = isProfilePicNumber
+    ? avatars.find(avatar => avatar.id === userData.profilePicture)
     : undefined;
-  
+
   const isCustomImg = typeof userData?.profilePicture === 'string'
-    && !userData.profilePicture.includes('avatar');
+  && !userData.profilePicture.includes('avatar');
+
+  const profileImageSource = isCustomImg
+    ? { uri: userData.profilePicture }
+    : localAvatar?.source;
   
   const profilePictureStyle = {
     width: isCustomImg ? RFValue(60, height) : RFValue(74, height),
@@ -97,9 +108,9 @@ export default function Home() {
     marginRight: RFPercentage(1),
   };
 
-  const nutritionProgress = userData?.calories / 2000;
+  const nutritionProgress = Math.min((userData?.calories || 0) / 2000, 1);
   const waterProgress = glassDrunk / totalGlasses;
-  const stepsProgress = steps / 10000;
+  const stepsProgress = Math.min(steps / 10000, 1);
 
   return (
     <ScrollView>
@@ -140,7 +151,7 @@ export default function Home() {
         </View>
       </View>
 
-      <Text style={styles.greeting}>Good morning, {userData.name || 'User'}</Text>
+      <Text style={styles.greeting}>Greetings, {userData.name || 'User'}</Text>
       <Text style={styles.subtitle}>
         Eat the right amount of food and stay hydrated through the day
       </Text>
@@ -168,7 +179,7 @@ export default function Home() {
                 <Text style={styles.sectionProgress}>{userData?.calories ?? 0} cal / 2000 cal</Text>
                 <View style={styles.progressBarContainer}>
                   <LinearGradient
-                    colors={['#6B4EFF', '#6B4EFF', '#FF9500', '#FF9500', '#FF6347', '#FF6347']}
+                    colors={['#66D3C8', '#66D3C8', '#9D6DEB', '#9D6DEB', '#FFA500', '#FFA500']}
                     locations={[0, 0.33, 0.33, 0.66, 0.66, 1]}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
@@ -203,7 +214,7 @@ export default function Home() {
                 <Text style={styles.sectionProgress}>{glassDrunk} / {totalGlasses} glasses</Text>
                 <View style={styles.progressBarContainer}>
                   <LinearGradient
-                    colors={['#6B4EFF', '#6B4EFF', '#FF9500', '#FF9500', '#FF6347', '#FF6347']}
+                    colors={['#66D3C8', '#66D3C8', '#9D6DEB', '#9D6DEB', '#FFA500', '#FFA500']}
                     locations={[0, 0.33, 0.33, 0.66, 0.66, 1]}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
@@ -241,7 +252,7 @@ export default function Home() {
                 <Text style={styles.sectionProgress}>{steps} steps / 10000 steps</Text>
                 <View style={styles.progressBarContainer}>
                   <LinearGradient
-                    colors={['#6B4EFF', '#6B4EFF', '#FF9500', '#FF9500', '#FF6347', '#FF6347']}
+                    colors={['#66D3C8', '#66D3C8', '#9D6DEB', '#9D6DEB', '#FFA500', '#FFA500']}
                     locations={[0, 0.33, 0.33, 0.66, 0.66, 1]}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}

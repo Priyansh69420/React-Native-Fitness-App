@@ -194,7 +194,7 @@ export default function SetProfile() {
             <Text style={styles.addPhotoText}>Add Custom Photo</Text>
           </TouchableOpacity>
 
-          {error ? <Text style={{color: 'red', width: '85%', textAlign: 'center', maxWidth: '70%'}}>{error}</Text>: <></>}
+          {error ? <Text style={{color: 'gray', width: '85%', textAlign: 'center', maxWidth: '70%'}}>{error}</Text>: <></>}
           </View>
 
           <TouchableOpacity style={styles.button} onPress={handleContinuePress}>

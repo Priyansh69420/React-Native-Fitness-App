@@ -416,7 +416,7 @@ export default function Nutrition() {
                         <Text style={styles.foodCardName}>{food.name}</Text>
                         <Text style={styles.foodQuantity}>{food.quantity} grams</Text>
                       </View>
-                      <Text style={styles.foodCalories}>{food.calories}</Text>
+                      <Text style={styles.foodCalories}>{food.calories} <Text style={{fontSize: 15, color: 'gray'}}>Cal</Text></Text>
                     </View>
                   ))}
                 </View>
@@ -474,20 +474,17 @@ export default function Nutrition() {
                   onChangeText={setSearchQuery}
                 />
 
-                {searchQuery ? (
-                  <FlatList 
-                  data={filteredNutritionInfo}
-                  renderItem={renderFoodItem}
-                  keyExtractor={(item) => item.name}
-                  style={styles.foodList}
-                />
+                {searchQuery && filteredNutritionInfo.length === 0 ? (
+                  <View style={styles.noResultsContainer}>
+                    <Text style={styles.noResultsText}>No record found, try something else</Text>
+                  </View>
                 ) : (
-                  <FlatList 
-                  data={nutritionInfo}
-                  renderItem={renderFoodItem}
-                  keyExtractor={(item) => item.name}
-                  style={styles.foodList}
-                />
+                  <FlatList
+                    data={searchQuery ? filteredNutritionInfo : nutritionInfo}
+                    renderItem={renderFoodItem}
+                    keyExtractor={(item) => item.name}
+                    style={styles.foodList}
+                  />
                 )}
 
                 {selectedFoods.length > 0 && selectedMeal && (
@@ -603,7 +600,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: RFPercentage(1.5),
-    paddingHorizontal: RFPercentage(2),
+    paddingLeft: RFPercentage(2),
+    paddingRight: RFPercentage(1.5)
   },
   foodCardName: {
     fontSize: RFValue(18),
@@ -730,6 +728,18 @@ const styles = StyleSheet.create({
   foodName: {
     fontSize: RFValue(16),
     color: '#444',
+  },
+  noResultsContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    minHeight: 100, 
+  },
+  noResultsText: {
+    fontSize: RFValue(16),
+    color: '#666',
+    textAlign: 'center',
   },
   selectionIndicator: {
     width: RFValue(18),

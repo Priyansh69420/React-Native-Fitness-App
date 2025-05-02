@@ -10,7 +10,8 @@ import {
   StyleSheet,
   Dimensions,
   Platform,
-  ActivityIndicator
+  ActivityIndicator,
+  Alert
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useSelector, useDispatch } from 'react-redux';
@@ -228,7 +229,7 @@ export default function Profile() {
         const userRefDoc = doc(firestore, 'users', user.uid);
         await setDoc(userRefDoc, updatedUserData, { merge: true });
       }
-      navigation.navigate('Settings')
+      navigation.goBack();
     } catch (error: any) {
       alert('Failed to update profile: ' + error.message);
     }
@@ -261,7 +262,18 @@ export default function Profile() {
       await reauthenticateWithCredential(user, credential);
 
       await updatePassword(user, newPassword);
-      alert('Password updated successfully.');
+      Alert.alert(
+        'Success', 
+        'Your password has been updated successfully.', 
+        [
+          {
+            text: 'OK',
+            onPress: () => console.log('OK Pressed'),
+            style: 'default',
+          },
+        ],
+        { cancelable: true }
+      );
 
       setCurrentPassword('');
       setNewPassword('');
@@ -284,7 +296,7 @@ export default function Profile() {
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.pop()}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
             <Image source={require('../../assets/backArrowIcon.png')} style={styles.backArrowIcon} />
             <Text style={styles.backButtonText}>Back</Text>
           </TouchableOpacity>

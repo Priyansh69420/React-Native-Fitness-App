@@ -16,16 +16,36 @@ export default function Signup() {
   const navigation = useNavigation<NavigationProp>();
   const [email, setEmail] = useState('');
   const [error, setError] = useState<String>('');
+  const [shouldValidate, setShouldValidate] = useState<boolean>(false);
+
   const {updateOnboardingData, onboardingData} = useOnboarding();
   
   useEffect(() => {
     if(onboardingData.email) setEmail(onboardingData.email);
   }, [])
-  
+
+  useEffect(() => {
+    if(!shouldValidate) return;
+
+    if (email.length === 0) {
+      setError('');
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setError('Please enter a valid email address');
+    } else {
+      setError('');
+    }
+  }, [email, shouldValidate]);
 
   async function handleContinue() {
+    if(email.length === 0) {
+      setError('Please enter your email address')
+      setShouldValidate(true);
+      return;
+    }
+
     if(!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && email.trim()) {
       setError('Please enter a valid email address');
+      setShouldValidate(true);
       return;
     }
 
@@ -52,7 +72,7 @@ export default function Signup() {
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : -100} 
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : -120} 
       >
         <View style={styles.container}>
 
@@ -63,7 +83,7 @@ export default function Signup() {
           <View style={styles.centeredContent}>
             <Image source={logo} style={styles.appLogo} resizeMode="contain" />
 
-            <Text style={styles.title}>What is your email address?</Text>
+            <Text style={styles.title}>What is your Email address?</Text>
 
             <View style={{marginBottom: height * 0.125, width: '100%', alignItems: 'center' }}>
             <View style={styles.inputContainer}>
@@ -77,7 +97,7 @@ export default function Signup() {
               />
             </View>
 
-            {error ? <Text style={{color: 'red', width: '100%', textAlign: 'center'}}>{error}</Text>: <></>}
+            {error ? <Text style={{color: 'gray', width: '100%', textAlign: 'center'}}>{error}</Text>: <></>}
             </View>
 
             <TouchableOpacity style={styles.button} onPress={() => handleContinue()}>
@@ -121,7 +141,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: width * 0.05, 
-    
   },
   appLogo: {
     width: width * 0.13, 
@@ -157,7 +176,8 @@ const styles = StyleSheet.create({
     fontSize: RFValue(16, height), 
     color: '#666',
     width: '100%',
-    textAlign: 'center'
+    textAlign: 'center',
+    paddingHorizontal: 10,
   },
   button: {
     backgroundColor: '#7A5FFF',

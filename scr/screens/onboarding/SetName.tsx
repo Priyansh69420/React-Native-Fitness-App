@@ -15,7 +15,7 @@ export default function SetNameScreen() {
   const [firstName, setFirstName] = useState<string>('');
   const [lastName, setLastName] = useState<string>('');
   const [error1, setError1] = useState<string>('');
-  const [error2, setError2] = useState<string>('');
+  const [shouldValidate, setShouldValidate] = useState<boolean>(false);
   const {updateOnboardingData, onboardingData} = useOnboarding();
 
   useEffect(() => {
@@ -24,21 +24,27 @@ export default function SetNameScreen() {
     if(onboardingData.lastName) setLastName(onboardingData.lastName);
   }, [])
   
-
-  const handleContinuePress = () => {
-    if (firstName.trim() && lastName.trim()) {
-      updateOnboardingData({firstName});
-      updateOnboardingData({lastName});
-      navigation.navigate('FaceId'); 
+  useEffect(() => {
+    if (!shouldValidate) return;
+  
+    if (!firstName.trim()) {
+      setError1('Please enter your first name.');
     } else {
-      if(firstName.trim()) setError2('Please enter your last name.');
-      if(lastName.trim()) setError1('Please enter your first name.');
-      if (!firstName.trim() && !lastName.trim()) {
-        setError1('Please enter your first name.');
-        setError2('Please enter your last name.');
-      }
+      setError1('');
     }
-  };
+  }, [firstName, shouldValidate]);
+  
+  const handleContinuePress = () => {
+    if (!firstName.trim()) {
+      setShouldValidate(true);
+      return;
+    }
+  
+    setError1('');
+    updateOnboardingData({ firstName });
+    updateOnboardingData({ lastName });
+    navigation.navigate('FaceId');
+  };  
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -62,25 +68,29 @@ export default function SetNameScreen() {
               <TextInput
                 style={styles.input}
                 value={firstName}
-                onChangeText={setFirstName}
+                onChangeText={(input) => {
+                  const filtered = input.replace(/[0-9]/g, '');
+                  setFirstName(filtered);
+                }}
                 placeholder="First Name"
                 autoCapitalize="words"
               />
             </View>
 
-            {error1 ? <Text style={{color: 'red', width: '85%', textAlign: 'center'}}>{error1}</Text>: <></>}
+            {error1 ? <Text style={{color: 'gray', width: '85%', textAlign: 'center'}}>{error1}</Text>: <></>}
 
             <View style={styles.inputContainer}>
               <TextInput
                 style={styles.input}
                 value={lastName}
-                onChangeText={setLastName}
+                onChangeText={(input) => {
+                  const filtered = input.replace(/[0-9]/g, '');
+                  setLastName(filtered);
+                }}
                 placeholder="Last Name"
                 autoCapitalize="words"
               />
             </View>
-
-            {error2 ? <Text style={{color: 'red', width: '85%', textAlign: 'center'}}>{error2}</Text>: <></>}
 
             <TouchableOpacity style={styles.button} onPress={handleContinuePress}>
               <Text style={styles.buttonText}>Continue</Text>

@@ -14,12 +14,30 @@ export default function SetPassword() {
   const navigation = useNavigation<NavigationProp>();
   const [password, setPassword] = useState('');
   const [error, setError] = useState<String>('');
+  const [shouldValidate, setShouldValidate] = useState<boolean>(false);
   const {updateOnboardingData, onboardingData} = useOnboarding();
   const email = onboardingData.email ?? "";
 
   useEffect(() => {
       if(onboardingData.password) setPassword(onboardingData.password);
     }, [])
+
+    useEffect(() => {
+      if(!shouldValidate) return;
+
+      if (password.length === 0) {
+        setError('');
+        return;
+      }
+    
+      const { minLength, hasUpperCase, hasNumber } = checkPasswordRequirements(password);
+    
+      if (!minLength || !hasUpperCase || !hasNumber) {
+        setError("Password must be at least 8 characters long, contain an uppercase letter, and include a number.");
+      } else {
+        setError('');
+      }
+    }, [password]);
 
   const checkPasswordRequirements = (pass: string) => {
     const minLength = pass.length >= 8;
@@ -33,6 +51,7 @@ export default function SetPassword() {
 
     if(!minLength || !hasUpperCase || !hasNumber) {
       setError("Password must be at least 8 characters long, contain an uppercase letter, and include a number.")
+      setShouldValidate(true);
       return;
     }
 
@@ -65,13 +84,13 @@ export default function SetPassword() {
                 style={styles.input}
                 value={password}
                 onChangeText={setPassword}
-                placeholder="Password"
+                placeholder="Enter your password"
                 secureTextEntry
                 autoCapitalize="none"
               />
             </View>
 
-            {error ? <Text style={{color: 'red', width: '85%', marginBottom: 20, textAlign: 'center'}}>{error}</Text>: <></>}
+            {error ? <Text style={{color: 'gray', width: '85%', marginBottom: 20, textAlign: 'center'}}>{error}</Text>: <></>}
 
             <View style={styles.requirementsContainer}>
               <View style={styles.requirementRow}>

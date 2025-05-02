@@ -143,7 +143,7 @@ export default function LoginScreen() {
             </TouchableOpacity>
           </View>
 
-          {error ? <Text style={{color: 'red', width: '85%', textAlign: 'center'}}>{error}</Text>: <></>}
+          {error ? <Text style={{color: 'gray', width: '85%', textAlign: 'center'}}>{error}</Text>: <></>}
 
           <Text style={styles.signInWithText}>Sign in with</Text>
 

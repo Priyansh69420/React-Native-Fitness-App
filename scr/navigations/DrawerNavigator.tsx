@@ -16,6 +16,12 @@ import { RFPercentage, RFValue } from 'react-native-responsive-fontsize';
 
 const Drawer = createDrawerNavigator<DrawerParamList>();
 
+const avatars = [
+  { id: 1, source: require('../assets/avatar5.png') },
+  { id: 2, source: require('../assets/avatar2.png') },
+  { id: 3, source: require('../assets/avatar4.png') },
+];
+
 function CustomDrawerContent(props: any) {
   const dispatch = useDispatch();
   const handleSignOut = async () => {
@@ -32,12 +38,17 @@ function CustomDrawerContent(props: any) {
   const navigationState = useNavigationState(state => state);
   const currentRouteName = navigationState?.routes?.[navigationState.index]?.name;
 
-  const profileImageSource = typeof userData?.profilePicture === 'string'
-  ? { uri: userData.profilePicture }
-  : undefined;
+  const isProfilePicNumber = typeof userData?.profilePicture === 'number';
+  const localAvatar = isProfilePicNumber
+    ? avatars.find(avatar => avatar.id === userData.profilePicture)
+    : undefined;
 
   const isCustomImg = typeof userData?.profilePicture === 'string'
     && !userData.profilePicture.includes('avatar');
+
+  const profileImageSource = isCustomImg
+    ? { uri: userData.profilePicture }
+    : localAvatar?.source;
 
     const profilePictureStyle = {
       width: isCustomImg ? RFValue(70) : RFValue(110),
@@ -48,17 +59,12 @@ function CustomDrawerContent(props: any) {
     
   return (
     <DrawerContentScrollView {...props} contentContainerStyle={styles.contentContainer}>
-      <TouchableOpacity 
+      <View 
         style={styles.profileContainer} 
-        onPress={() => {
-          props.navigation.navigate('SettingStack', {
-            screen: 'Profile', 
-          });
-        }}
       >
         <Image source={ profileImageSource } style={profilePictureStyle}/>
         <Text style={styles.userName}>{userData?.name}</Text>
-      </TouchableOpacity>
+      </View>
 
       <View style={styles.menuContainer}>
         <DrawerItem
