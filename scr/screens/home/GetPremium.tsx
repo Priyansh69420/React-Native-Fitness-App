@@ -14,10 +14,11 @@ import { DrawerNavigationProp } from '@react-navigation/drawer';
 import Carousel, { ICarouselInstance } from 'react-native-reanimated-carousel';
 import { DrawerParamList } from '../../navigations/DrawerParamList';
 import { RFPercentage, RFValue } from 'react-native-responsive-fontsize';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { updateUser } from '../../store/slices/userSlice';
 import { auth, firestore } from '../../../firebaseConfig';
 import { doc, setDoc } from '@firebase/firestore';
+import { RootState } from '../../store/store';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 const BUTTON_HORIZONTAL_MARGIN_PERCENTAGE = 6;
@@ -38,7 +39,7 @@ const carouselItems: CarouselItem[] = [
   },
   {
     image: require('../../assets/premium2.jpg'),
-    title: 'Go premium, get full access!',
+    title: 'Go premium, full access!',
     description: 'When you subscribe, you get instant unlimited access to all resources.',
   },
   {
@@ -56,6 +57,7 @@ export default function GetPremium() {
   const [activeSlide, setActiveSlide] = useState(0);
   const carouselRef = useRef<ICarouselInstance>(null);
   const [loading, setLoading] = useState<boolean>(false);
+  const isPremium = useSelector((state: RootState) => state.user.userData?.isPremium ?? false);
   const dispatch = useDispatch();
 
   const getSelectedPlanDetails = () => {
@@ -202,8 +204,17 @@ export default function GetPremium() {
           Contrary to what many people think, eating healthy is not easier said than done. Just a few good habits can make a great difference.
         </Text>
 
-        <TouchableOpacity style={styles.purchaseButton} onPress={handlePurchase}>
-          <Text style={styles.purchaseButtonText}>Purchase</Text>
+        <TouchableOpacity
+          style={[
+            styles.purchaseButton,
+            isPremium && { backgroundColor: '#ccc' },
+          ]}
+          onPress={handlePurchase}
+          disabled={isPremium}
+        >
+          <Text style={styles.purchaseButtonText}>
+            {isPremium ? 'Already Premium' : 'Purchase'}
+          </Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

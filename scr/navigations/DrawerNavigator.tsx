@@ -7,7 +7,7 @@ import Notifications from '../screens/home/Notifications';
 import SettingStack from './SettingStack';
 import GetPremium from '../screens/home/GetPremium';
 import { auth } from '../../firebaseConfig';
-import { View, Text, Image, StyleSheet, Animated, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, Image, StyleSheet, Animated, TouchableOpacity, Alert, Dimensions } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { clearUser } from '../store/slices/userSlice';
 import { persistor, RootState } from '../store/store';
@@ -16,11 +16,7 @@ import { RFPercentage, RFValue } from 'react-native-responsive-fontsize';
 
 const Drawer = createDrawerNavigator<DrawerParamList>();
 
-const avatars = [
-  { id: 1, source: require('../assets/avatar5.png') },
-  { id: 2, source: require('../assets/avatar2.png') },
-  { id: 3, source: require('../assets/avatar4.png') },
-];
+const { width, height } = Dimensions.get('window');
 
 function CustomDrawerContent(props: any) {
   const dispatch = useDispatch();
@@ -34,36 +30,35 @@ function CustomDrawerContent(props: any) {
     }
   };
 
-  const { userData, loading } = useSelector((state: RootState) => state.user);
+  const { userData } = useSelector((state: RootState) => state.user);
   const navigationState = useNavigationState(state => state);
   const currentRouteName = navigationState?.routes?.[navigationState.index]?.name;
 
-  const isProfilePicNumber = typeof userData?.profilePicture === 'number';
-  const localAvatar = isProfilePicNumber
-    ? avatars.find(avatar => avatar.id === userData.profilePicture)
-    : undefined;
-
-  const isCustomImg = typeof userData?.profilePicture === 'string'
-    && !userData.profilePicture.includes('avatar');
-
-  const profileImageSource = isCustomImg
+  const profileImageSource = typeof userData?.profilePicture === 'string'
     ? { uri: userData.profilePicture }
-    : localAvatar?.source;
-
-    const profilePictureStyle = {
-      width: isCustomImg ? RFValue(70) : RFValue(110),
-      height: isCustomImg ? RFValue(70) : RFValue(110),
-      borderRadius: RFValue(60),
-      marginBottom: RFPercentage(1.5),
-    };
+    : undefined;
+  
+    const isCustomImg = typeof userData?.profilePicture === 'string'
+      && !userData.profilePicture.includes('avatar');
+  
+      const profilePictureStyle = {
+        width: isCustomImg ? RFValue(75) : RFValue(85),
+        height: isCustomImg ? RFValue(75) : RFValue(85),
+        borderRadius: RFValue(60),
+        marginBottom: RFPercentage(1.5),
+      };
     
   return (
     <DrawerContentScrollView {...props} contentContainerStyle={styles.contentContainer}>
-      <View 
-        style={styles.profileContainer} 
-      >
-        <Image source={ profileImageSource } style={profilePictureStyle}/>
+      <View style={styles.profileContainer}>
+        <Image source={profileImageSource} style={profilePictureStyle} />
         <Text style={styles.userName}>{userData?.name}</Text>
+        {userData?.isPremium && (
+          <View style={styles.premiumBadge}>
+            <Image source={require('../assets/PremiumIcon.png')} style={styles.premiumIcon} />
+            <Text style={styles.premiumText}>Premium Member</Text>
+          </View>
+        )}
       </View>
 
       <View style={styles.menuContainer}>
@@ -94,7 +89,6 @@ function CustomDrawerContent(props: any) {
                 [
                   {
                     text: 'Maybe Later',
-                    style: 'cancel',
                   },
                   {
                     text: 'Buy Premium',
@@ -176,6 +170,26 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#333',
   },
+  premiumBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    backgroundColor: '#F5F0FF',
+    borderRadius: 20,
+  },
+  premiumIcon: {
+    width: 16,
+    height: 16,
+    marginRight: 6,
+    tintColor: '#7A5FFF',
+  },
+  premiumText: {
+    color: '#7A5FFF',
+    fontWeight: '600',
+    fontSize: 14,
+  },  
   menuContainer: {
     flex: 1,
     justifyContent: 'flex-start', 

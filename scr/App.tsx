@@ -10,14 +10,13 @@ import { NotificationsProvider } from "./contexts/NotificationsContext";
 const App = () => {
   useEffect(() => {
     async function setupNotifications() {
-      const permission = await notifee.requestPermission();
-
       const channelId = await notifee.createChannel({
         id: "default",
         name: "Default Channel",
         importance: AndroidImportance.HIGH,
       });
     }
+    
     setupNotifications();
   }, []);
 

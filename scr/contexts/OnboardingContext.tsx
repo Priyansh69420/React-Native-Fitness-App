@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useMemo } from 'react';
 
 interface OnboardingData {
   email?: string;
@@ -27,8 +27,13 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
     setOnboardingData((prev) => ({ ...prev, ...data }));
   };
 
+  const value = useMemo(
+    () => ({ onboardingData, updateOnboardingData }),
+    [onboardingData]
+  )
+
   return (
-    <OnboardingContext.Provider value={{ onboardingData, updateOnboardingData }}>
+    <OnboardingContext.Provider value={value}>
       {children}
     </OnboardingContext.Provider>
   );

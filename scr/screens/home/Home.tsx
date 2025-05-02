@@ -26,12 +26,6 @@ type NavigationProp = DrawerNavigationProp<HomeStackParamList, 'Home'>;
 
 const { width, height } = Dimensions.get('window');
 
-const avatars = [
-  { id: 1, source: require('../../assets/avatar5.png') },
-  { id: 2, source: require('../../assets/avatar2.png') },
-  { id: 3, source: require('../../assets/avatar4.png') },
-];
-
 export default function Home() {
   const { userData, loading } = useSelector((state: RootState) => state.user);
   const { steps } = useSelector((state: RootState) => state.footsteps);
@@ -89,24 +83,19 @@ export default function Home() {
     );
   }
 
-  const isProfilePicNumber = typeof userData?.profilePicture === 'number';
-  const localAvatar = isProfilePicNumber
-    ? avatars.find(avatar => avatar.id === userData.profilePicture)
-    : undefined;
+  const profileImageSource = typeof userData?.profilePicture === 'string'
+  ? { uri: userData.profilePicture }
+  : undefined;
 
   const isCustomImg = typeof userData?.profilePicture === 'string'
-  && !userData.profilePicture.includes('avatar');
+    && !userData.profilePicture.includes('avatar');
 
-  const profileImageSource = isCustomImg
-    ? { uri: userData.profilePicture }
-    : localAvatar?.source;
-  
-  const profilePictureStyle = {
-    width: isCustomImg ? RFValue(60, height) : RFValue(74, height),
-    height: isCustomImg ? RFValue(60, height) : RFValue(74, height),
-    borderRadius: RFValue(50, height),
-    marginRight: RFPercentage(1),
-  };
+    const profilePictureStyle = {
+      width: isCustomImg ? RFValue(65, height) : RFValue(70, height),
+      height: isCustomImg ? RFValue(65, height) : RFValue(70, height),
+      borderRadius: RFValue(50, height),
+      marginRight: RFPercentage(1),
+    };
 
   const nutritionProgress = Math.min((userData?.calories || 0) / 2000, 1);
   const waterProgress = glassDrunk / totalGlasses;

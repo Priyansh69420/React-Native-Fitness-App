@@ -25,7 +25,7 @@ import { CommunityStackParamList } from '../../navigations/CommunityStackParamLi
 import * as ImagePicker from 'expo-image-picker';
 import RNFS from 'react-native-fs';
 import { supabase } from '../../../supabaseConfig'; 
-import { TapGestureHandler } from 'react-native-gesture-handler';
+import { ScrollView, TapGestureHandler } from 'react-native-gesture-handler';
 import { Menu, MenuItem } from 'react-native-material-menu';
 import { ResizeMode, Video } from 'expo-av';
 import InstaStory, { IUserStory, IUserStoryItem } from 'react-native-insta-story';
@@ -75,6 +75,12 @@ const getTimeAgo = (timestamp: any) => {
     return `${days} day${days > 1 ? 's' : ''} ago`;
   }
 };
+
+const avatars = [
+  { id: 1, source: require('../../assets/avatar5.png') },
+  { id: 2, source: require('../../assets/avatar2.png') },
+  { id: 3, source: require('../../assets/avatar4.png') },
+];
 
 const Community = () => {
   const [posts, setPosts] = useState<Post[]>([]);
@@ -663,6 +669,7 @@ const Community = () => {
           transparent
           animationType="none"
           onRequestClose={() => setEditModalVisible(false)}
+          style={{}}
         >
           <View style={styles.modalOverlay}>
             <View style={styles.editModalContainer}>
@@ -720,7 +727,7 @@ const Community = () => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>
+      <View style={styles.fixedHeader}>
         <TouchableOpacity
           style={styles.drawerContainer}
           onPress={() => navigation.openDrawer()}
@@ -730,46 +737,51 @@ const Community = () => {
             style={styles.drawerIcon}
           />
         </TouchableOpacity>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Text style={styles.headerTitle}>Community</Text>
-          <View style={{ flexDirection: 'row', marginTop: height * 0.008 }}>
-            <TouchableOpacity onPress={handlePickStoryMedia} style={{ paddingVertical: height * 0.03, paddingHorizontal: width * 0.02 }}>
-              <Feather name="plus-square" size={24} color="#222" />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={{ paddingVertical: height * 0.03, paddingHorizontal: width * 0.02 }}
-              onPress={() => setIsAddPostModalVisible(true)}
-            >
-              <Feather name="inbox" size={24} color="#222" />
-            </TouchableOpacity>
-          </View>
         </View>
-      </View>
 
-      <View style={styles.suggestedUsersContainer}>
-        <InstaStory
-          data={storiesData}
-          duration={10}
-          avatarSize={RFValue(65 * scaleFactor, height)} 
-          avatarTextStyle={{
-            fontSize: RFValue(0 * scaleFactor, height), 
-          }}
-          unPressedBorderColor="#EEEEEE"
-          pressedBorderColor="#7A5FFF"
-          avatarWrapperStyle={{
-            alignItems: 'center',
-            marginHorizontal: width * 0.009 * scaleFactor, 
-            paddingHorizontal: 0,
-          }}
-        />
-      </View>
+        <ScrollView>
+          <View style={styles.header}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={styles.headerTitle}>Community</Text>
+                <View style={{ flexDirection: 'row', marginTop: height * 0.008 }}>
+                  <TouchableOpacity onPress={handlePickStoryMedia} style={{ paddingVertical: height * 0.03, paddingHorizontal: width * 0.02 }}>
+                    <Feather name="plus-square" size={24} color="#222" />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={{ paddingVertical: height * 0.03, paddingHorizontal: width * 0.02 }}
+                    onPress={() => setIsAddPostModalVisible(true)}
+                  >
+                    <Feather name="inbox" size={24} color="#222" />
+                  </TouchableOpacity>
+                </View>
+            </View>
+          </View>
 
-      <FlatList
-        data={posts}
-        keyExtractor={(item) => item.id}
-        renderItem={renderPostItem}
-        contentContainerStyle={styles.postsListContainer}
-      />
+          <View style={styles.suggestedUsersContainer}>
+            <InstaStory
+              data={storiesData}
+              duration={10}
+              avatarSize={RFValue(65 * scaleFactor, height)} 
+              avatarTextStyle={{
+                fontSize: RFValue(0 * scaleFactor, height), 
+              }}
+              unPressedBorderColor="#7A5FFF"
+              pressedBorderColor="#d3d3d3"
+              avatarWrapperStyle={{
+                alignItems: 'center',
+                marginHorizontal: width * 0.009 * scaleFactor, 
+                paddingHorizontal: 0,
+              }}
+            />
+          </View>
+
+          <FlatList
+            data={posts}
+            keyExtractor={(item) => item.id}
+            renderItem={renderPostItem}
+            contentContainerStyle={styles.postsListContainer}
+          />
+        </ScrollView>
 
       <Modal
         animationType="slide"
@@ -804,7 +816,7 @@ const Community = () => {
                   setNewPostImage(null)
                 }}
               >
-                <Text style={styles.modalButtonText}>Cancel</Text>
+                <Text style={[styles.modalButtonText, {color: '#7A5FFF'}]}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalButton, styles.modalPostButton]}
@@ -842,11 +854,18 @@ const styles = StyleSheet.create({
     padding: width * 0.05 * scaleFactor,
     backgroundColor: '#F5F7FA',
   },
-  header: {
+  fixedHeader: {
     flexDirection: 'column',
     justifyContent: 'space-between',
     paddingHorizontal: width * 0.04 * scaleFactor,
     paddingVertical: height * 0.02 * scaleFactor,
+  },
+  header: {
+    flexDirection: 'column',
+    justifyContent: 'space-between',
+    paddingHorizontal: width * 0.04 * scaleFactor,
+    marginTop: -height * 0.018 * scaleFactor,
+    marginBottom: height * 0.01 * scaleFactor,
   },
   drawerContainer: {
     marginTop: height * 0.006 * scaleFactor,
@@ -1059,7 +1078,9 @@ const styles = StyleSheet.create({
     marginHorizontal: width * 0.01 * scaleFactor,
   },
   modalCancelButton: {
-    backgroundColor: '#d3d3d3',
+    backgroundColor: '#FFF',
+    borderWidth: 1.5,
+    borderColor: '#7A5FFF',
   },
   modalPostButton: {
     backgroundColor: '#7A5FFF',
@@ -1093,13 +1114,15 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     justifyContent: 'center',
     alignItems: 'center',
-    marginHorizontal: 15
+    marginHorizontal: 15,
   },
   editModalContainer: {
-    backgroundColor: 'white',
+    backgroundColor: '#FFF',
     padding: 20,
     borderRadius: 10,
     width: '90%',
+    borderColor: '#d3d3d3',
+    borderWidth: 1
   },
   editModalTitle: {
     fontSize: 18,

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useMemo } from 'react';
 
 type NotificationItem = {
   id: string;
@@ -27,8 +27,13 @@ export const NotificationsProvider = ({ children }: NotificationsProviderProps) 
     setNotifications(prev => [notification, ...prev]);
   };
 
+  const value = useMemo(
+    () => ({ notifications, addNotification }),
+    [notifications]
+  );
+
   return (
-    <NotificationsContext.Provider value={{ notifications, addNotification }}>
+    <NotificationsContext.Provider value={value}>
       {children}
     </NotificationsContext.Provider>
   );
@@ -36,6 +41,8 @@ export const NotificationsProvider = ({ children }: NotificationsProviderProps) 
 
 export const useNotifications = () => {
   const context = useContext(NotificationsContext);
-if (!context) throw new Error("useNotifications must be used within a NotificationsProvider");
+  if (!context) {
+    throw new Error("useNotifications must be used within a NotificationsProvider");
+  }
   return context;
 }

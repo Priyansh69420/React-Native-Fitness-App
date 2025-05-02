@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import OnboardingStack from "./OnboardingStack";
 import DrawerNavigator from "./DrawerNavigator";
@@ -6,7 +6,7 @@ import { onAuthStateChanged, User } from "firebase/auth";
 import { auth, firestore } from "../../firebaseConfig";
 import { doc, getDoc, collection, collectionGroup, query, where, orderBy, limit, onSnapshot, Timestamp } from "firebase/firestore";
 import notifee, { AndroidImportance, EventType, RepeatFrequency, TimestampTrigger, TriggerType } from "@notifee/react-native";
-import { ActivityIndicator, View, StyleSheet, AppState, AppStateStatus } from "react-native";
+import { ActivityIndicator, View, StyleSheet  } from "react-native";
 import ReactNativeBiometrics from "react-native-biometrics";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { UserData } from "../store/slices/userSlice";
