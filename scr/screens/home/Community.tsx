@@ -28,7 +28,7 @@ import { supabase } from '../../../supabaseConfig';
 import { ScrollView, TapGestureHandler } from 'react-native-gesture-handler';
 import { Menu, MenuItem } from 'react-native-material-menu';
 import { ResizeMode, Video } from 'expo-av';
-import InstaStory, { IUserStory, IUserStoryItem } from 'react-native-insta-story';
+import InstaStory from 'react-native-insta-story';
 
 type NavigationProp = DrawerNavigationProp<CommunityStackParamList, 'Community'>;
 
@@ -53,6 +53,18 @@ export interface UserData {
   gender?: string;
   calories?: number;
   stories?: Record<string, { imageUrl: string; timestamp: any }>;
+}
+
+interface IUserStoryItem {
+  story_id: string; 
+  story_image: string;
+}
+
+interface IUserStory {
+  user_id: string;
+  user_name: string;
+  user_image?: string;
+  stories: IUserStoryItem[];
 }
 
 const getTimeAgo = (timestamp: any) => {
@@ -101,6 +113,7 @@ const Community = () => {
   const [editingPost, setEditingPost] = useState<Post | null>(null);
   const [editedContent, setEditedContent] = useState<string>('');
   const [newStoryImage, setNewStoryImage] = useState<string | null>(null);
+  const [likingPostId, setLikingPostId] = useState<string | null>(null);
 
   const navigation = useNavigation<NavigationProp>();setNewPostVideo
 
@@ -166,46 +179,79 @@ const Community = () => {
   }, []);
 
   useEffect(() => {
-    const fetchRecentStories = async () => {
-      try {
-        const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-        const usersCollection = collection(firestore, 'users');
-        const snapshot = await getDocs(usersCollection);
-        const allStories: IUserStory[] = []; 
+    const fetchRecentStories = () => {
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const storiesCollection = collection(firestore, 'stories');
+
+      const storiesQuery = query(
+        storiesCollection,
+        where('timestamp', '>', twentyFourHoursAgo),
+        orderBy('timestamp', 'desc')
+      );
   
-        for (const userDoc of snapshot.docs) {
-          const userData = userDoc.data() as UserData;
-          if (userData?.stories) {
-            const userStoryItems: IUserStoryItem[] = []; 
-            let storyIdCounter = 0; 
+      const unsubscribe = onSnapshot(storiesQuery, async (snapshot) => {
+        try {
+          const allStories: IUserStory[] = [];
+          const storiesByUser: Record<string, IUserStory> = {};
+          const userIds = new Set<string>();
   
-            for (const storyKey in userData.stories) {
-              const story = userData.stories[storyKey];
-              if (story?.timestamp?.toDate() > twentyFourHoursAgo && story?.imageUrl) {
-                userStoryItems.push({
-                  story_id: storyIdCounter++, 
-                  story_image: story.imageUrl,
-                });
-              }
-            }
+          snapshot.forEach((doc) => {
+            const storyData = doc.data();
+            userIds.add(storyData.userId);
+          });
   
-            if (userStoryItems.length > 0) {
-              allStories.push({
-                user_id: userDoc.id as any, 
+          const userDataPromises = Array.from(userIds).map((userId) =>
+            getDoc(doc(firestore, 'users', userId)).then((userDoc) => ({
+              userId,
+              userData: userDoc.exists() ? (userDoc.data() as UserData) : { name: 'User', profilePicture: undefined },
+            }))
+          );
+  
+          const userDataResults = await Promise.all(userDataPromises);
+          const userDataMap = userDataResults.reduce((acc, { userId, userData }) => {
+            acc[userId] = userData;
+            return acc;
+          }, {} as Record<string, UserData>);
+  
+          snapshot.forEach((doc) => {
+            const storyData = doc.data();
+            const userId = storyData.userId;
+            const userData = userDataMap[userId];
+  
+            if (!storiesByUser[userId]) {
+              storiesByUser[userId] = {
+                user_id: userId,
                 user_name: userData.name || 'User',
-                user_image: userData.profilePicture,
-                stories: userStoryItems,
-              });
+                user_image: userData.profilePicture || undefined,
+                stories: [],
+              };
             }
-          }
+  
+            storiesByUser[userId].stories.push({
+              story_id: doc.id,
+              story_image: storyData.imageUrl,
+            });
+          });
+  
+          Object.values(storiesByUser).forEach((userStory) => {
+            if (userStory.stories.length > 0) {
+              allStories.push(userStory);
+            }
+          });
+  
+          setStoriesData(allStories);
+        } catch (error) {
+          console.error('Error fetching recent stories:', error);
         }
-        setStoriesData(allStories);
-      } catch (error) {
-        console.error('Error fetching recent stories:', error);
-      }
+      }, (error) => {
+        console.error('onSnapshot error:', error);
+      });
+  
+      return unsubscribe;
     };
   
-    fetchRecentStories();
+    const unsubscribe = fetchRecentStories();
+    return () => unsubscribe();
   }, []);
 
   const handlePickMedia = async () => {
@@ -263,6 +309,7 @@ const Community = () => {
   
   const handleUploadNewStory = async (uri: string) => {
     setUploadingImage(true);
+
     try {
       const user = auth.currentUser;
       if (!user) {
@@ -272,10 +319,9 @@ const Community = () => {
   
       const fileName = uri.split('/').pop() || `story_${Date.now()}.jpg`;
       const fileType = uri.split('.').pop() || 'jpeg';
-      const filePath = `stories/${fileName}`; 
+      const filePath = `stories/${fileName}`;
   
       const base64Image = await RNFS.readFile(uri, 'base64');
-  
       if (!base64Image) {
         throw new Error('Failed to convert image to Base64');
       }
@@ -285,7 +331,7 @@ const Community = () => {
       for (let i = 0; i < binaryString.length; i++) {
         fileArray[i] = binaryString.charCodeAt(i);
       }
-  
+
       const { data, error: uploadError } = await supabase.storage
         .from('stories')
         .upload(filePath, fileArray, {
@@ -294,6 +340,7 @@ const Community = () => {
         });
   
       if (uploadError) {
+        console.error('Supabase upload error:', uploadError);
         throw new Error(uploadError.message);
       }
   
@@ -304,14 +351,17 @@ const Community = () => {
       if (!urlData?.publicUrl) {
         throw new Error('Failed to retrieve public URL');
       }
+    
+      const storiesCollection = collection(firestore, 'stories');
+      const storyData = {
+        userId: user.uid,
+        imageUrl: urlData.publicUrl,
+        timestamp: serverTimestamp(),
+      };
   
-      const userRef = doc(firestore, 'users', user.uid);
-      const timestamp = serverTimestamp();
-      await updateDoc(userRef, {
-        [`stories.${Date.now()}`]: { imageUrl: urlData.publicUrl, timestamp }, 
-      });
+      await addDoc(storiesCollection, storyData);
   
-      setNewStoryImage(null); 
+      setNewStoryImage(null);
     } catch (error: any) {
       console.error('Error uploading story:', error.message);
       Alert.alert('Error', 'Failed to upload story.');
@@ -369,6 +419,7 @@ const Community = () => {
 
   const uploadVideoForPosts = async (uri: string): Promise<string | null> => {
     setUploadingImage(true);
+
     try {
       const fileName = uri.split('/').pop() || `post_${Date.now()}.mp4`;
       const fileType = uri.split('.').pop() || 'mp4';
@@ -458,42 +509,57 @@ const Community = () => {
   };
 
   const handleLikePost = async (postId: string) => {
-    try {
-      const user: User | null = auth.currentUser;
-      if (!user) {
-        Alert.alert(
-          'Authentication Required',
-          'You need to be logged in to like posts.'
-        );
-        return;
-      }
-
-      const postRef = doc(firestore, 'posts', postId);
-      const postSnapshot = await getDoc(postRef);
-      const postData = postSnapshot.data() as Post | undefined;
-
-      const hasLiked = postData?.likes?.includes(user.uid);
-
-      setPosts((prevPosts) =>
-        prevPosts.map((p) =>
-          p.id === postId
-            ? {
-                ...p,
-                likes: hasLiked
-                  ? p.likes?.filter((uid) => uid !== user.uid)
-                  : [...(p.likes || []), user.uid],
-              }
-            : p
-        )
+    const user: User | null = auth.currentUser;
+    if (!user) {
+      Alert.alert(
+        'Authentication Required',
+        'You need to be logged in to like posts.'
       );
-
+      return;
+    }
+  
+    const postRef = doc(firestore, 'posts', postId);
+  
+    const currentPost = posts.find(p => p.id === postId);
+    if (!currentPost) return;
+  
+    const hasLiked = currentPost.likes?.includes(user.uid);
+  
+    setPosts(prevPosts =>
+      prevPosts.map(p =>
+        p.id === postId
+          ? {
+              ...p,
+              likes: hasLiked
+                ? p.likes?.filter(uid => uid !== user.uid)
+                : [...(p.likes || []), user.uid],
+            }
+          : p
+      )
+    );
+  
+    try {
       await updateDoc(postRef, {
         likes: hasLiked ? arrayRemove(user.uid) : arrayUnion(user.uid),
       });
     } catch (error: any) {
       console.error('Error liking post:', error.message);
+  
+      setPosts(prevPosts =>
+        prevPosts.map(p =>
+          p.id === postId
+            ? {
+                ...p,
+                likes: hasLiked
+                  ? [...(p.likes || []), user.uid]
+                  : p.likes?.filter(uid => uid !== user.uid),
+              }
+            : p
+        )
+      );
     }
   };
+  
 
   const handleDeletePost = async (postId: string) => {
     try {
@@ -592,7 +658,7 @@ const Community = () => {
                 resizeMode={ResizeMode.COVER}         
                 useNativeControls={true}                 
                 shouldPlay={true}                    
-                isLooping={false}      
+                isLooping={true}      
               />
               {showHeart && (
                 <Animated.View>
@@ -639,7 +705,13 @@ const Community = () => {
         <View style={styles.postActions}>
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => handleLikePost(item.id)}
+            onPress={() => {
+              if (likingPostId !== item.id) {
+                setLikingPostId(item.id);
+                handleLikePost(item.id).finally(() => setLikingPostId(null));
+              }
+            }}
+            disabled={likingPostId === item.id}
           >
             <Image
               source={
@@ -647,7 +719,9 @@ const Community = () => {
                   ? require('../../assets/likedIcon.png')
                   : require('../../assets/likeIcon.png')
               }
-              style={styles.likeIcon}
+              style={[styles.likeIcon,
+                !isLiked && {tintColor: '#000'}
+              ]}
             />
             <Text style={styles.actionText}>
               {item.likes ? item.likes.length : 0}
@@ -657,7 +731,7 @@ const Community = () => {
             style={styles.actionButton}
             onPress={() => navigation.navigate('Post', { item, name, profilePic })}
           >
-            <SimpleLineIcons name="bubble" size={20} color="#d3d3d3" />
+            <SimpleLineIcons name="bubble" size={20} color="#000" />
             <Text style={styles.actionText}>
               {item.commentCount || 0}
             </Text>
@@ -686,6 +760,8 @@ const Community = () => {
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={async () => {
+                    if(editedContent.length === 0 ) return; 
+
                     if (editingPost) {
                       await updateDoc(doc(firestore, 'posts', editingPost.id), {
                         content: editedContent.trim(),
@@ -737,51 +813,52 @@ const Community = () => {
             style={styles.drawerIcon}
           />
         </TouchableOpacity>
+      </View>
+
+      <ScrollView>
+        <View style={styles.header}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Text style={styles.headerTitle}>Community</Text>
+              <View style={{ flexDirection: 'row', marginTop: height * 0.008 }}>
+                <TouchableOpacity onPress={handlePickStoryMedia} style={{ paddingVertical: height * 0.03, paddingHorizontal: width * 0.02 }}>
+                  <Feather name="plus-square" size={24} color="#222" />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={{ paddingVertical: height * 0.03, paddingHorizontal: width * 0.02 }}
+                  onPress={() => setIsAddPostModalVisible(true)}
+                >
+                  <Feather name="inbox" size={24} color="#222" />
+                </TouchableOpacity>
+              </View>
+          </View>
         </View>
 
-        <ScrollView>
-          <View style={styles.header}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Text style={styles.headerTitle}>Community</Text>
-                <View style={{ flexDirection: 'row', marginTop: height * 0.008 }}>
-                  <TouchableOpacity onPress={handlePickStoryMedia} style={{ paddingVertical: height * 0.03, paddingHorizontal: width * 0.02 }}>
-                    <Feather name="plus-square" size={24} color="#222" />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={{ paddingVertical: height * 0.03, paddingHorizontal: width * 0.02 }}
-                    onPress={() => setIsAddPostModalVisible(true)}
-                  >
-                    <Feather name="inbox" size={24} color="#222" />
-                  </TouchableOpacity>
-                </View>
-            </View>
-          </View>
-
-          <View style={styles.suggestedUsersContainer}>
-            <InstaStory
-              data={storiesData}
-              duration={10}
-              avatarSize={RFValue(65 * scaleFactor, height)} 
-              avatarTextStyle={{
-                fontSize: RFValue(0 * scaleFactor, height), 
-              }}
-              unPressedBorderColor="#7A5FFF"
-              pressedBorderColor="#d3d3d3"
-              avatarWrapperStyle={{
-                alignItems: 'center',
-                marginHorizontal: width * 0.009 * scaleFactor, 
-                paddingHorizontal: 0,
-              }}
-            />
-          </View>
-
-          <FlatList
-            data={posts}
-            keyExtractor={(item) => item.id}
-            renderItem={renderPostItem}
-            contentContainerStyle={styles.postsListContainer}
+        <View style={styles.suggestedUsersContainer}>
+          <InstaStory
+            key={JSON.stringify(storiesData)} 
+            data={storiesData}
+            duration={10}
+            avatarSize={RFValue(65 * scaleFactor, height)}
+            avatarTextStyle={{
+              fontSize: RFValue(0 * scaleFactor, height),
+            }}
+            unPressedBorderColor="#7A5FFF"
+            pressedBorderColor="#d3d3d3"
+            avatarWrapperStyle={{
+              alignItems: 'center',
+              marginHorizontal: width * 0.009 * scaleFactor,
+              paddingHorizontal: 0,
+            }}
           />
-        </ScrollView>
+        </View>
+
+        <FlatList
+          data={posts}
+          keyExtractor={(item) => item.id}
+          renderItem={renderPostItem}
+          contentContainerStyle={styles.postsListContainer}
+        />
+      </ScrollView>
 
       <Modal
         animationType="slide"
@@ -806,6 +883,14 @@ const Community = () => {
               <Text style={{ color: '#757575' }}>Tap to add image</Text>
               {uploadingImage && <ActivityIndicator size="small" color="#7A5FFF" />}
               {newPostImage && <Image source={{ uri: newPostImage }} style={styles.modalImagePreview} />}
+              {newPostVideo && 
+              <Video
+                source={{ uri: newPostVideo }}
+                style={styles.modalImagePreview}              
+                resizeMode={ResizeMode.COVER}                         
+                shouldPlay={true}                    
+                isLooping={true}      
+              />}
             </TouchableOpacity>
 
             <View style={styles.modalButtonsContainer}>
@@ -997,7 +1082,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingRight: width * 0.03 * scaleFactor,
-    paddingLeft: width * 0.009 * scaleFactor
+    paddingLeft: width * 0.009 * scaleFactor,
   },
   likeIcon: {
     width: RFValue(20 * scaleFactor, height),
@@ -1007,7 +1092,7 @@ const styles = StyleSheet.create({
     marginLeft: width * 0.012 * scaleFactor,
     fontSize: RFValue(14 * scaleFactor, height),
     fontWeight: 'bold',
-    color: '#d3d3d3'
+    color: '#000'
   },
   centeredView: {
     flex: 1,

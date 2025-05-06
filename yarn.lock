@@ -5965,7 +5965,7 @@ __metadata:
     react-native-gesture-handler: ~2.20.2
     react-native-gifted-charts: ^1.4.60
     react-native-google-fit: ^0.21.0
-    react-native-insta-story: ^1.1.9
+    react-native-insta-story: latest
     react-native-masked-view: ^0.2.0
     react-native-material-menu: ^2.0.0
     react-native-permissions: ^5.3.0
@@ -8778,7 +8778,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-native-insta-story@npm:^1.1.9":
+"react-native-insta-story@npm:latest":
   version: 1.1.9
   resolution: "react-native-insta-story@npm:1.1.9"
   dependencies:

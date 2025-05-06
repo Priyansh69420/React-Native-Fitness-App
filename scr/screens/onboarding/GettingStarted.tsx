@@ -35,7 +35,7 @@ const GettingStartedScreen = () => {
       <View style={styles.signInContainer}>
         <Text style={styles.signInText}>Already have an account? </Text>
         <TouchableOpacity onPress={() => navigation.navigate("Login")}>
-        <Text style={styles.linkText}>Sign in</Text>
+        <Text style={styles.linkText}>Log in</Text>
       </TouchableOpacity>
       </View>
     </View>

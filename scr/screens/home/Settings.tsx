@@ -65,6 +65,10 @@ export default function Settings() {
     };
 
     const handleSendFeedback = () => {
+        if(feedbackText.length === 0) {
+            return;
+        }
+
         Alert.alert(
             'Thank You',
             'Thanks for your feedback!\nWe will look into it as soon as possible.'
@@ -206,7 +210,7 @@ export default function Settings() {
             >
                 <View style={styles.centeredView}>
                     <View style={styles.modalView}>
-                        <Text style={styles.modalTitle}>Need Help?</Text>
+                        <Text style={styles.modalTitle}>Need Help ?</Text>
 
                         <View style={styles.supportOptionsContainer}>
                             <TouchableOpacity style={styles.supportOption} onPress={handleCallSupport}>

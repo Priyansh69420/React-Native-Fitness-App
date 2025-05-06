@@ -51,7 +51,7 @@ export default function SetNameScreen() {
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : -100} 
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : -130}
       >
         <View style={styles.container}>
 
@@ -77,7 +77,7 @@ export default function SetNameScreen() {
               />
             </View>
 
-            {error1 ? <Text style={{color: 'gray', width: '85%', textAlign: 'center'}}>{error1}</Text>: <></>}
+            {error1 ? <Text style={{color: 'red', width: '85%', textAlign: 'center', marginTop: -10}}>{error1}</Text>: <></>}
 
             <View style={styles.inputContainer}>
               <TextInput

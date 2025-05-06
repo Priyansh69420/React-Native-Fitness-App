@@ -119,6 +119,7 @@ export default function SetProfile() {
 
   const confirmCustomImage = () => {
     if(customImg) {
+      setError('');
       setSelectedAvatar(null);
       setModalVisible(false);
       navigation.navigate('Goals');
@@ -161,7 +162,10 @@ export default function SetProfile() {
             {avatars.map((item) => (
               <TouchableOpacity
                 key={item.id}
-                onPress={() => setSelectedAvatar(item.id)}
+                onPress={() => {
+                  setError('')
+                  setSelectedAvatar(item.id)
+                }}
               >
                 <View
                   style={[
@@ -194,7 +198,7 @@ export default function SetProfile() {
             <Text style={styles.addPhotoText}>Add Custom Photo</Text>
           </TouchableOpacity>
 
-          {error ? <Text style={{color: 'gray', width: '85%', textAlign: 'center', maxWidth: '70%'}}>{error}</Text>: <></>}
+          {error ? <Text style={{color: 'red', width: '85%', textAlign: 'center', maxWidth: '70%'}}>{error}</Text>: <></>}
           </View>
 
           <TouchableOpacity style={styles.button} onPress={handleContinuePress}>

@@ -9,6 +9,7 @@ import { RFPercentage, RFValue } from 'react-native-responsive-fontsize';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { CommunityStackParamList } from '../../navigations/CommunityStackParamList';
 import { ResizeMode, Video } from 'expo-av';
+import { LearnMoreLinks } from 'react-native/Libraries/NewAppScreen';
 
 type NavigationProp = DrawerNavigationProp<CommunityStackParamList, 'Community'>;
 
@@ -62,6 +63,7 @@ export default function Post() {
   const initialItem = route.params!.item;
   const { name, profilePic } = route.params;
   const [post, setPost] = useState<Post>(initialItem);
+    const [loading, setLoading] = useState<boolean>(false);
   const [comments, setComments] = useState<Comment[]>([]);
   const [commentText, setCommentText] = useState('');
   const [userDataMap, setUserDataMap] = useState<Record<string, UserData>>({});
@@ -163,6 +165,7 @@ export default function Post() {
   };
 
   const handleAddComment = async () => {
+    setLoading(true);
     if (!commentText.trim()) return;
 
     if (!user) {
@@ -188,6 +191,9 @@ export default function Post() {
     } catch (error: any) {
       console.error('Error adding comment:', error.message);
       Alert.alert('Error', 'Could not add comment.');
+    } finally {
+      setCommentText('');
+      setLoading(false);
     }
   };
 
@@ -304,7 +310,7 @@ export default function Post() {
           onChangeText={setCommentText}
         />
         <TouchableOpacity style={styles.newPostCommentButton} onPress={handleAddComment}>
-          <Text style={styles.newPostCommentButtonText}>Post</Text>
+          {loading ? <ActivityIndicator size='small' color='#d3d3d3' /> : <Text style={styles.newPostCommentButtonText}>Post</Text>}
         </TouchableOpacity>
       </View>
     </SafeAreaView>

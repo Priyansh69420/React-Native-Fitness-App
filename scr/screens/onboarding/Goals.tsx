@@ -36,6 +36,7 @@ export default function SetGoalsScreen() {
         setSelectedGoals(selectedGoals.filter(label => label !== selectedGoal.label));
       } else {
         setSelectedGoals([...selectedGoals, selectedGoal.label]);
+        setError('')
       }
     }
   };
@@ -85,7 +86,7 @@ export default function SetGoalsScreen() {
               </TouchableOpacity>
             ))}
 
-            {error ? <Text style={{color: 'gray', width: '100%', textAlign: 'center'}}>{error}</Text>: <></>}
+            {error ? <Text style={{color: 'red', width: '100%', textAlign: 'center'}}>{error}</Text>: <></>}
           </View>
 
           <TouchableOpacity style={styles.button} onPress={handleContinuePress}>

@@ -67,7 +67,7 @@ export default function SetPassword() {
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : -100} 
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : -130}
       >
         <View style={styles.container}>
           <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
@@ -90,7 +90,7 @@ export default function SetPassword() {
               />
             </View>
 
-            {error ? <Text style={{color: 'gray', width: '85%', marginBottom: 20, textAlign: 'center'}}>{error}</Text>: <></>}
+            {error ? <Text style={{color: 'red', width: '85%', marginBottom: 20, textAlign: 'center', marginTop: -10}}>{error}</Text>: <></>}
 
             <View style={styles.requirementsContainer}>
               <View style={styles.requirementRow}>

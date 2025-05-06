@@ -38,20 +38,33 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (!email || !password) {
-      setError('Please enter your email and password');
+      setError('Please enter both email and password');
       return;
     }
+  
     setLoading(true);
-
+    setError('');
+  
     try {
       await signInWithEmailAndPassword(auth, email, password);
       await AsyncStorage.setItem('justLoggedIn', 'true');
     } catch (error: any) {
       console.error('LoginScreen: Sign-in error:', error.message);
-      alert(error.message);
+  
+      const errorCode = error.code;
+  
+      const errorMessages: { [key: string]: string } = {
+        'auth/user-not-found': 'No user found with this email.',
+        'auth/wrong-password': 'Incorrect password. Please try again.',
+        'auth/invalid-email': 'Email address is invalid.',
+        'auth/user-disabled': 'This account has been disabled.',
+        'auth/too-many-requests': 'Too many failed attempts. Try again later.',
+      };
+  
+      const friendlyMessage = errorMessages[errorCode] || 'Login failed. Please try again.';
+      setError(friendlyMessage);
     } finally {
       setLoading(false);
-      setError('');
     }
   };
 
@@ -143,7 +156,7 @@ export default function LoginScreen() {
             </TouchableOpacity>
           </View>
 
-          {error ? <Text style={{color: 'gray', width: '85%', textAlign: 'center'}}>{error}</Text>: <></>}
+          {error ? <Text style={{color: 'red', width: '85%', textAlign: 'center'}}>{error}</Text>: <></>}
 
           <Text style={styles.signInWithText}>Sign in with</Text>
 

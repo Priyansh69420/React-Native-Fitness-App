@@ -71,6 +71,10 @@ export default function Home() {
     );
   }
 
+  if(userData?.profilePicture === '' || userData?.profilePicture === null) {
+    userData.profilePicture = 'https://dojvycwbetqfeutcvsqe.supabase.co/storage/v1/object/public/profileimages/profile_pictures/default-Icon.jpeg'
+  }
+
   if (!userData) {
     return (
       <View style={styles.container}>

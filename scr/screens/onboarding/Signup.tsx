@@ -37,42 +37,45 @@ export default function Signup() {
   }, [email, shouldValidate]);
 
   async function handleContinue() {
-    if(email.length === 0) {
-      setError('Please enter your email address')
-      setShouldValidate(true);
+    setShouldValidate(true);
+  
+    const trimmedEmail = email.trim();
+
+    if (trimmedEmail.length === 0) {
+      setError('Please enter your email address');
       return;
     }
-
-    if(!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && email.trim()) {
+  
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
       setError('Please enter a valid email address');
-      setShouldValidate(true);
       return;
     }
-
+  
     try {
-      const methods = await fetchSignInMethodsForEmail(auth, email);
-      if (Array.isArray(methods) && methods.length > 0) {
+      const signInMethods = await fetchSignInMethodsForEmail(auth, trimmedEmail);
+  
+      if (signInMethods.length > 0) {
         setError('Email already exists, please log in');
         return;
       }
-      updateOnboardingData({ email });
-      navigation.navigate("SetPassword", { email });
+
+      updateOnboardingData({ email: trimmedEmail });
+      setError(''); 
+      navigation.navigate("SetPassword", { email: trimmedEmail });
+  
     } catch (error: any) {
-      console.log('Error code:', error.code); 
-      console.log('Error message:', error.message); 
-      alert(error.message);
-    }
-    finally {
-      setError('');
+      console.error("Firebase error:", error.message);
+      setError(error.message || "Something went wrong. Please try again.");
     }
   }
+  
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : -120} 
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : -130}
       >
         <View style={styles.container}>
 
@@ -97,7 +100,7 @@ export default function Signup() {
               />
             </View>
 
-            {error ? <Text style={{color: 'gray', width: '100%', textAlign: 'center'}}>{error}</Text>: <></>}
+            {error ? <Text style={{color: 'red', width: '100%', textAlign: 'center'}}>{error}</Text>: <></>}
             </View>
 
             <TouchableOpacity style={styles.button} onPress={() => handleContinue()}>
