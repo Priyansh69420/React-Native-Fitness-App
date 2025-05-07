@@ -27,6 +27,7 @@ import { RFPercentage, RFValue } from 'react-native-responsive-fontsize';
 import { supabase } from '../../../supabaseConfig';
 import * as ImagePicker from 'expo-image-picker';
 import RNFS from 'react-native-fs';
+import { Ionicons } from '@expo/vector-icons';
 
 type NavigationProp = StackNavigationProp<SettingStackParamList, 'Profile'>;
 
@@ -34,7 +35,7 @@ interface UserData {
   email: string;
   name: string;
   faceId: boolean;
-  profilePicture: string | number;
+  profilePicture: string;
   goals: string[];
   interests: string[];
   gender: string;
@@ -72,7 +73,9 @@ export default function Profile() {
   const [imageLoading, setImageLoading] = useState<boolean>(true);
 
   const [name, setName] = useState(userData?.name || '');
-  const [profilePicture, setProfilePicture] = useState<number | string>(userData?.profilePicture || 1);
+  const [profilePicture, setProfilePicture] = useState<string>(
+    userData && typeof userData.profilePicture === 'string' ? userData.profilePicture : ''
+  );
   const [goals, setGoals] = useState<string[]>(userData?.goals || []);
   const [interests, setInterests] = useState<string[]>(userData?.interests || []);
   const [gender, setGender] = useState<string>(userData?.gender || '');
@@ -82,17 +85,27 @@ export default function Profile() {
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [error, setError] = useState<string>('');
   const [updatingPassword, setUpdatingPassword] = useState<boolean>(false);
-
+  const [showCurrent, setShowCurrent] = useState<boolean>(false);
+  const [showNew, setShowNew] = useState<boolean>(false);
+  const [showConfirm, setShowConfirm] = useState<boolean>(false);
 
   useEffect(() => {
     if (userData) {
       setName(userData.name);
-      setProfilePicture(userData.profilePicture);
+      if (typeof userData.profilePicture === 'string') {
+        setProfilePicture(userData.profilePicture);
+      } else {
+        setProfilePicture('');
+      }      
       setGoals(userData.goals);
       setInterests(userData.interests);
       setGender(userData.gender);
     }
   }, [userData]);
+
+  useEffect(() => {
+    setError('');
+  }, [currentPassword, newPassword, confirmNewPassword]);
 
   const toggleGoal = (goal: string) => {
     if (goals.includes(goal)) {
@@ -239,58 +252,59 @@ export default function Profile() {
   };
 
   const handleChangePassword = async () => {
-    if(!currentPassword || !newPassword || !confirmNewPassword) {
-      setError('Please fill in all password fields.');
-      return;
-    }
-
-    if(newPassword !== confirmNewPassword) {
+    let hasError = false;
+  
+    setError('');
+  
+    if (!currentPassword) {
+      setError('Please enter your current password.');
+      hasError = true;
+    } else if (!newPassword) {
+      setError('Please enter a new password.');
+      hasError = true;
+    } else if (newPassword.length < 6) {
+      setError('New password must be at least 6 characters.');
+      hasError = true;
+    } else if (!confirmNewPassword) {
+      setError('Please confirm your new password.');
+      hasError = true;
+    } else if (newPassword !== confirmNewPassword) {
       setError('New passwords do not match.');
-      return;
+      hasError = true;
     }
-
+  
+    if (hasError) return;
+  
     const user = auth.currentUser;
-    if(!user || !user.email) {
+    if (!user || !user.email) {
       setError('No user is currently signed in.');
       return;
     }
-
+  
     try {
       setUpdatingPassword(true);
-
       const credential = EmailAuthProvider.credential(user.email, currentPassword);
       await reauthenticateWithCredential(user, credential);
-
+  
       await updatePassword(user, newPassword);
-      Alert.alert(
-        'Success', 
-        'Your password has been updated successfully.', 
-        [
-          {
-            text: 'OK',
-            onPress: () => console.log('OK Pressed'),
-            style: 'default',
-          },
-        ],
-        { cancelable: true }
-      );
-
+  
+      Alert.alert('Success', 'Your password has been updated successfully.');
       setCurrentPassword('');
       setNewPassword('');
       setConfirmNewPassword('');
     } catch (error: any) {
-      setError('Wrong Password');
+      if (error.code === 'auth/wrong-password') {
+        setError('Incorrect current password.');
+      } else {
+        setError('Failed to update password. Please try again.');
+      }
     } finally {
       setUpdatingPassword(false);
-    }  
-  }
+    }
+  };
+  
 
-  const profileImageSource =
-    typeof profilePicture === 'string'
-      ? { uri: profilePicture }
-      : typeof profilePicture === 'number'
-      ? getAvatarSource(profilePicture)
-      : null;
+  const profileImageSource = profilePicture ? { uri: profilePicture } : null;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -337,8 +351,8 @@ export default function Profile() {
             contentContainerStyle={styles.avatarList}
             renderItem={({ item }) => (
               <TouchableOpacity
-                style={[styles.avatarItem, profilePicture === item.id && styles.selectedAvatar]}
-                onPress={() => setProfilePicture(item.id)}
+                style={[styles.avatarItem, profilePicture === item.source.uri && styles.selectedAvatar]}
+                onPress={() => setProfilePicture(item.source.uri)}
               >
                 <Image source={item.source} style={styles.avatarImage} />
               </TouchableOpacity>
@@ -413,39 +427,85 @@ export default function Profile() {
         </View>
 
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, {marginBottom: responsiveHeight(2)}]}>Change Password</Text>
-          <TextInput
-            style={styles.textInput}
-            placeholder="Current Password"
-            placeholderTextColor="#999"
-            secureTextEntry
-            value={currentPassword}
-            onChangeText={setCurrentPassword}
-          />
-          <TextInput
-            style={styles.textInput}
-            placeholder="New Password"
-            placeholderTextColor="#999"
-            secureTextEntry
-            value={newPassword}
-            onChangeText={setNewPassword}
-          />
-          <TextInput
-            style={styles.textInput}
-            placeholder="Confirm New Password"
-            placeholderTextColor="#999"
-            secureTextEntry
-            value={confirmNewPassword}
-            onChangeText={setConfirmNewPassword}
-          />
-          {error ? <Text style={{color: 'red', textAlign: 'center'}}>{error}</Text>: <></>}
+  <Text style={[styles.sectionTitle, {marginBottom: responsiveHeight(2)}]}>
+    Change Password
+  </Text>
 
-          <View style={{flexDirection: 'row', justifyContent: 'flex-end'}}>
-          <TouchableOpacity onPress={handleChangePassword}  style={[styles.addPhotoButton, {borderRadius: 20, width: '50%'}]}>
-          {updatingPassword ? <ActivityIndicator size='small' color='#d0d0d0'/> : <Text style={styles.addPhotoText}>Update Password</Text>}
-          </TouchableOpacity>
-          </View>
-        </View>
+  {/* Current Password */}
+  <View style={styles.inputWrapper}>
+    <TextInput
+      style={styles.textInput}
+      placeholder="Current Password"
+      placeholderTextColor="#999"
+      secureTextEntry={!showCurrent}
+      value={currentPassword}
+      onChangeText={setCurrentPassword}
+    />
+    <TouchableOpacity onPress={() => setShowCurrent(prev => !prev)} style={styles.eyeButton}>
+      <Ionicons
+        name={showCurrent ? "eye-off-outline" : "eye-outline"}
+        size={22}
+        color="#666"
+      />
+    </TouchableOpacity>
+  </View>
+
+  {/* New Password */}
+  <View style={styles.inputWrapper}>
+    <TextInput
+      style={styles.textInput}
+      placeholder="New Password"
+      placeholderTextColor="#999"
+      secureTextEntry={!showNew}
+      value={newPassword}
+      onChangeText={setNewPassword}
+    />
+    <TouchableOpacity onPress={() => setShowNew(prev => !prev)} style={styles.eyeButton}>
+      <Ionicons
+        name={showNew ? "eye-off-outline" : "eye-outline"}
+        size={22}
+        color="#666"
+      />
+    </TouchableOpacity>
+  </View>
+
+  {/* Confirm Password */}
+  <View style={styles.inputWrapper}>
+    <TextInput
+      style={styles.textInput}
+      placeholder="Confirm New Password"
+      placeholderTextColor="#999"
+      secureTextEntry={!showConfirm}
+      value={confirmNewPassword}
+      onChangeText={setConfirmNewPassword}
+    />
+    <TouchableOpacity onPress={() => setShowConfirm(prev => !prev)} style={styles.eyeButton}>
+      <Ionicons
+        name={showConfirm ? "eye-off-outline" : "eye-outline"}
+        size={22}
+        color="#666"
+      />
+    </TouchableOpacity>
+  </View>
+
+  {error ? (
+    <Text style={{color: 'red', textAlign: 'center'}}>{error}</Text>
+  ) : null}
+
+  <View style={{flexDirection: 'row', justifyContent: 'flex-end'}}>
+    <TouchableOpacity
+      onPress={handleChangePassword}
+      style={[styles.addPhotoButton, {borderRadius: 20, width: '50%'}]}
+    >
+      {updatingPassword ? (
+        <ActivityIndicator size="small" color="#d0d0d0" />
+      ) : (
+        <Text style={styles.addPhotoText}>Update Password</Text>
+      )}
+    </TouchableOpacity>
+  </View>
+</View>
+
 
         <View style={{ paddingHorizontal: 60 }}>
           <TouchableOpacity onPress={handleSave} style={styles.saveButton}>
@@ -519,13 +579,13 @@ const styles = StyleSheet.create({
   textInput: {
     borderWidth: 1,
     borderColor: '#E0E0E0',
-    borderRadius: responsiveWidth(1.25), 
-    padding: responsiveWidth(2.5), 
-    fontSize: RFValue(12),
+    borderRadius: 8,
+    padding: 12,
+    paddingRight: 40,
+    fontSize: RFValue(13),
     backgroundColor: '#F9F9F9',
     color: '#333',
-    marginBottom: responsiveHeight(1)
-  },
+  },  
   profilePictureContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -533,11 +593,12 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   profilePicture: {
-    width: responsiveWidth(15), 
-    height: responsiveWidth(15), 
-    borderRadius: responsiveWidth(7.5), 
+    width: responsiveWidth(25), 
+    height: responsiveWidth(25), 
+    borderRadius: responsiveWidth(12.5), 
     borderWidth: 2,
     borderColor: '#7A5FFF',
+    marginBottom: responsiveHeight(2)
   },
   activityIndicator: {
     position: 'absolute',
@@ -550,9 +611,12 @@ const styles = StyleSheet.create({
   },
   avatarList: {
     paddingVertical: responsiveHeight(0.5),
+    justifyContent: 'center',
+    width: '102%'
   },
   avatarItem: {
     marginRight: responsiveWidth(2.5),
+    marginHorizontal: responsiveWidth(2)
   },
   avatarImage: {
     width: responsiveWidth(12), 
@@ -562,6 +626,7 @@ const styles = StyleSheet.create({
   selectedAvatar: {
     borderWidth: 2,
     borderColor: '#7A5FFF',
+    borderRadius: RFValue(50)
   },
   toggleContainer: {
     flexDirection: 'row',
@@ -624,5 +689,17 @@ const styles = StyleSheet.create({
   addPhotoText: {
     color: '#fff',
     fontSize: 16,
+  },
+  inputWrapper: {
+    position: 'relative',
+    marginBottom: 10,
+  },
+  eyeButton: {
+    position: 'absolute',
+    right: 10,
+    top: '50%',
+    transform: [{ translateY: -11 }],
+    padding: 2,
+    marginHorizontal: 10
   },
 });

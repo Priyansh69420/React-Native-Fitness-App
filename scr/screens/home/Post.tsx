@@ -9,7 +9,6 @@ import { RFPercentage, RFValue } from 'react-native-responsive-fontsize';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { CommunityStackParamList } from '../../navigations/CommunityStackParamList';
 import { ResizeMode, Video } from 'expo-av';
-import { LearnMoreLinks } from 'react-native/Libraries/NewAppScreen';
 
 type NavigationProp = DrawerNavigationProp<CommunityStackParamList, 'Community'>;
 
@@ -143,56 +142,73 @@ export default function Post() {
       Alert.alert('Authentication Required', 'You need to be logged in to like posts.');
       return;
     }
-
+  
     const postRef = doc(firestore, 'posts', post.id);
     const hasLiked = post.likes?.includes(user.uid);
-
+  
+    setPost((prevPost) => ({
+      ...prevPost,
+      likes: hasLiked
+        ? prevPost.likes?.filter((uid) => uid !== user.uid)
+        : [...(prevPost.likes || []), user.uid],
+    }));
+  
     try {
       await updateDoc(postRef, {
         likes: hasLiked ? arrayRemove(user.uid) : arrayUnion(user.uid),
       });
-
+    } catch (error: any) {
+      console.error('Error liking post:', error.message);
+  
       setPost((prevPost) => ({
         ...prevPost,
         likes: hasLiked
-          ? prevPost.likes?.filter((uid) => uid !== user.uid)
-          : [...(prevPost.likes || []), user.uid],
+          ? [...(prevPost.likes || []), user.uid]
+          : prevPost.likes?.filter((uid) => uid !== user.uid),
       }));
-    } catch (error: any) {
-      console.error('Error liking post:', error.message);
-      Alert.alert('Error', 'Could not like/unlike the post.');
     }
   };
+  
 
   const handleAddComment = async () => {
     setLoading(true);
     if (!commentText.trim()) return;
-
+  
     if (!user) {
       Alert.alert('Authentication Required', 'You need to be logged in to comment.');
       return;
     }
-
+  
     try {
       const commentsCollectionRef = collection(firestore, 'comments');
+  
+      setPost(prevPost => ({
+        ...prevPost,
+        commentCount: (prevPost.commentCount || 0) + 1,
+      }));
+  
       await addDoc(commentsCollectionRef, {
         postId: post.id,
         userId: user.uid,
         content: commentText,
         timestamp: serverTimestamp(),
       });
-
+  
       const postDocRef = doc(firestore, 'posts', post.id);
       await updateDoc(postDocRef, {
         commentCount: increment(1),
       });
-
+  
       setCommentText('');
     } catch (error: any) {
       console.error('Error adding comment:', error.message);
       Alert.alert('Error', 'Could not add comment.');
+  
+      setPost(prevPost => ({
+        ...prevPost,
+        commentCount: (prevPost.commentCount || 1) - 1,
+      }));
     } finally {
-      setCommentText('');
       setLoading(false);
     }
   };
@@ -274,11 +290,12 @@ export default function Post() {
 
           <View style={styles.postActions}>
             <TouchableOpacity style={styles.actionButton} onPress={handleLikePost}>
-              <Image source={isLiked ? require('../../assets/likedIcon.png') : require('../../assets/likeIcon.png')} style={[styles.likeIcon]} />
+              <Image source={isLiked ? require('../../assets/likedIcon.png') : require('../../assets/likeIcon.png')} 
+                     style={[styles.likeIcon, !isLiked && {tintColor: '#000'}]} />
               <Text style={styles.actionText}>{post.likes ? post.likes.length : 0}</Text>
             </TouchableOpacity>
             <View style={styles.actionButton}>
-              <SimpleLineIcons name="bubble" size={20} color="#d3d3d3" />
+              <SimpleLineIcons name="bubble" size={20} color="#000" />
               <Text style={styles.actionText}>{post.commentCount || 0}</Text>
             </View>
           </View>
@@ -415,7 +432,7 @@ const styles = StyleSheet.create({
     marginLeft: width * 0.01 * scaleFactor,
     fontSize: RFValue(14 * scaleFactor, height),
     fontWeight: 'bold',
-    color: '#d3d3d3',
+    color: '#000',
   },
   commentsHeader: {
     paddingHorizontal: width * 0.06 * scaleFactor,

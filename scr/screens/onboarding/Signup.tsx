@@ -39,15 +39,16 @@ export default function Signup() {
   async function handleContinue() {
     setShouldValidate(true);
   
-    const trimmedEmail = email.trim();
-
+    const trimmedEmail = email.trim().toLowerCase();
+  
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (trimmedEmail.length === 0) {
       setError('Please enter your email address');
       return;
     }
   
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
-      setError('Please enter a valid email address');
+    if (!emailRegex.test(trimmedEmail)) {
+      setError('That doesn’t look like a valid email address');
       return;
     }
   
@@ -55,21 +56,24 @@ export default function Signup() {
       const signInMethods = await fetchSignInMethodsForEmail(auth, trimmedEmail);
   
       if (signInMethods.length > 0) {
-        setError('Email already exists, please log in');
+        setError('An account with this email already exists. Please log in instead.');
         return;
       }
-
+  
       updateOnboardingData({ email: trimmedEmail });
-      setError(''); 
+      setError('');
       navigation.navigate("SetPassword", { email: trimmedEmail });
   
     } catch (error: any) {
-      console.error("Firebase error:", error.message);
-      setError(error.message || "Something went wrong. Please try again.");
+      if (error.code === 'auth/invalid-email') {
+        setError('That doesn’t look like a valid email address');
+      } else {
+        console.error("Firebase error:", error.message);
+        setError("Something went wrong. Please try again.");
+      }
     }
   }
   
-
   return (
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView

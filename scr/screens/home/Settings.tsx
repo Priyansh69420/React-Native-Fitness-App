@@ -65,7 +65,7 @@ export default function Settings() {
     };
 
     const handleSendFeedback = () => {
-        if(feedbackText.length === 0) {
+        if(!feedbackText.trim()) {
             return;
         }
 
@@ -189,7 +189,7 @@ export default function Settings() {
                                 style={[styles.modalButton, styles.modalCancelButton]}
                                 onPress={handleCloseFeedbackModal}
                             >
-                                <Text style={styles.modalButtonText}>Cancel</Text>
+                                <Text style={[styles.modalButtonText, {color: '#7A5FFF'}]}>Cancel</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={[styles.modalButton, styles.modalSubmitButton]}
@@ -217,7 +217,7 @@ export default function Settings() {
                                 <View style={styles.supportIcon}>
                                     <Text style={styles.icon}>📞</Text>
                                 </View>
-                                <Text style={styles.supportText}>Call Us</Text>
+                                
                                 <Text style={styles.supportDetail}>7887052000</Text>
                             </TouchableOpacity>
 
@@ -225,8 +225,8 @@ export default function Settings() {
                                 <View style={styles.supportIcon}>
                                     <Text style={styles.icon}>✉️</Text>
                                 </View>
-                                <Text style={styles.supportText}>Email Us</Text>
-                                <Text style={styles.supportDetail}>contactus@mail.in</Text>
+                                
+                                <Text style={styles.supportDetail}>contactus@mail.com</Text>
                             </TouchableOpacity>
                         </View>
 
@@ -235,7 +235,7 @@ export default function Settings() {
                                 style={[styles.modalButton, styles.modalCancelButton]}
                                 onPress={handleCloseSupportModal}
                             >
-                                <Text style={styles.modalButtonText}>Close</Text>
+                                <Text style={[styles.modalButtonText, {color: '#7A5FFF'}]}>Close</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -337,7 +337,9 @@ const styles = StyleSheet.create({
         marginLeft: width * 0.02 * scaleFactor,
     },
     modalCancelButton: {
-        backgroundColor: '#d3d3d3',
+        backgroundColor: '#FFF',
+        borderWidth: 2,
+        borderColor: '#7A5FFF',
     },
     modalSubmitButton: {
         backgroundColor: '#7A5FFF',
@@ -354,6 +356,7 @@ const styles = StyleSheet.create({
     supportOption: {
         flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'space-between',
         paddingVertical: height * 0.015 * scaleFactor,
         borderBottomWidth: 1 * scaleFactor,
         borderBottomColor: '#eee',

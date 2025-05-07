@@ -493,7 +493,10 @@ export default function Nutrition() {
                 </TouchableOpacity>
                 )}
 
-                <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
+                <TouchableOpacity style={styles.closeButton} onPress={() => {
+                  setModalVisible(false)
+                  setSearchQuery('')
+                }}>
                   <Text style={{fontSize: RFValue(25), marginTop: -5}}>✕</Text>
                 </TouchableOpacity>
               </View>

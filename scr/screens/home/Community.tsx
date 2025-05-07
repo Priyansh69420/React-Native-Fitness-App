@@ -737,45 +737,6 @@ const Community = () => {
             </Text>
           </TouchableOpacity>
         </View>
-  
-        <Modal
-          visible={editModalVisible}
-          transparent
-          animationType="none"
-          onRequestClose={() => setEditModalVisible(false)}
-          style={{}}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.editModalContainer}>
-              <Text style={styles.editModalTitle}>Edit Post</Text>
-              <TextInput
-                style={styles.editInput}
-                value={editedContent}
-                onChangeText={setEditedContent}
-                multiline
-              />
-              <View style={styles.modalButtons}>
-                <TouchableOpacity onPress={() => setEditModalVisible(false)}>
-                  <Text style={[styles.modalButtonText, { color: '#a8a8a8', marginRight: 15 }]}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={async () => {
-                    if(editedContent.length === 0 ) return; 
-
-                    if (editingPost) {
-                      await updateDoc(doc(firestore, 'posts', editingPost.id), {
-                        content: editedContent.trim(),
-                      });
-                    }
-                    setEditModalVisible(false);
-                  }}
-                >
-                  <Text style={[styles.modalButtonText, { color: 'blue', marginTop: 0.5 }]}>Save</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        </Modal>
       </View>
     );
   };
@@ -899,6 +860,7 @@ const Community = () => {
                 onPress={() => {
                   setIsAddPostModalVisible(false)
                   setNewPostImage(null)
+                  setNewPostContent('')
                 }}
               >
                 <Text style={[styles.modalButtonText, {color: '#7A5FFF'}]}>Cancel</Text>
@@ -909,6 +871,45 @@ const Community = () => {
                 disabled={uploadingImage}
               >
                 {postLoading ? <ActivityIndicator size='small' color='#d3d3d3' /> : <Text style={styles.modalButtonText}>{uploadingImage ? 'Posting...' : 'Post'}</Text>}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={editModalVisible}
+        transparent
+        animationType="none"
+        onRequestClose={() => setEditModalVisible(false)}
+        style={{}}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.editModalContainer}>
+            <Text style={styles.editModalTitle}>Edit Post</Text>
+            <TextInput
+              style={styles.editInput}
+              value={editedContent}
+              onChangeText={setEditedContent}
+              multiline
+            />
+            <View style={styles.modalButtons}>
+              <TouchableOpacity onPress={() => setEditModalVisible(false)}>
+                <Text style={[styles.modalButtonText, { color: '#a8a8a8', marginRight: 15 }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={async () => {
+                  if(!editedContent.trim()) return; 
+
+                  if (editingPost) {
+                    await updateDoc(doc(firestore, 'posts', editingPost.id), {
+                      content: editedContent.trim(),
+                    });
+                  }
+                  setEditModalVisible(false);
+                }}
+              >
+                <Text style={[styles.modalButtonText, { color: 'blue', marginTop: 0.5 }]}>Save</Text>
               </TouchableOpacity>
             </View>
           </View>

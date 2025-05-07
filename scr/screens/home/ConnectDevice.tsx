@@ -36,7 +36,7 @@ const DeviceItem: React.FC<DeviceItemProps> = ({ item, onConnect }) => {
       onPress={() => onConnect(item)}
       accessibilityLabel={`Connect to ${item.name || 'Unknown Device'}`}
     >
-      <Ionicons name="watch" size={24} color="#7A5FFF" style={styles.deviceIcon} />
+      <Ionicons name="hardware-chip" size={24} color="#7A5FFF" style={styles.deviceIcon} />
       <Text style={styles.deviceName}>{item.name || 'Unknown Device'}</Text>
     </TouchableOpacity>
   );
@@ -206,7 +206,7 @@ const ConnectDeviceScreen: React.FC = () => {
         </TouchableOpacity>
       </View>
 
-      <Text style={styles.title}>Connect to Smartwatch</Text>
+      <Text style={styles.title}>Tap Below to Connect</Text>
 
       {!connectedDevice && (
         <TouchableOpacity

@@ -38,7 +38,18 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (!email || !password) {
-      setError('Please enter both email and password');
+
+      if(!email && password) {
+        setError('Please enter your email');
+        return;
+      }
+
+      if(email && !password) {
+        setError('Please enter your password');
+        return;
+      }
+
+      setError('Please enter both your email and password');
       return;
     }
   

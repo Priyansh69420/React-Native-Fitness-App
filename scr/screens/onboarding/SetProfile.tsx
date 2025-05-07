@@ -117,6 +117,8 @@ export default function SetProfile() {
     }
 };
 
+console.log(selectedAvatar)
+
   const confirmCustomImage = () => {
     if(customImg) {
       setError('');
@@ -137,10 +139,7 @@ export default function SetProfile() {
       updateOnboardingData({ profilePicture: customImg });
       navigation.navigate('Goals');
     } else if (selectedAvatar) {
-      const selectedAvatarObj = avatars.find(avatar => avatar.id === selectedAvatar);
-      if (selectedAvatarObj) {
-        updateOnboardingData({ profilePicture: selectedAvatarObj.source.uri });
-      }
+      updateOnboardingData({ profilePicture: selectedAvatar });
       navigation.navigate('Goals');
     } else {
       setError('Please select an avatar or add a Custom Photo');
@@ -164,13 +163,13 @@ export default function SetProfile() {
                 key={item.id}
                 onPress={() => {
                   setError('')
-                  setSelectedAvatar(item.id)
+                  setSelectedAvatar(item.source.uri)
                 }}
               >
                 <View
                   style={[
                     styles.avatarContainer,
-                    selectedAvatar === item.id && styles.selectedAvatarContainer,
+                    selectedAvatar === item.source.uri && styles.selectedAvatarContainer,
                     !selectedAvatar && error && styles.errorAvatar,  
                   ]}                
                 >
@@ -178,7 +177,7 @@ export default function SetProfile() {
                     source={item.source}
                     style={[
                       styles.avatarImage,
-                      selectedAvatar === item.id && styles.selectedAvatar,
+                      selectedAvatar === item.source.uri && styles.selectedAvatar,
                     ]}
                     resizeMode="cover" 
                   />
