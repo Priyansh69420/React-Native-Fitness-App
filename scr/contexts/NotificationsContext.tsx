@@ -27,10 +27,16 @@ export const NotificationsProvider = ({ children }: NotificationsProviderProps) 
     setNotifications(prev => [notification, ...prev]);
   };
 
-  const value = useMemo(
-    () => ({ notifications, addNotification }),
-    [notifications]
-  );
+  const value = useMemo(() => {
+    const now = Date.now();
+    const oneDay = 24 * 60 * 60 * 1000;
+  
+    const recentNotifications = notifications.filter(
+      (n) => !n.timestamp || now - n.timestamp <= oneDay
+    );
+  
+    return { notifications: recentNotifications, addNotification };
+  }, [notifications]);
 
   return (
     <NotificationsContext.Provider value={value}>

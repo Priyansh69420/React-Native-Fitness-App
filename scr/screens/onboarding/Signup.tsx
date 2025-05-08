@@ -7,6 +7,7 @@ import { useOnboarding } from '../../contexts/OnboardingContext';
 import { fetchSignInMethodsForEmail } from 'firebase/auth';
 import { auth } from '../../../firebaseConfig';
 import { RFValue } from 'react-native-responsive-fontsize';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, "Signup">;
 const logo = require('../../assets/logo.png');
@@ -76,10 +77,11 @@ export default function Signup() {
   
   return (
     <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1 }}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : -130}
+      <KeyboardAwareScrollView
+        contentContainerStyle={{ flexGrow: 1 }}
+        enableOnAndroid={true}
+        extraScrollHeight={-2000}
+        keyboardShouldPersistTaps="handled"
       >
         <View style={styles.container}>
 
@@ -113,8 +115,8 @@ export default function Signup() {
             
           </View>
         </View>
-      </KeyboardAvoidingView>
       <View style={{marginBottom: height * 0.18, }}/>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }

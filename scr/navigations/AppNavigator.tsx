@@ -158,11 +158,9 @@ const AppNavigator = () => {
         timestamp: Date.now(),
         postId: ''
       });
-  
     }
 
     await scheduleAtTime(12, 0, 'water-1', 'Don’t forget to stay hydrated!')
-    await scheduleAtTime(18, 0, 'water-1', 'Don’t forget to stay hydrated!')
   }
 
   const listenToPostLikes = (uid: string) => {
@@ -202,7 +200,7 @@ const AppNavigator = () => {
                   body: `${likerData.name} liked your post!`,
                   postId,
                   type: 'like',
-                  timestamp: Date.now(),
+                  timestamp: data.createdAt?.toMillis?.() ?? Date.now(),
                 });
               }
             }
@@ -251,7 +249,7 @@ const AppNavigator = () => {
                     body: `${comment.username || "Someone"}: "${comment.content}"`,
                     postId: comment.postId!,
                     type: 'comment',
-                    timestamp: Date.now(),
+                    timestamp: comment.createdAt?.toMillis?.() ?? Date.now(),
                   });
                 }
               }
@@ -264,10 +262,13 @@ const AppNavigator = () => {
   };
   
   const listenToNewPosts = (uid: string) => {
-    if(!isPushEnabled) return;
-
+    if (!isPushEnabled) return;
+  
+    const twentyFourHoursAgo = Timestamp.fromMillis(Date.now() - 24 * 60 * 60 * 1000);
+  
     const newPostsQuery = query(
       collection(firestore, "posts"),
+      where("createdAt", ">=", twentyFourHoursAgo),
       orderBy("createdAt", "desc"),
       limit(1)
     );
@@ -276,6 +277,7 @@ const AppNavigator = () => {
       snapshot.docChanges().forEach(async change => {
         if (change.type === "added") {
           const post = change.doc.data() as { userId?: string; createdAt?: Timestamp };
+          
           if (!isWithinLast24Hours(post.createdAt)) return;
   
           if (post.userId && post.userId !== uid) {

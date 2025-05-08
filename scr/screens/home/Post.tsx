@@ -279,7 +279,7 @@ export default function Post() {
                   resizeMode={ResizeMode.COVER}         
                   useNativeControls={true}                 
                   shouldPlay={true}                    
-                  isLooping={false}                    
+                  isLooping={true}                    
               />
             )}
 

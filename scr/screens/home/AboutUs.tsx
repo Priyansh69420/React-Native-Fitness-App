@@ -42,7 +42,6 @@ export default function AboutUs() {
         </View>
       </View>
 
-      {/* Mission Statement */}
       <Text style={styles.missionStatement}>
         "Empowering Your Fitness Journey"
       </Text>
@@ -58,25 +57,40 @@ export default function AboutUs() {
         athlete, our app is designed to empower you on your wellness journey.
       </Text>
 
-      {/* Team Section */}
       <View style={styles.teamContainer}>
         <Text style={styles.teamTitle}>Meet Our Team</Text>
         <View style={styles.teamMembers}>
-          <View style={styles.teamMember}>
+          <View style={[styles.teamMember, {marginLeft: -10}]}>
             <Image
               source={require('../../assets/team_icon_1.jpg')} 
               style={styles.teamIcon}
             />
             <Text style={styles.teamName}>Jane Doe</Text>
             <Text style={styles.teamRole}>Founder & Fitness Coach</Text>
+            <View style={{flexDirection: 'row', marginTop: 5, justifyContent: 'space-evenly', marginLeft: 5}}>
+              <TouchableOpacity onPress={() => Linking.openURL('https://twitter.com/yourpage')}>
+                <Image source={require('../../assets/twitter.png')} style={styles.socialIcon} />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => Linking.openURL('https://instagram.com/yourpage')}>
+                <Image source={require('../../assets/instagram.png')} style={styles.socialIcon} />
+              </TouchableOpacity>
+            </View>
           </View>
           <View style={styles.teamMember}>
             <Image
               source={require('../../assets/team_icon_2.jpg')} 
               style={styles.teamIcon}
             />
-            <Text style={styles.teamName}>John Smith</Text>
-            <Text style={styles.teamRole}>Nutrition Expert</Text>
+            <Text style={[styles.teamName, {marginLeft: 10}]}>John Smith</Text>
+            <Text style={[styles.teamRole, {marginLeft: 10}]}>Nutrition Expert</Text>
+            <View style={{flexDirection: 'row', marginTop: 5, justifyContent: 'space-evenly', marginLeft: 10}}>
+              <TouchableOpacity onPress={() => Linking.openURL('https://twitter.com/yourpage')}>
+                <Image source={require('../../assets/twitter.png')} style={styles.socialIcon} />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => Linking.openURL('https://instagram.com/yourpage')}>
+                <Image source={require('../../assets/instagram.png')} style={styles.socialIcon} />
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </View>
@@ -94,7 +108,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: width * 0.04,
-    paddingVertical: width * 0.03,
   },
   backButtonContainer: {
     flexDirection: 'row',
@@ -125,8 +138,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 5,
-    marginTop: height * 0.1,
-    marginBottom: height * 0.01,
+    marginTop: height * 0.05,
   },
   logo: {
     width: RFValue(60, height),
@@ -135,10 +147,10 @@ const styles = StyleSheet.create({
   missionStatement: {
     fontSize: RFPercentage(2.5),
     fontWeight: 'bold',
-    color: '#7A5FFF', // Accent color to make it stand out
+    color: '#7A5FFF', 
     textAlign: 'center',
     marginTop: height * 0.02,
-    marginBottom: height * 0.01,
+    marginBottom: height * 0.02,
   },
   titleContainer: {
     borderBottomWidth: 1,
@@ -167,6 +179,7 @@ const styles = StyleSheet.create({
     marginHorizontal: width * 0.08,
     marginBottom: height * 0.03,
     justifyContent: 'space-evenly',
+    width: '82%'
   },
   teamTitle: {
     fontSize: RFPercentage(2.5),
@@ -177,16 +190,16 @@ const styles = StyleSheet.create({
   },
   teamMembers: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'space-evenly',
     marginTop: height * 0.01,
   },
   teamMember: {
     alignItems: 'center',
   },
   teamIcon: {
-    width: RFValue(50, height),
-    height: RFValue(50, height),
-    borderRadius: RFValue(25, height),
+    width: RFValue(80, height),
+    height: RFValue(80, height),
+    borderRadius: RFValue(50, height),
     marginBottom: height * 0.01,
   },
   teamName: {
@@ -198,37 +211,9 @@ const styles = StyleSheet.create({
     fontSize: RFPercentage(1.6),
     color: '#666',
   },
-  socialContainer: {
-    marginHorizontal: width * 0.08,
-    marginBottom: height * 0.03,
-  },
-  socialTitle: {
-    fontSize: RFPercentage(2.5),
-    fontWeight: 'bold',
-    color: '#333',
-    textAlign: 'center',
-    marginBottom: height * 0.015,
-  },
-  socialIcons: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: width * 0.05,
-  },
   socialIcon: {
-    width: RFValue(30, height),
-    height: RFValue(30, height),
-  },
-  ctaButton: {
-    backgroundColor: '#7A5FFF',
-    borderRadius: RFValue(10, height),
-    paddingVertical: height * 0.015,
-    paddingHorizontal: width * 0.08,
-    alignSelf: 'center',
-    marginBottom: height * 0.03,
-  },
-  ctaText: {
-    fontSize: RFPercentage(2),
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-  },
+    width: 16,
+    height: 16,
+    marginHorizontal: 10,
+  },  
 });

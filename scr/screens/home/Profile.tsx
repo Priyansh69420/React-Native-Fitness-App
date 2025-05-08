@@ -332,7 +332,7 @@ export default function Profile() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Profile Picture</Text>
           <View style={styles.profilePictureContainer}>
-            {imageLoading && (
+            {!imageLoading && (
               <ActivityIndicator 
                 size="small" 
                 color="#b6b6b6" 
@@ -427,85 +427,81 @@ export default function Profile() {
         </View>
 
         <View style={styles.section}>
-  <Text style={[styles.sectionTitle, {marginBottom: responsiveHeight(2)}]}>
-    Change Password
-  </Text>
+          <Text style={[styles.sectionTitle, {marginBottom: responsiveHeight(2)}]}>
+            Change Password
+          </Text>
 
-  {/* Current Password */}
-  <View style={styles.inputWrapper}>
-    <TextInput
-      style={styles.textInput}
-      placeholder="Current Password"
-      placeholderTextColor="#999"
-      secureTextEntry={!showCurrent}
-      value={currentPassword}
-      onChangeText={setCurrentPassword}
-    />
-    <TouchableOpacity onPress={() => setShowCurrent(prev => !prev)} style={styles.eyeButton}>
-      <Ionicons
-        name={showCurrent ? "eye-off-outline" : "eye-outline"}
-        size={22}
-        color="#666"
-      />
-    </TouchableOpacity>
-  </View>
+          <View style={styles.inputWrapper}>
+            <TextInput
+              style={styles.textInput}
+              placeholder="Current Password"
+              placeholderTextColor="#999"
+              secureTextEntry={!showCurrent}
+              value={currentPassword}
+              onChangeText={setCurrentPassword}
+            />
+            <TouchableOpacity onPress={() => setShowCurrent(prev => !prev)} style={styles.eyeButton}>
+              <Ionicons
+                name={showCurrent ? "eye-off-outline" : "eye-outline"}
+                size={22}
+                color="#666"
+              />
+            </TouchableOpacity>
+          </View>
 
-  {/* New Password */}
-  <View style={styles.inputWrapper}>
-    <TextInput
-      style={styles.textInput}
-      placeholder="New Password"
-      placeholderTextColor="#999"
-      secureTextEntry={!showNew}
-      value={newPassword}
-      onChangeText={setNewPassword}
-    />
-    <TouchableOpacity onPress={() => setShowNew(prev => !prev)} style={styles.eyeButton}>
-      <Ionicons
-        name={showNew ? "eye-off-outline" : "eye-outline"}
-        size={22}
-        color="#666"
-      />
-    </TouchableOpacity>
-  </View>
+          <View style={styles.inputWrapper}>
+            <TextInput
+              style={styles.textInput}
+              placeholder="New Password"
+              placeholderTextColor="#999"
+              secureTextEntry={!showNew}
+              value={newPassword}
+              onChangeText={setNewPassword}
+            />
+            <TouchableOpacity onPress={() => setShowNew(prev => !prev)} style={styles.eyeButton}>
+              <Ionicons
+                name={showNew ? "eye-off-outline" : "eye-outline"}
+                size={22}
+                color="#666"
+              />
+            </TouchableOpacity>
+          </View>
 
-  {/* Confirm Password */}
-  <View style={styles.inputWrapper}>
-    <TextInput
-      style={styles.textInput}
-      placeholder="Confirm New Password"
-      placeholderTextColor="#999"
-      secureTextEntry={!showConfirm}
-      value={confirmNewPassword}
-      onChangeText={setConfirmNewPassword}
-    />
-    <TouchableOpacity onPress={() => setShowConfirm(prev => !prev)} style={styles.eyeButton}>
-      <Ionicons
-        name={showConfirm ? "eye-off-outline" : "eye-outline"}
-        size={22}
-        color="#666"
-      />
-    </TouchableOpacity>
-  </View>
+          <View style={styles.inputWrapper}>
+            <TextInput
+              style={styles.textInput}
+              placeholder="Confirm New Password"
+              placeholderTextColor="#999"
+              secureTextEntry={!showConfirm}
+              value={confirmNewPassword}
+              onChangeText={setConfirmNewPassword}
+            />
+            <TouchableOpacity onPress={() => setShowConfirm(prev => !prev)} style={styles.eyeButton}>
+              <Ionicons
+                name={showConfirm ? "eye-off-outline" : "eye-outline"}
+                size={22}
+                color="#666"
+              />
+            </TouchableOpacity>
+          </View>
 
-  {error ? (
-    <Text style={{color: 'red', textAlign: 'center'}}>{error}</Text>
-  ) : null}
+          {error ? (
+            <Text style={{color: 'red', textAlign: 'center'}}>{error}</Text>
+          ) : null}
 
-  <View style={{flexDirection: 'row', justifyContent: 'flex-end'}}>
-    <TouchableOpacity
-      onPress={handleChangePassword}
-      style={[styles.addPhotoButton, {borderRadius: 20, width: '50%'}]}
-    >
-      {updatingPassword ? (
-        <ActivityIndicator size="small" color="#d0d0d0" />
-      ) : (
-        <Text style={styles.addPhotoText}>Update Password</Text>
-      )}
-    </TouchableOpacity>
-  </View>
-</View>
-
+          <View style={{flexDirection: 'row', justifyContent: 'flex-end'}}>
+            <TouchableOpacity
+              onPress={handleChangePassword}
+              style={[styles.addPhotoButton, {borderRadius: 20, width: '50%'}]}
+            >
+              {updatingPassword ? (
+                <ActivityIndicator size="small" color="#d0d0d0" />
+              ) : (
+                <Text style={styles.addPhotoText}>Update Password</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
 
         <View style={{ paddingHorizontal: 60 }}>
           <TouchableOpacity onPress={handleSave} style={styles.saveButton}>
@@ -605,7 +601,7 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0, 
-    bottom: 0, 
+    bottom: 5, 
     justifyContent: 'center', 
     alignItems: 'center',
   },

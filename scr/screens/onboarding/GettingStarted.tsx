@@ -16,7 +16,7 @@ const GettingStartedScreen = () => {
     <View style={styles.container}>
       <Image source={logo} style={styles.logo}/>
 
-      <Text style={styles.title}>Welcome to Fitness App</Text>
+      <Text style={styles.title}>Welcome to FitTrack</Text>
       <Text style={styles.subtitle}>
         The best UI kit for your next health and fitness project
       </Text>

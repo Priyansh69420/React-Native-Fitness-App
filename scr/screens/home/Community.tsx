@@ -99,7 +99,6 @@ const Community = () => {
   const [loading, setLoading] = useState(true);
   const [postLoading, setPostLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [suggestedUsers, setSuggestedUsers] = useState<UserData[]>([]);
   const [userDataMap, setUserDataMap] = useState<Record<string, UserData>>({});
   const [isAddPostModalVisible, setIsAddPostModalVisible] = useState(false);
   const [newPostContent, setNewPostContent] = useState('');
@@ -155,23 +154,6 @@ const Community = () => {
         setLoading(false);
       }
     );
-
-    const fetchSuggestedUsers = async () => {
-      try {
-        const usersCollection = collection(firestore, 'users');
-        const usersQuery = query(usersCollection, limit(20));
-        const snapshot = await getDocs(usersQuery);
-    
-        const updatedSuggestedUsers = snapshot.docs.map((doc) => {
-          return doc.data() as UserData;
-        });
-    
-        setSuggestedUsers(updatedSuggestedUsers);
-      } catch (e) {
-        console.error('Error fetching suggested users', e);
-      }
-    };
-    fetchSuggestedUsers();
 
     return () => {
       unsubscribePosts();
@@ -639,7 +621,7 @@ const Community = () => {
           </View>
         </View>
   
-        <Text style={styles.content}>{item.content}</Text>
+        {item.content ? <Text style={styles.content}>{item.content}</Text> : <></>}
   
         <View style={{ justifyContent: 'center', alignItems: 'center' }}>
           {item.videoUrl ? (
@@ -657,7 +639,7 @@ const Community = () => {
                 style={styles.postMedia}              
                 resizeMode={ResizeMode.COVER}         
                 useNativeControls={true}                 
-                shouldPlay={true}                    
+                shouldPlay={!isAddPostModalVisible}                    
                 isLooping={true}      
               />
               {showHeart && (

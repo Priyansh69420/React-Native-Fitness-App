@@ -3,13 +3,14 @@ import React, { useState } from 'react';
 import { useNavigation } from "@react-navigation/native";
 import { RootStackParamList } from "../../navigations/RootStackParamList";
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { GoogleAuthProvider, signInWithCredential, signInWithEmailAndPassword } from 'firebase/auth';
+import { GoogleAuthProvider, sendPasswordResetEmail, signInWithCredential, signInWithEmailAndPassword } from 'firebase/auth';
 import { auth, firestore } from '../../../firebaseConfig';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { RFValue } from 'react-native-responsive-fontsize';
 import { doc, getDoc, setDoc } from '@firebase/firestore';
 import { Ionicons } from '@expo/vector-icons';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, "GettingStarted">;
 
@@ -119,18 +120,47 @@ export default function LoginScreen() {
     }
   };
 
+  const handlePasswordReset = async () => {
+    if (!email.trim()) {
+      Alert.alert('Error', 'Please enter your email address.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await sendPasswordResetEmail(auth, email);
+      Alert.alert(
+        'Success',
+        'A password reset link has been sent to your email address.',
+        [{ text: 'OK', onPress: () => navigation.goBack() }]
+      );
+    } catch (error: any) {
+      console.error('Error sending password reset email:', error);
+      let errorMessage = 'An error occurred. Please try again.';
+      if (error.code === 'auth/invalid-email') {
+        errorMessage = 'Invalid email address.';
+      } else if (error.code === 'auth/user-not-found') {
+        errorMessage = 'No user found with this email address.';
+      }
+      Alert.alert('Error', errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1 }}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : -130}
+      <KeyboardAwareScrollView
+        contentContainerStyle={{ flexGrow: 1 }}
+        enableOnAndroid={true}
+        extraScrollHeight={-2000}
+        keyboardShouldPersistTaps="handled"
       >
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+        <View style={styles.container}>
+           <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
             <Image source={backIcon} style={styles.backIcon} />
           </TouchableOpacity>
 
-        <View style={styles.container}>
           <Image source={logo} style={styles.appLogo} />
 
           <View style={styles.inputContainer}>
@@ -167,6 +197,12 @@ export default function LoginScreen() {
             </TouchableOpacity>
           </View>
 
+          <View style={styles.forgotPasswordContainer}>
+          <TouchableOpacity onPress={handlePasswordReset}>
+            <Text style={styles.forgotPassword}>Forgot Password?</Text>
+          </TouchableOpacity>
+          </View>
+
           {error ? <Text style={{color: 'red', width: '85%', textAlign: 'center'}}>{error}</Text>: <></>}
 
           <Text style={styles.signInWithText}>Sign in with</Text>
@@ -182,8 +218,9 @@ export default function LoginScreen() {
             <Text style={styles.buttonText}>Continue</Text>}
           </TouchableOpacity>
         </View>
-      </KeyboardAvoidingView>
-      <View style={{marginBottom: height * 0.12, }}/>
+  
+        <View style={{marginBottom: height * 0.12, }}/>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }
@@ -201,12 +238,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: width * 0.05, 
-    paddingTop: height * 0.025,
-    
+    paddingTop: height * 0.05,
   },
   backButton: {
     position: 'absolute',
-    top: height * 0.12, 
+    top: height * 0.05, 
     left: width * 0.05, 
     zIndex: 1,
   },
@@ -293,5 +329,16 @@ const styles = StyleSheet.create({
   },
   eyeButton: {
     padding: 8,
+  },
+  forgotPasswordContainer: {
+    width: '100%', 
+    alignItems: 'flex-end', 
+  },
+  forgotPassword: {
+    fontSize: RFValue(14, height), 
+    color: '#0000FF', 
+    textAlign: 'center',
+    fontWeight: '500', 
+    justifyContent: 'flex-end',
   },
 });

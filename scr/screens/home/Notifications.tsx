@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { FlatList, View, Text, Image, TouchableOpacity, Dimensions, StyleSheet, Alert } from 'react-native';
+import { FlatList, View, Text, Image, TouchableOpacity, Dimensions, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { RFPercentage, RFValue } from 'react-native-responsive-fontsize';
@@ -23,7 +23,7 @@ const { width, height } = Dimensions.get('window');
 const scaleFactor = 1.1;
 
 const NotificationsScreen = () => {
-  const { notifications, addNotification } = useNotifications();
+  const { notifications } = useNotifications();
   const [isPushEnabled, setPushEnabled] = useState(true);
   const navigation = useNavigation<NavigationProp>();
 
@@ -40,7 +40,6 @@ const NotificationsScreen = () => {
 
     loadPushSetting();
   }, []);
-  
 
   const renderNotificationItem = ({ item }: { item: NotificationItem }) => {
     const time = item.timestamp 
@@ -77,7 +76,7 @@ const NotificationsScreen = () => {
         {isPushEnabled ? (
           notifications.length > 0 ? (
             <FlatList
-              data={notifications}
+              data={notifications as any}
               keyExtractor={(item) => item.id}
               contentContainerStyle={styles.listContent}
               renderItem={renderNotificationItem}

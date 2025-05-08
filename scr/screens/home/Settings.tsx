@@ -39,25 +39,29 @@ export default function Settings() {
     }, [isPushEnabled]);
 
     const appLink = Platform.select({
-        ios: 'YOUR_IOS_APP_LINK',
-        android: 'YOUR_ANDROID_APP_LINK',
-        default: '',
+        ios: 'www.testlink.com',
+        android: 'www.testlink.com',
+        default: 'www.testlink.com',
     });
 
     const handleInviteFriend = async () => {
         if (appLink) {
-            try {
-                const result = await Linking.openURL(`sms:&body=Check out this awesome app: ${appLink}`);
-                if (!result) {
-                    console.error('Error', 'Could not open SMS app.');
-                }
-            } catch (error: any) {
-              console.error('Error', `Could not open SMS app: ${error.message}`);
+          const message = `Check out this awesome app: ${appLink}`;
+          const url = `sms:?body=${encodeURIComponent(message)}`; 
+      
+          try {
+            const result = await Linking.openURL(url);
+            if (!result) {
+              console.error('Error', 'Could not open SMS app.');
             }
+          } catch (error: any) {
+            console.error('Error', `Could not open SMS app: ${error.message}`);
+          }
         } else {
           console.error('Invite Not Supported', 'App link is not configured for this platform.');
         }
-    };
+      };
+      
 
     const handleGiveFeedback = () => {
         setFeedbackModalVisible(true);
@@ -70,7 +74,7 @@ export default function Settings() {
         }
 
         Alert.alert(
-            'Thank You',
+            'Feedback Received',
             'Thanks for your feedback!\nWe will look into it as soon as possible.'
         );
         setFeedbackModalVisible(false);

@@ -5,6 +5,7 @@ import { RootStackParamList } from '../../navigations/RootStackParamList';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useOnboarding } from '../../contexts/OnboardingContext';
 import { RFValue } from 'react-native-responsive-fontsize';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, "SetPassword">;
 const logo = require('../../assets/logo.png'); 
@@ -64,10 +65,11 @@ export default function SetPassword() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1 }}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : -130}
+      <KeyboardAwareScrollView
+        contentContainerStyle={{ flexGrow: 1 }}
+        enableOnAndroid={true}
+        extraScrollHeight={-2000}
+        keyboardShouldPersistTaps="handled"
       >
         <View style={styles.container}>
           <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
@@ -124,8 +126,8 @@ export default function SetPassword() {
             </TouchableOpacity>
           </View>
         </View>
-      </KeyboardAvoidingView>
       <View style={{marginBottom: height * 0.09, }}/>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   )
 }

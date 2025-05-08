@@ -401,7 +401,7 @@ export default function Nutrition() {
                     style={styles.deleteCardButton}
                     onPress={() => handleDeleteCard(mealType as MealType)}
                   >
-                    <Text style={styles.deleteCardText}>✕</Text>
+                    <Text style={styles.deleteCardText}>X</Text>
                   </TouchableOpacity>
                   <Text style={styles.mealCardTitle}>{mealType}</Text>
                   {foodList.map((food, index) => (
@@ -497,7 +497,7 @@ export default function Nutrition() {
                   setModalVisible(false)
                   setSearchQuery('')
                 }}>
-                  <Text style={{fontSize: RFValue(25), marginTop: -5}}>✕</Text>
+                  <Text style={{fontSize: RFValue(30), marginTop: -5}}>✕</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -633,6 +633,7 @@ const styles = StyleSheet.create({
     color: 'gray',
     fontWeight: 'bold',
     lineHeight: RFValue(16), 
+    transform: [{ scaleX: 1.5 }]
   },
 	modalOverlay: {
     flex: 1,

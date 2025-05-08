@@ -5,6 +5,7 @@ import { RootStackParamList } from '../../navigations/RootStackParamList';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useOnboarding } from '../../contexts/OnboardingContext';
 import { RFValue } from 'react-native-responsive-fontsize';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, "SetName">;
 const logo = require('../../assets/logo.png'); 
@@ -47,12 +48,14 @@ export default function SetNameScreen() {
   };  
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1 }}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : -130}
+    <KeyboardAwareScrollView
+        contentContainerStyle={{ flexGrow: 1 }}
+        enableOnAndroid={true}
+        extraScrollHeight={-2000}
+        keyboardShouldPersistTaps="handled"
       >
+    <SafeAreaView style={styles.safeArea}>
+      
         <View style={styles.container}>
 
           <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
@@ -97,9 +100,10 @@ export default function SetNameScreen() {
             </TouchableOpacity>
           </View>
         </View>
-      </KeyboardAvoidingView>
+      
       <View style={{marginBottom: height * 0.09,}}/>
     </SafeAreaView>
+    </KeyboardAwareScrollView>
   );
 }
 
