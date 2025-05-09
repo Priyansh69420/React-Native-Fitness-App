@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
   },
   notificationContainer: {
     backgroundColor: '#FFF',
-    height: height * 0.65, 
+    height: height * 0.85, 
   },
   listContent: {
     padding: RFValue(25 * scaleFactor, height),
@@ -138,7 +138,7 @@ const styles = StyleSheet.create({
   notificationItem: {
     flexDirection: 'column',
     justifyContent: 'space-between',
-    paddingVertical: height * 0.01,
+    paddingVertical: height * 0.015,
     borderBottomWidth: 1,
     borderBottomColor: '#E0E0E0',
   },
@@ -158,7 +158,7 @@ const styles = StyleSheet.create({
   notificationBody: {
     fontSize: RFPercentage(1.9 * scaleFactor),
     color: '#666',
-    lineHeight: RFPercentage(2.2 * scaleFactor),
+    lineHeight: RFPercentage(2.3 * scaleFactor),
   },
   notificationTime: {
     fontSize: RFPercentage(1.5 * scaleFactor),

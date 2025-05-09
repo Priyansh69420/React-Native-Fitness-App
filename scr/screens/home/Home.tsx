@@ -1,4 +1,4 @@
-import React, { Children, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -119,14 +119,14 @@ export default function Home() {
           />
         </TouchableOpacity>
         <View style={styles.profileContainer}>
-        <View style={styles.imageWrapper}>
-            {imageLoading && (
-              <ActivityIndicator 
-                size="small" 
-                color="#b3b3b3" 
-                style={styles.activityIndicator} 
-              /> 
-            )}
+          <View style={styles.imageWrapper}>
+              {imageLoading && (
+                <ActivityIndicator 
+                  size="small" 
+                  color="#b3b3b3" 
+                  style={styles.activityIndicator} 
+                /> 
+              )}
             
             {profileImageSource ? (
               <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
@@ -136,6 +136,10 @@ export default function Home() {
                 onLoad={() => setImageLoading(false)} 
                 onError={() => setImageLoading(false)} 
               />
+
+<View style={styles.editIcon}>
+<Image source={require('../../assets/editIcon.png')} style={{height: 12, width: 12, alignContent: 'center', tintColor: '#F5F7FA'}} />
+          </View>
               </TouchableOpacity>
             ) : (
               <View style={styles.placeholderProfile} />
@@ -326,6 +330,19 @@ const styles = StyleSheet.create({
   activityIndicator: {
     position: 'absolute',
     zIndex: 1,
+  },
+  editIcon: {
+    position: 'absolute',
+    bottom: 2, 
+    right: 3, 
+    backgroundColor: '#000', 
+    borderRadius: 10, 
+    width: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#F5F7FA',
   },
   greeting: {
     fontSize: RFPercentage(3.8),

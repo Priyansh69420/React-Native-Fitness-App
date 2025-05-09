@@ -297,7 +297,7 @@ const AppNavigator = () => {
       });
     };
 
-    await scheduleAtTime(12, 0, 'water-1', 'Don’t forget to stay hydrated!');
+    await scheduleAtTime(12, 0, 'water-1', 'Don’t forget to drink your daily goal of water');
   };
 
   const listenToPostLikes = (uid: string) => {
@@ -439,7 +439,7 @@ const AppNavigator = () => {
                   addNotification({
                     id: `${Date.now()}`,
                     title: 'New Comment 💬',
-                    body: `${comment.username || "Someone"}: "${comment.content}"`,
+                    body: `${comment.username || "Someone"} commented "${comment.content}"`,
                     postId: comment.postId!,
                     type: 'comment',
                     timestamp: comment.createdAt?.toMillis?.() ?? Date.now(),

@@ -158,15 +158,15 @@ export default function Settings() {
 
                 <TouchableOpacity style={styles.option} onPress={() => {
                     Alert.alert(
-                        'Confirm Logout',
-                        'Are you sure you want to log out?',
-                        [
-                          { text: 'Cancel', style: 'cancel' },
-                          { text: 'Log Out', style: 'destructive', onPress: handleSignOut }
-                        ],
-                        { cancelable: true }
-                    );
-                }}>
+                      'Confirm Logout',
+                      'Are you sure you want to log out?',
+                      [
+                        { text: 'Cancel', style: 'cancel' },
+                        { text: 'Log Out', style: 'destructive', onPress: handleSignOut }
+                      ],
+                      { cancelable: true }
+                        );
+                    }}>
                     <Text style={styles.logoutButton}>Log Out</Text>
                 </TouchableOpacity>
             </View>
@@ -214,21 +214,32 @@ export default function Settings() {
             >
                 <View style={styles.centeredView}>
                     <View style={styles.modalView}>
-                        <Text style={styles.modalTitle}>Need Help?</Text>
+                        <Text style={styles.modalTitle}>Contact Us</Text>
+
+                        <Text style={{
+                          fontSize: RFValue(12 * scaleFactor, height), 
+                          
+                        }}>
+                          We are here to help and answer any question that you might have.
+                        </Text>
 
                         <View style={styles.supportOptionsContainer}>
-                            <TouchableOpacity style={styles.supportOption} onPress={handleCallSupport}>
-                                <View style={styles.supportIcon}>
-                                    <Text style={styles.icon}>📞</Text>
+                            <View style={styles.supportOption}>
+                                <View >
+                                    <Text style={styles.icon}>📍</Text>
                                 </View>
+                                
+                                <Text style={styles.supportDetail}> Park Avenue, Bangalore</Text>
+                            </View>
+
+                            <TouchableOpacity style={styles.supportOption} onPress={handleCallSupport}>
+                                    <Text style={styles.icon}>📞</Text>
                                 
                                 <Text style={styles.supportDetail}>7887052000</Text>
                             </TouchableOpacity>
 
                             <TouchableOpacity style={styles.supportOption} onPress={handleEmailSupport}>
-                                <View style={styles.supportIcon}>
                                     <Text style={styles.icon}>✉️</Text>
-                                </View>
                                 
                                 <Text style={styles.supportDetail}>contactus@mail.com</Text>
                             </TouchableOpacity>
@@ -355,7 +366,6 @@ const styles = StyleSheet.create({
     },
     supportOptionsContainer: {
         width: '100%',
-        marginBottom: height * 0.03 * scaleFactor,
     },
     supportOption: {
         flexDirection: 'row',
@@ -364,7 +374,6 @@ const styles = StyleSheet.create({
         paddingVertical: height * 0.015 * scaleFactor,
         borderBottomWidth: 1 * scaleFactor,
         borderBottomColor: '#eee',
-        marginBottom: height * 0.015 * scaleFactor,
     },
     supportOptionLast: {
         borderBottomWidth: 0,
