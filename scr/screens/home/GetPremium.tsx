@@ -39,7 +39,7 @@ const carouselItems: CarouselItem[] = [
   },
   {
     image: require('../../assets/premium2.jpg'),
-    title: 'Go premium, full access!',
+    title: 'Go Premium, Get More',
     description: 'When you subscribe, you get instant unlimited access to all resources.',
   },
   {
@@ -57,7 +57,7 @@ export default function GetPremium() {
   const [activeSlide, setActiveSlide] = useState(0);
   const carouselRef = useRef<ICarouselInstance>(null);
   const [loading, setLoading] = useState<boolean>(false);
-  const isPremium = useSelector((state: RootState) => state.user.userData?.isPremium ?? false);
+  const userPlanType = useSelector((state: RootState) => state.user.userData?.planType);
   const dispatch = useDispatch();
 
   const getSelectedPlanDetails = () => {
@@ -71,46 +71,70 @@ export default function GetPremium() {
 
   const handlePurchase = async () => {
     setLoading(true);
-
     const planDetails = getSelectedPlanDetails();
-    if (planDetails) {
-      Alert.alert(
-        'Confirm Purchase',
-        `Are you sure you want to purchase the ${planDetails.name} plan for ${planDetails.price}?`,
-        [
-          {
-            text: 'Cancel',
-            style: 'cancel',
-          },
-          {
-            text: 'Yes',
-            onPress: async () => {
-              const user = auth.currentUser;
-              if(!user) alert('User not logged in');
-
-              try {
-                if(user) {
-                  await setDoc(doc(firestore, 'users', user.uid), {
-                    isPremium: true,
-                  }, { merge: true });
-                }
-
-                dispatch(updateUser({ isPremium: true }));
-                Alert.alert('Purchase Successful', 'You are now a premium member!');
-              } catch {
-                Alert.alert('Error', 'Something went wrong while processing your purchase.');
-              } finally {
-                setLoading(false);
-              }
-            },
-          },
-        ],
-        { cancelable: false }
-      );
-    } else {
-      Alert.alert('Error', 'Please select a plan before purchasing.');
-    } 
+    const user = auth.currentUser;
+  
+    if (!user) {
+      Alert.alert('Error', 'User not logged in');
+      return;
+    }
+  
+    if (!planDetails) {
+      Alert.alert('Error', 'Please select a plan.');
+      return;
+    }
+  
+    let confirmText = `Are you sure you want to purchase the ${planDetails.name} plan for ${planDetails.price}?`;
+  
+    if (userPlanType === 'monthly' && selectedPlan === 'yearly') {
+      confirmText = `Upgrade to Yearly for ${planDetails.price}?`;
+    }
+  
+    Alert.alert('Confirm Purchase', confirmText, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Yes',
+        onPress: async () => {
+          try {
+            await setDoc(doc(firestore, 'users', user.uid), {
+              isPremium: true,
+              planType: selectedPlan,
+            }, { merge: true });
+  
+            dispatch(updateUser({
+              isPremium: true,
+              planType: selectedPlan,
+            }));
+  
+            Alert.alert(
+              selectedPlan === 'yearly' && userPlanType === 'monthly'
+                ? 'Upgraded!'
+                : 'Purchase Successful',
+              selectedPlan === 'yearly' && userPlanType === 'monthly'
+                ? 'You have successfully upgraded to the Yearly Premium plan!'
+                : 'You are now a premium member!'
+            );
+          } catch {
+            Alert.alert('Error', 'Something went wrong while processing your purchase.');
+          } finally {
+            setLoading(false);
+          }
+        },
+      },
+    ]);
   };
+  
+  let buttonText = 'Purchase';
+  let isDisabled = false;
+
+  if (userPlanType === selectedPlan || userPlanType === 'yearly') {
+    buttonText = 'Already Purchased';
+    isDisabled = true;
+  } else if (userPlanType === 'monthly' && selectedPlan === 'yearly') {
+    buttonText = 'Upgrade to Yearly';
+  } else if (!userPlanType) {
+    buttonText = 'Purchase';
+  }
 
   const renderCarouselItem = ({ item }: { item: CarouselItem }) => (
     <View style={styles.carouselItem}>
@@ -207,14 +231,12 @@ export default function GetPremium() {
         <TouchableOpacity
           style={[
             styles.purchaseButton,
-            isPremium && { backgroundColor: '#ccc' },
+            isDisabled && { backgroundColor: '#ccc' },
           ]}
           onPress={handlePurchase}
-          disabled={isPremium}
+          disabled={isDisabled}
         >
-          <Text style={styles.purchaseButtonText}>
-            {isPremium ? 'Already Premium' : 'Purchase'}
-          </Text>
+          <Text style={styles.purchaseButtonText}>{buttonText}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

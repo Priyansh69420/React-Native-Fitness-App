@@ -117,8 +117,6 @@ export default function SetProfile() {
     }
 };
 
-console.log(selectedAvatar)
-
   const confirmCustomImage = () => {
     if(customImg) {
       setError('');

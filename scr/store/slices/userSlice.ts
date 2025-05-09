@@ -12,6 +12,8 @@ export interface UserData {
     gender: string;
     calories: number;
     isPremium: boolean;
+    planType: string;
+    onboardingComplete: boolean;
 }
 
 interface UserState {

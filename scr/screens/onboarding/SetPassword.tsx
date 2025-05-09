@@ -224,7 +224,7 @@ const styles = StyleSheet.create({
   },
   requirementText: {
     fontSize: RFValue(14, height), 
-    color: '#D3D3D3',
+    color: '#A9A9A9',
     textAlign: 'left',
   },
   button: {

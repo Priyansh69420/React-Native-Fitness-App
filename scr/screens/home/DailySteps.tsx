@@ -140,6 +140,18 @@ export default function DailySteps() {
 
   const updateBestAndWorstPerformance = (performanceData: DailyStepsPerformance[]) => {
     const nonZeroData = performanceData.filter(day => day.count > 0);
+
+    if (nonZeroData.length === 0) {
+      setBestPerformance(null);
+      setWorstPerformance(null);
+      return;
+    }
+  
+    if (nonZeroData.length === 1) {
+      setBestPerformance(nonZeroData[0]);
+      setWorstPerformance(null);
+      return;
+    }
   
     if (nonZeroData.length > 0) {
       let best = nonZeroData[0];
@@ -170,15 +182,20 @@ export default function DailySteps() {
 
   const handleShareFriend = async () => {
     try {
-      const message = `We have completed a total of: ${steps}`;
+      const message = `We have completed a total of ${steps} steps today.`;
       const encodedMessage = encodeURIComponent(message);
-
+  
       const url =
-        Platform.OS === 'android'
-          ? `sms:123?body=${encodedMessage}` 
-          : `sms:&body=${encodedMessage}`;  
-
-      await Linking.openURL(url);
+        Platform.OS === 'ios'
+          ? `sms:&body=${encodedMessage}` 
+          : `sms:?body=${encodedMessage}`;
+  
+      const supported = await Linking.canOpenURL(url);
+      if (supported) {
+        await Linking.openURL(url);
+      } else {
+        console.error('Error', 'SMS app is not available.');
+      }
     } catch (error: any) {
       console.error('Error', `Could not open SMS app: ${error.message}`);
     }

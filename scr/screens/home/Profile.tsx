@@ -60,7 +60,7 @@ const getAvatarSource = (id: number): any => {
 
 const goalsOptions = ['Weight Loss', 'Better sleeping habit', 'Track my nutrition', 'Improve overall fitness'];
 const interestsOptions = ['Fashion', 'Organic', 'Meditation', 'Fitness', 'Smoke Free', 'Sleep', 'Health', 'Running', 'Vegan'];
-const genderOptions = ['Male', 'Female', 'Other'];
+const genderOptions = ['Male', 'Female'];
 
 const { width, height } = Dimensions.get('window');
 const responsiveWidth = (percentage: number) => width * (percentage / 100);
@@ -349,6 +349,7 @@ export default function Profile() {
             data={avatars}
             keyExtractor={(item) => item.id.toString()}
             contentContainerStyle={styles.avatarList}
+            scrollEnabled={false}
             renderItem={({ item }) => (
               <TouchableOpacity
                 style={[styles.avatarItem, profilePicture === item.source.uri && styles.selectedAvatar]}

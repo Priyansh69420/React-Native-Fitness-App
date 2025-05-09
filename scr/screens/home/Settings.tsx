@@ -193,13 +193,13 @@ export default function Settings() {
                                 style={[styles.modalButton, styles.modalCancelButton]}
                                 onPress={handleCloseFeedbackModal}
                             >
-                                <Text style={[styles.modalButtonText, {color: '#7A5FFF'}]}>Cancel</Text>
+                                <Text style={styles.modalButtonText}>Close</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={[styles.modalButton, styles.modalSubmitButton]}
                                 onPress={handleSendFeedback}
                             >
-                                <Text style={styles.modalButtonText}>Send</Text>
+                                <Text style={[styles.modalButtonText, {color: '#FFF'}]}>Send</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -214,7 +214,7 @@ export default function Settings() {
             >
                 <View style={styles.centeredView}>
                     <View style={styles.modalView}>
-                        <Text style={styles.modalTitle}>Need Help ?</Text>
+                        <Text style={styles.modalTitle}>Need Help?</Text>
 
                         <View style={styles.supportOptionsContainer}>
                             <TouchableOpacity style={styles.supportOption} onPress={handleCallSupport}>
@@ -239,7 +239,7 @@ export default function Settings() {
                                 style={[styles.modalButton, styles.modalCancelButton]}
                                 onPress={handleCloseSupportModal}
                             >
-                                <Text style={[styles.modalButtonText, {color: '#7A5FFF'}]}>Close</Text>
+                                <Text style={styles.modalButtonText}>Close</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -301,14 +301,14 @@ const styles = StyleSheet.create({
         padding: RFValue(25 * scaleFactor, height),
         alignItems: 'center',
         shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 5,
-        },
         shadowOpacity: 0.3,
         shadowRadius: 6,
         elevation: 10,
         width: '85%',
+        shadowOffset: {
+            width: 0,
+            height: 5,
+        },
     },
     modalTitle: {
         fontSize: RFPercentage(3 * scaleFactor),
@@ -329,29 +329,29 @@ const styles = StyleSheet.create({
     },
     modalButtons: {
         flexDirection: 'row',
-        justifyContent: 'flex-end',
+        justifyContent: 'center', // Adjusted to center the button as in previous modal
         width: '100%',
         marginTop: height * 0.02 * scaleFactor,
     },
     modalButton: {
-        borderRadius: RFValue(8 * scaleFactor, height),
-        paddingVertical: RFValue(12 * scaleFactor, height),
-        paddingHorizontal: RFValue(20 * scaleFactor, height),
+        borderRadius: RFValue(25, height), // Adjusted to match previous modal's rounded button
+        paddingVertical: RFValue(10, height), // Adjusted to match previous modal
+        paddingHorizontal: RFValue(30, height), // Adjusted to match previous modal
         alignItems: 'center',
-        marginLeft: width * 0.02 * scaleFactor,
+        marginHorizontal: 10, // Adjusted to match previous modal
     },
     modalCancelButton: {
         backgroundColor: '#FFF',
-        borderWidth: 2,
+        borderWidth: 1, // Adjusted to match previous modal
         borderColor: '#7A5FFF',
     },
     modalSubmitButton: {
         backgroundColor: '#7A5FFF',
     },
     modalButtonText: {
-        color: 'white',
+        fontSize: RFValue(16, height), 
         fontWeight: 'bold',
-        fontSize: RFValue(16 * scaleFactor, height),
+        color: '#7A5FFF',
     },
     supportOptionsContainer: {
         width: '100%',

@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { RFPercentage, RFValue } from 'react-native-responsive-fontsize';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { auth } from '../../../firebaseConfig';
+import { ScrollView } from 'react-native-gesture-handler';
 
 type NavigationProp = DrawerNavigationProp<HomeStackParamList, 'Water'>;
 
@@ -124,7 +125,6 @@ export default function Water() {
       const currentDate = getCurrentDate();
       const currentDay = getDayOfWeek(currentDate);
 
-      // Update weekly performance to reflect the new count for the current day
       const updatedPerformance = weeklyPerformance.map((item) =>
         item.day === currentDay ? { ...item, count: newCount } : item
       );
@@ -143,26 +143,31 @@ export default function Water() {
   };
 
   const updateBestAndWorstPerformance = (performanceData: { day: string; count: number }[]) => {
-    if (performanceData.length > 0) {
-      let best = performanceData[0];
-      let worst = performanceData[0];
+  if (performanceData.length === 0) {
+    setBestPerformance(null);
+    setWorstPerformance(null);
+    return;
+  }
 
-      performanceData.forEach((dayData) => {
-        if (dayData.count > best.count) {
-          best = dayData;
-        }
-        if (dayData.count < worst.count) {
-          worst = dayData;
-        }
-      });
+  const uniqueDays = new Set(performanceData.map(item => item.day));
 
-      setBestPerformance(best);
-      setWorstPerformance(worst);
-    } else {
-      setBestPerformance(null);
-      setWorstPerformance(null);
-    }
-  };
+  if (uniqueDays.size === 1) {
+    setBestPerformance(performanceData[0]);
+    setWorstPerformance(null);
+    return;
+  }
+
+  let best = performanceData[0];
+  let worst = performanceData[0];
+
+  for (const dayData of performanceData) {
+    if (dayData.count >= best.count) best = dayData;
+    if (dayData.count < worst.count) worst = dayData;
+  }
+
+  setBestPerformance(best);
+  setWorstPerformance(worst);
+};
 
   const getDayOfWeek = (dateString: string): string => {
     const date = new Date(dateString);
@@ -195,91 +200,93 @@ export default function Water() {
     }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButtonContainer} onPress={() => navigation.goBack()}>
-          <Image
-            source={require('../../assets/backArrowIcon.png')}
-            style={styles.backIcon}
-          />
-          <Text style={styles.backButton}>Back</Text>
-        </TouchableOpacity>
-      </View>
-
-      <Text style={styles.title}>
-        You drank <Text style={styles.highlight}>{glassDrunk} glasses</Text> today
-      </Text>
-
-      <View style={styles.glassesContainer}>
-        {[...Array(totalGlasses)].map((_, index) => (
-          <TouchableOpacity
-            key={index}
-            style={styles.glassWrapper}
-            onPress={() => handleGlassPress(index)}
-          >
+    <ScrollView>
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButtonContainer} onPress={() => navigation.goBack()}>
             <Image
-              source={
-                index < glassDrunk
-                  ? require('../../assets/filledGlass.png')
-                  : require('../../assets/emptyGlass.png')
-              }
-              style={styles.glassIcon}
+              source={require('../../assets/backArrowIcon.png')}
+              style={styles.backIcon}
             />
-            {index >= glassDrunk && (
-              <Text style={styles.plusSign}>+</Text>
-            )}
+            <Text style={styles.backButton}>Back</Text>
           </TouchableOpacity>
-        ))}
-      </View>
-
-      <View style={styles.statsContainer}>
-        <View style={styles.stat}>
-          <Text style={styles.statValue}>{glassDrunk * 250} ml</Text>
-          <Text style={styles.statLabel}>Water Drank</Text>
         </View>
-        <View style={styles.divider} />
-        <View style={styles.stat}>
-          <Text style={styles.statValue}>{totalGlasses} glasses</Text>
-          <Text style={styles.statLabel}>Daily goal</Text>
-        </View>
-      </View>
 
-      {glassDrunk < totalGlasses ? (
-        <View style={styles.warningContainer}>
-        <Text style={styles.warningText}>You didn’t drink enough water for today.</Text>
-      </View>
-      ) : (<View />)}
+        <Text style={styles.title}>
+          You drank <Text style={styles.highlight}>{glassDrunk} glasses</Text> today
+        </Text>
 
-      <View style={styles.performanceContainer}>
-        <View style={[styles.performanceBox, {borderBottomWidth: 0.5, borderBottomColor: "#d9d9d9"}]}>
-          <View style={styles.performanceRow}>
-            <View style={styles.smileyContainer}>
+        <View style={styles.glassesContainer}>
+          {[...Array(totalGlasses)].map((_, index) => (
+            <TouchableOpacity
+              key={index}
+              style={styles.glassWrapper}
+              onPress={() => handleGlassPress(index)}
+            >
               <Image
-                source={require('../../assets/greenSmiley.png')}
-                style={styles.smileyIcon}
+                source={
+                  index < glassDrunk
+                    ? require('../../assets/filledGlass.png')
+                    : require('../../assets/emptyGlass.png')
+                }
+                style={styles.glassIcon}
               />
-            </View>
-            <Text style={styles.performanceText}>Best Performance</Text>
-            <Text style={styles.performanceValue}>{bestPerformance?.count || '-'}</Text>
-          </View>
-          <Text style={styles.performanceDay}>{bestPerformance?.day || '-'}</Text>
+              {index >= glassDrunk && (
+                <Text style={styles.plusSign}>+</Text>
+              )}
+            </TouchableOpacity>
+          ))}
         </View>
 
-        <View style={styles.performanceBox}>
-          <View style={styles.performanceRow}>
-            <View style={styles.smileyContainer}>
-              <Image
-                source={require('../../assets/pinkSmiley.png')}
-                style={styles.smileyIcon}
-              />
-            </View>
-            <Text style={styles.performanceText}>Worst Performance</Text>
-            <Text style={styles.performanceValue}>{worstPerformance?.count || '-'}</Text>
+        <View style={styles.statsContainer}>
+          <View style={styles.stat}>
+            <Text style={styles.statValue}>{glassDrunk * 250} ml</Text>
+            <Text style={styles.statLabel}>Water Drank</Text>
           </View>
-          <Text style={styles.performanceDay}>{worstPerformance?.day || '-'}</Text>
+          <View style={styles.divider} />
+          <View style={styles.stat}>
+            <Text style={styles.statValue}>{totalGlasses} glasses</Text>
+            <Text style={styles.statLabel}>Daily goal</Text>
+          </View>
         </View>
-      </View>
-    </SafeAreaView>
+
+        {glassDrunk < totalGlasses ? (
+          <View style={styles.warningContainer}>
+          <Text style={styles.warningText}>You didn’t drink enough water for today.</Text>
+        </View>
+        ) : (<View />)}
+
+        <View style={styles.performanceContainer}>
+          <View style={[styles.performanceBox, {borderBottomWidth: 0.5, borderBottomColor: "#d9d9d9"}]}>
+            <View style={styles.performanceRow}>
+              <View style={styles.smileyContainer}>
+                <Image
+                  source={require('../../assets/greenSmiley.png')}
+                  style={styles.smileyIcon}
+                />
+              </View>
+              <Text style={styles.performanceText}>Best Performance</Text>
+              <Text style={styles.performanceValue}>{bestPerformance?.count || '-'}</Text>
+            </View>
+            <Text style={styles.performanceDay}>{bestPerformance?.day || '-'}</Text>
+          </View>
+
+          <View style={styles.performanceBox}>
+            <View style={styles.performanceRow}>
+              <View style={styles.smileyContainer}>
+                <Image
+                  source={require('../../assets/pinkSmiley.png')}
+                  style={styles.smileyIcon}
+                />
+              </View>
+              <Text style={styles.performanceText}>Worst Performance</Text>
+              <Text style={styles.performanceValue}>{worstPerformance?.count || '-'}</Text>
+            </View>
+            <Text style={styles.performanceDay}>{worstPerformance?.day || '-'}</Text>
+          </View>
+        </View>
+      </SafeAreaView>
+    </ScrollView>
   );
 }
 
