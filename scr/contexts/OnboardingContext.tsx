@@ -5,6 +5,8 @@ interface OnboardingData {
   password?: string;
   firstName?: string;
   lastName?: string;
+  userHeight?: number;
+  userWeight?: number;
   faceId?: boolean;
   profilePicture?: any;
   goals?: string[];

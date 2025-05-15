@@ -40,6 +40,8 @@ interface UserData {
   interests: string[];
   gender: string;
   onboardingCompleted: boolean;
+  userHeight: number;
+  userWeight: number;
 }
 
 interface Avatar {
@@ -73,6 +75,8 @@ export default function Profile() {
   const [imageLoading, setImageLoading] = useState<boolean>(true);
 
   const [name, setName] = useState(userData?.name || '');
+  const [height, setHeight] = useState(userData?.userHeight?.toString() || '');
+  const [weight, setWeight] = useState(userData?.userWeight?.toString() || '');
   const [profilePicture, setProfilePicture] = useState<string>(
     userData && typeof userData.profilePicture === 'string' ? userData.profilePicture : ''
   );
@@ -92,11 +96,13 @@ export default function Profile() {
   useEffect(() => {
     if (userData) {
       setName(userData.name);
+      setHeight(userData.userHeight?.toString() || '');
+      setWeight(userData.userWeight?.toString() || '');
       if (typeof userData.profilePicture === 'string') {
         setProfilePicture(userData.profilePicture);
       } else {
         setProfilePicture('');
-      }      
+      }
       setGoals(userData.goals);
       setInterests(userData.interests);
       setGender(userData.gender);
@@ -126,18 +132,18 @@ export default function Profile() {
   const handleAddCustomPhoto = async () => {
     try {
       setLoading(true);
-        const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (!permissionResult.granted) {
-          alert('Permission Denied. Please grant permission to select an image.');
-          return;
-        }
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permissionResult.granted) {
+        alert('Permission Denied. Please grant permission to select an image.');
+        return;
+      }
 
-        const result = await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: ['images'],
-          allowsEditing: true,
-          aspect: [1, 1],
-          quality: 1,
-        });
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 1,
+      });
 
       if (!result.canceled && result.assets.length > 0) {
         const uri = result.assets[0].uri;
@@ -217,7 +223,7 @@ export default function Profile() {
         console.log('New profile picture updated:', publicUrlWithCacheBust);
       }
     } catch (error: any) {
-        alert('Error uploading image: ' + error.message);
+      alert('Error uploading image: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -229,6 +235,8 @@ export default function Profile() {
     try {
       const updatedUserData: Partial<UserData> = {
         name,
+        userHeight: parseFloat(height) || 0,
+        userWeight: parseFloat(weight) || 0,
         profilePicture,
         goals,
         interests,
@@ -245,8 +253,7 @@ export default function Profile() {
       navigation.goBack();
     } catch (error: any) {
       alert('Failed to update profile: ' + error.message);
-    }
-    finally {
+    } finally {
       setLoading(false);
     }
   };
@@ -302,7 +309,6 @@ export default function Profile() {
       setUpdatingPassword(false);
     }
   };
-  
 
   const profileImageSource = profilePicture ? { uri: profilePicture } : null;
 
@@ -319,13 +325,41 @@ export default function Profile() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Name</Text>
+          <Text style={styles.sectionTitle}>Details</Text>
+          
+          <Text style={styles.subtitle}>Name</Text>
           <TextInput
             style={styles.textInput}
             value={name}
             onChangeText={setName}
             placeholder="Enter your name"
             placeholderTextColor="#999"
+          />
+
+          <Text style={styles.subtitle}>Height (cm)</Text>
+          <TextInput
+            style={styles.textInput}
+            value={height}
+            onChangeText={(text) => {
+              const filtered = text.replace(/[^0-9.]/g, '');
+              setHeight(filtered);
+            }}
+            placeholder="Enter your height"
+            placeholderTextColor="#999"
+            keyboardType="numeric"
+          />
+
+          <Text style={styles.subtitle}>Weight (kg)</Text>
+          <TextInput
+            style={styles.textInput}
+            value={weight}
+            onChangeText={(text) => {
+              const filtered = text.replace(/[^0-9.]/g, '');
+              setWeight(filtered);
+            }}
+            placeholder="Enter your weight"
+            placeholderTextColor="#999"
+            keyboardType="numeric"
           />
         </View>
 
@@ -350,6 +384,7 @@ export default function Profile() {
             keyExtractor={(item) => item.id.toString()}
             contentContainerStyle={styles.avatarList}
             scrollEnabled={false}
+            showsHorizontalScrollIndicator={false}
             renderItem={({ item }) => (
               <TouchableOpacity
                 style={[styles.avatarItem, profilePicture === item.source.uri && styles.selectedAvatar]}
@@ -493,7 +528,7 @@ export default function Profile() {
           <View style={{flexDirection: 'row', justifyContent: 'flex-end'}}>
             <TouchableOpacity
               onPress={handleChangePassword}
-              style={[styles.addPhotoButton, {borderRadius: 20, width: '50%'}]}
+              style={[styles.addPhotoButton, {width: '100%'}]}
             >
               {updatingPassword ? (
                 <ActivityIndicator size="small" color="#d0d0d0" />
@@ -572,6 +607,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#333',
     marginBottom: responsiveHeight(1),
+  },
+  subtitle: {
+    fontSize: RFValue(14),
+    fontWeight: '500',
+    color: '#666',
+    marginBottom: responsiveHeight(0.5),
+    marginTop: responsiveHeight(1),
   },
   textInput: {
     borderWidth: 1,

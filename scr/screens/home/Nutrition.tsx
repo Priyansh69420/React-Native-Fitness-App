@@ -11,6 +11,7 @@ import { useDispatch } from 'react-redux';
 import { setCalories } from '../../store/slices/userSlice';
 import { doc, updateDoc } from '@firebase/firestore';
 import { TextInput } from 'react-native-gesture-handler';
+import { saveDailyProgress } from '../../utils/monthlyProgressUtils';
 
 type NavigationProp = DrawerNavigationProp<HomeStackParamList, 'Nutrition'>;
 
@@ -122,7 +123,7 @@ export default function Nutrition() {
   useEffect(() => {
     calculateTotal();
     saveData();
-  }, [consumedFoods]);
+  }, [consumedFoods, totalCalories]);
 
 	const handleMealTypeSelect = (meal: string) => {
     setSelectedMeal(meal === selectedMeal ? null : meal); 
@@ -230,11 +231,13 @@ export default function Nutrition() {
         const now = new Date().toISOString().split('T')[0];
         await AsyncStorage.setItem(`consumedFoods_${userId}`, JSON.stringify(consumedFoods));
         await AsyncStorage.setItem(`lastSavedDate_${userId}`, now);
+  
+        await saveDailyProgress({ calories: totalCalories });
       } catch (error: any) {
         console.error('Nutrition Screen: Error while saving data-', error);
       }
-    } 
-  }
+    }
+  };
 
   const loadAndResetData = async () => {
     const userId = auth.currentUser?.uid;
@@ -497,7 +500,7 @@ export default function Nutrition() {
                   setModalVisible(false)
                   setSearchQuery('')
                 }}>
-                  <Text style={{fontSize: RFValue(30), marginTop: -5}}>✕</Text>
+                  <Text style={{fontSize: RFValue(20), marginTop: -5}}>✕</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -626,7 +629,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 12,
     right: 15,
-    paddingLeft: 200
+    paddingHorizontal: 5
   },
   deleteCardText: {
     fontSize: RFValue(16),

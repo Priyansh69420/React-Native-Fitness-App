@@ -104,8 +104,9 @@ export default function LoginScreen() {
             interests: [ 'Fitness' ],
             gender: 'Male',
             calories: 0,
-            biometricAuthenticated: false,
             faceId: false,
+            userHeight: 0,
+            userWeight: 0,
           });
           console.log("LoginScreen: Created initial user document for Google Sign-in");
         } else {

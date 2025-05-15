@@ -13,7 +13,6 @@ import { UserData } from "../store/slices/userSlice";
 import { useNotifications } from "../contexts/NotificationsContext";
 import { navigationRef } from "./DrawerParamList";
 
-// Utility to wait for navigation to be ready with retry logic
 const waitForNavigationReady = async () => {
   let retries = 3;
   let attempt = 0;
@@ -47,7 +46,6 @@ const waitForNavigationReady = async () => {
   }
 };
 
-// Store pending navigation data if navigation isn't ready or user isn't authenticated
 const storePendingNavigation = async (routeName: string, params?: object) => {
   try {
     const data = { routeName, params, timestamp: Date.now() };
@@ -57,7 +55,6 @@ const storePendingNavigation = async (routeName: string, params?: object) => {
   }
 };
 
-// Retrieve and execute pending navigation
 const executePendingNavigation = async () => {
   try {
     const pendingNav = await AsyncStorage.getItem('pendingNavigation');

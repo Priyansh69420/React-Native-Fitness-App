@@ -31,6 +31,8 @@ export default function ReadyToGo() {
         interests: onboardingData.interests || [],
         gender: onboardingData.gender || '',
         calories: 0,
+        userHeight: onboardingData.userHeight || 0,
+        userWeight: onboardingData.userWeight || 0,
       });
 
     } catch (error: any) {

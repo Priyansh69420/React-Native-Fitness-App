@@ -94,14 +94,6 @@ export default function Settings() {
         setSupportModalVisible(false);
     };
 
-    const handleCallSupport = () => {
-        Linking.openURL(`tel:${'7887052000'}`);
-    };
-
-    const handleEmailSupport = () => {
-        Linking.openURL(`mailto:${'contactus@mail.in'}?subject=App Support Request&body=`);
-    };
-
     const handleSignOut = async () => {
         try {
             await auth.signOut();
@@ -216,10 +208,7 @@ export default function Settings() {
                     <View style={styles.modalView}>
                         <Text style={styles.modalTitle}>Contact Us</Text>
 
-                        <Text style={{
-                          fontSize: RFValue(12 * scaleFactor, height), 
-                          
-                        }}>
+                        <Text style={styles.modalDescription}>
                           We are here to help and answer any question that you might have.
                         </Text>
 
@@ -229,20 +218,20 @@ export default function Settings() {
                                     <Text style={styles.icon}>📍</Text>
                                 </View>
                                 
-                                <Text style={styles.supportDetail}> Park Avenue, Bangalore</Text>
+                                <Text style={styles.supportDetail}> Park Avenue, Bangalore, 160010</Text>
                             </View>
 
-                            <TouchableOpacity style={styles.supportOption} onPress={handleCallSupport}>
+                            <View style={styles.supportOption}>
                                     <Text style={styles.icon}>📞</Text>
                                 
-                                <Text style={styles.supportDetail}>7887052000</Text>
-                            </TouchableOpacity>
+                                <Text style={styles.supportDetail}>+91-7887052000</Text>
+                            </View>
 
-                            <TouchableOpacity style={styles.supportOption} onPress={handleEmailSupport}>
+                            <View style={styles.supportOption}>
                                     <Text style={styles.icon}>✉️</Text>
                                 
-                                <Text style={styles.supportDetail}>contactus@mail.com</Text>
-                            </TouchableOpacity>
+                                <Text style={styles.supportDetail}>contactus@gmail.com</Text>
+                            </View>
                         </View>
 
                         <View style={styles.modalButtons}>
@@ -324,7 +313,7 @@ const styles = StyleSheet.create({
     modalTitle: {
         fontSize: RFPercentage(3 * scaleFactor),
         fontWeight: 'bold',
-        marginBottom: height * 0.03 * scaleFactor,
+        marginBottom: height * 0.025 * scaleFactor,
         color: '#333',
     },
     modalInput: {
@@ -340,20 +329,20 @@ const styles = StyleSheet.create({
     },
     modalButtons: {
         flexDirection: 'row',
-        justifyContent: 'center', // Adjusted to center the button as in previous modal
+        justifyContent: 'center', 
         width: '100%',
-        marginTop: height * 0.02 * scaleFactor,
+        marginTop: height * 0.015 * scaleFactor,
     },
     modalButton: {
-        borderRadius: RFValue(25, height), // Adjusted to match previous modal's rounded button
-        paddingVertical: RFValue(10, height), // Adjusted to match previous modal
-        paddingHorizontal: RFValue(30, height), // Adjusted to match previous modal
+        borderRadius: RFValue(25, height),
+        paddingVertical: RFValue(13, height), 
+        paddingHorizontal: RFValue(30, height), 
         alignItems: 'center',
-        marginHorizontal: 10, // Adjusted to match previous modal
+        marginHorizontal: 10, 
     },
     modalCancelButton: {
         backgroundColor: '#FFF',
-        borderWidth: 1, // Adjusted to match previous modal
+        borderWidth: 1, 
         borderColor: '#7A5FFF',
     },
     modalSubmitButton: {
@@ -370,10 +359,7 @@ const styles = StyleSheet.create({
     supportOption: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingVertical: height * 0.015 * scaleFactor,
-        borderBottomWidth: 1 * scaleFactor,
-        borderBottomColor: '#eee',
+        paddingVertical: height * 0.01 * scaleFactor,
     },
     supportOptionLast: {
         borderBottomWidth: 0,
@@ -400,5 +386,10 @@ const styles = StyleSheet.create({
     supportDetail: {
         fontSize: RFValue(16 * scaleFactor, height),
         color: '#666',
+        marginLeft: width * 0.05 * scaleFactor 
     },
+    modalDescription: {
+        fontSize: RFValue(13 * scaleFactor, height), 
+        marginBottom: height * 0.01 * scaleFactor,
+    }
 });

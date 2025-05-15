@@ -12,6 +12,7 @@ import { RFPercentage, RFValue } from 'react-native-responsive-fontsize';
 import LineGraph from '../../components/LineGraph';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Linking from 'expo-linking';
+import { saveDailyProgress } from '../../utils/monthlyProgressUtils';
 
 type NavigationProp = DrawerNavigationProp<HomeStackParamList, 'DailySteps'>;
 
@@ -132,11 +133,13 @@ export default function DailySteps() {
         setWeeklySteps(updatedPerformance);
         await AsyncStorage.setItem('weeklyStepsPerformance', JSON.stringify(updatedPerformance));
         updateBestAndWorstPerformance(updatedPerformance);
+  
+        await saveDailyProgress({ steps });
       } catch (error) {
         console.error('Error saving weekly steps performance to AsyncStorage:', error);
       }
     }
-  };  
+  };
 
   const updateBestAndWorstPerformance = (performanceData: DailyStepsPerformance[]) => {
     const nonZeroData = performanceData.filter(day => day.count > 0);
@@ -435,13 +438,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: RFPercentage(2),
-    paddingVertical: RFPercentage(3),
+    paddingVertical: RFPercentage(2.5),
     backgroundColor: '#F5F7FA',
     marginTop: (height * 0.009),
   },
   backButtonContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    left: width * 0.008,
+    top: height * 0.0015,
   },
   backIcon: {
     width: RFValue(24, REFERENCE_HEIGHT),

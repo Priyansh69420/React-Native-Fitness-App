@@ -137,9 +137,9 @@ export default function Home() {
                 onError={() => setImageLoading(false)} 
               />
 
-<View style={styles.editIcon}>
-<Image source={require('../../assets/editIcon.png')} style={{height: 12, width: 12, alignContent: 'center', tintColor: '#F5F7FA'}} />
-          </View>
+                <View style={styles.editIcon}>
+                  <Image source={require('../../assets/editIcon.png')} style={{height: 12, width: 12, alignContent: 'center', tintColor: '#F5F7FA'}} />
+                </View>
               </TouchableOpacity>
             ) : (
               <View style={styles.placeholderProfile} />
@@ -152,6 +152,10 @@ export default function Home() {
       <Text style={styles.subtitle}>
         Eat the right amount of food and stay hydrated through the day
       </Text>
+
+      <TouchableOpacity style={styles.detailsOption} onPress={() => navigation.navigate('MoreDetail')}>
+        <Text style={styles.detailsText}>More Details</Text>
+      </TouchableOpacity>
 
       <View>
         <TouchableOpacity
@@ -357,7 +361,16 @@ const styles = StyleSheet.create({
     width: width * 0.8,
     marginLeft: width * 0.05,
     marginTop: height * 0.02,
-    marginBottom: height * 0.08,
+    marginBottom: height * 0.023,
+  },
+  detailsOption: {
+    marginBottom: height * 0.043, 
+    marginLeft: width * 0.05
+  },
+  detailsText: {
+    fontSize: RFPercentage(2.2), 
+    fontWeight: 'bold', 
+    color: '#7A5FFF'
   },
   section: {
     backgroundColor: '#FFFFFF',

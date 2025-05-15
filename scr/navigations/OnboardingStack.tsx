@@ -12,6 +12,7 @@ import Intrests from '../screens/onboarding/Intrests'
 import Gender from '../screens/onboarding/Gender'
 import ReadyToGo from '../screens/onboarding/ReadyToGo'
 import { OnboardingProvider } from '../contexts/OnboardingContext'
+import SetDetails from '../screens/onboarding/SetDetails'
 
 const Stack = createStackNavigator();
 
@@ -24,6 +25,7 @@ export default function OnboardingStack() {
           <Stack.Screen name='Signup' component={Signup} />
           <Stack.Screen name='SetPassword' component={SetPassword} />
           <Stack.Screen name='SetName' component={SetName} />
+          <Stack.Screen name='SetDetails' component={SetDetails} />
           <Stack.Screen name='FaceId' component={FaceId} />
           <Stack.Screen name='SetProfile' component={SetProfile} />
           <Stack.Screen name='Goals' component={Goals} />

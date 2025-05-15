@@ -7,44 +7,51 @@ import { useOnboarding } from '../../contexts/OnboardingContext';
 import { RFValue } from 'react-native-responsive-fontsize';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
-type NavigationProp = NativeStackNavigationProp<RootStackParamList, "SetName">;
+type NavigationProp = NativeStackNavigationProp<RootStackParamList, "SetDetails">;
 const logo = require('../../assets/logo.png'); 
 const backIcon = require('../../assets/backIcon.png'); 
 
-export default function SetNameScreen() {
+export default function SetDetails() {
   const navigation = useNavigation<NavigationProp>();
-  const [firstName, setFirstName] = useState<string>('');
-  const [lastName, setLastName] = useState<string>('');
+  const [userHeight, setUserHeight] = useState<number>();
+  const [userWeight, setUserWeight] = useState<number>();
   const [error1, setError1] = useState<string>('');
+  const [error2, setError2] = useState<string>('');
   const [shouldValidate, setShouldValidate] = useState<boolean>(false);
   const {updateOnboardingData, onboardingData} = useOnboarding();
 
   useEffect(() => {
-    if(onboardingData.firstName) setFirstName(onboardingData.firstName);
+    if(onboardingData.userHeight) setUserHeight(onboardingData.userHeight);
 
-    if(onboardingData.lastName) setLastName(onboardingData.lastName);
+    if(onboardingData.userWeight) setUserWeight(onboardingData.userWeight);
   }, []);
   
   useEffect(() => {
     if (!shouldValidate) return;
   
-    if (!firstName.trim()) {
-      setError1('Please enter your first name.');
+    if (!userHeight) {
+      setError1('Please enter your height.');
     } else {
       setError1('');
     }
-  }, [firstName, shouldValidate]);
+
+    if(!userWeight) {
+      setError2('Please enter your weight.');
+    } else {
+      setError2('');
+    }
+  }, [userHeight, userWeight, shouldValidate]);
   
   const handleContinuePress = () => {
-    if (!firstName.trim()) {
+    if (!userHeight || !userWeight) {
       setShouldValidate(true);
       return;
     }
   
     setError1('');
-    updateOnboardingData({ firstName });
-    updateOnboardingData({ lastName });
-    navigation.navigate('SetDetails');
+    updateOnboardingData({ userHeight });
+    updateOnboardingData({ userWeight });
+    navigation.navigate('FaceId');
   };  
 
   return (
@@ -65,18 +72,15 @@ export default function SetNameScreen() {
           <View style={styles.centeredContent}>
             <Image source={logo} style={styles.appLogo} resizeMode="contain" />
 
-            <Text style={styles.title}>What’s your name?</Text>
+            <Text style={styles.title}>What are your height & weight?</Text>
 
             <View style={styles.inputContainer}>
               <TextInput
                 style={styles.input}
-                value={firstName}
-                onChangeText={(input) => {
-                  const filtered = input.replace(/[0-9]/g, '');
-                  setFirstName(filtered);
-                }}
-                placeholder="First Name"
-                autoCapitalize="words"
+                value={userHeight !== undefined ? String(userHeight) : ''}
+                onChangeText={(text) => setUserHeight(text ? parseFloat(text) : undefined)}
+                placeholder="Height (cm)"
+                keyboardType="numeric"
               />
             </View>
 
@@ -85,15 +89,14 @@ export default function SetNameScreen() {
             <View style={styles.inputContainer}>
               <TextInput
                 style={styles.input}
-                value={lastName}
-                onChangeText={(input) => {
-                  const filtered = input.replace(/[0-9]/g, '');
-                  setLastName(filtered);
-                }}
-                placeholder="Last Name"
-                autoCapitalize="words"
+                value={userWeight !== undefined ? String(userWeight) : ''}
+                onChangeText={(text) => setUserWeight(text ? parseFloat(text) : undefined)}
+                placeholder="Weight (kg)"
+                keyboardType="numeric"
               />
             </View>
+
+            {error2 ? <Text style={{color: 'red', width: '85%', textAlign: 'center', marginTop: -10}}>{error2}</Text>: <></>}
 
             <TouchableOpacity style={styles.button} onPress={handleContinuePress}>
               <Text style={styles.buttonText}>Continue</Text>

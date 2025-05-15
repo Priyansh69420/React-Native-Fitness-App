@@ -16,6 +16,7 @@ import { RFPercentage, RFValue } from 'react-native-responsive-fontsize';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { auth } from '../../../firebaseConfig';
 import { ScrollView } from 'react-native-gesture-handler';
+import { saveDailyProgress } from '../../utils/monthlyProgressUtils';
 
 type NavigationProp = DrawerNavigationProp<HomeStackParamList, 'Water'>;
 
@@ -115,28 +116,31 @@ export default function Water() {
   const saveGlassDrunk = async (newCount: number) => {
     const userId = auth.currentUser?.uid;
     if (!userId) return;
-
+  
     try {
       const storedGlassDrunkKey = getUserStorageKey('glassDrunk');
       const storedWeeklyPerformanceKey = getUserStorageKey('weeklyPerformance');
-
+  
       await AsyncStorage.setItem(storedGlassDrunkKey, newCount.toString());
-
+  
       const currentDate = getCurrentDate();
       const currentDay = getDayOfWeek(currentDate);
-
+  
       const updatedPerformance = weeklyPerformance.map((item) =>
         item.day === currentDay ? { ...item, count: newCount } : item
       );
-
+  
       const dayExists = updatedPerformance.some((item) => item.day === currentDay);
       if (!dayExists) {
         updatedPerformance.push({ day: currentDay, count: newCount });
       }
-
+  
       setWeeklyPerformance(updatedPerformance);
       await AsyncStorage.setItem(storedWeeklyPerformanceKey, JSON.stringify(updatedPerformance));
       updateBestAndWorstPerformance(updatedPerformance);
+  
+      const waterLiters = newCount * 0.2;
+      await saveDailyProgress({ water: waterLiters });
     } catch (error) {
       console.error('Error saving glass count to AsyncStorage:', error);
     }

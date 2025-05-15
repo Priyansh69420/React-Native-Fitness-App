@@ -4,5 +4,6 @@ export type HomeStackParamList = {
     Water: undefined;
     DailySteps: undefined;
     Profile: undefined;
-    Notification: undefined
+    Notification: undefined;
+    MoreDetail: undefined;
 };

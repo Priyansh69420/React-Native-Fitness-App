@@ -509,6 +509,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: width * 0.03 * scaleFactor,
+    paddingVertical: width * 0.01 * scaleFactor,
     backgroundColor: '#fff', 
   },
   newCommentInput: {

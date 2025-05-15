@@ -4,6 +4,7 @@ export type RootStackParamList = {
     Signup: undefined;
     SetPassword: { email: string };
     SetName: undefined;
+    SetDetails: undefined;
     FaceId: undefined;
     Goals: undefined;
     Intrests: undefined;

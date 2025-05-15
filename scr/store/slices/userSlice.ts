@@ -14,6 +14,8 @@ export interface UserData {
     isPremium: boolean;
     planType: string;
     onboardingComplete: boolean;
+    userHeight: number;
+    userWeight: number;
 }
 
 interface UserState {
