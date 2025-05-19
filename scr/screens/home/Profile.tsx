@@ -1,18 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  FlatList,
-  Image,
-  ScrollView,
-  StyleSheet,
-  Dimensions,
-  Platform,
-  ActivityIndicator,
-  Alert
-} from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, FlatList, Image, ScrollView, StyleSheet, Dimensions, Platform, ActivityIndicator, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useSelector, useDispatch } from 'react-redux';
 import { doc, setDoc } from 'firebase/firestore';
@@ -74,15 +61,15 @@ export default function Profile() {
   const userData = useSelector((state: RootState) => state.user.userData);
   const [imageLoading, setImageLoading] = useState<boolean>(true);
 
-  const [name, setName] = useState(userData?.name || '');
-  const [height, setHeight] = useState(userData?.userHeight?.toString() || '');
-  const [weight, setWeight] = useState(userData?.userWeight?.toString() || '');
+  const [name, setName] = useState(userData?.name ?? '');
+  const [height, setHeight] = useState(userData?.userHeight?.toString() ?? '');
+  const [weight, setWeight] = useState(userData?.userWeight?.toString() ?? '');
   const [profilePicture, setProfilePicture] = useState<string>(
     userData && typeof userData.profilePicture === 'string' ? userData.profilePicture : ''
   );
-  const [goals, setGoals] = useState<string[]>(userData?.goals || []);
+  const [goals, setGoals] = useState<string[]>(userData?.goals ?? []);
   const [interests, setInterests] = useState<string[]>(userData?.interests || []);
-  const [gender, setGender] = useState<string>(userData?.gender || '');
+  const [gender, setGender] = useState<string>(userData?.gender ?? '');
   const [loading, setLoading] = useState<boolean>(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -132,101 +119,109 @@ export default function Profile() {
   const handleAddCustomPhoto = async () => {
     try {
       setLoading(true);
-      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!permissionResult.granted) {
-        alert('Permission Denied. Please grant permission to select an image.');
-        return;
-      }
 
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 1,
-      });
+      const permissionGranted = await requestMediaLibraryPermission();
+      if (!permissionGranted) return;
 
-      if (!result.canceled && result.assets.length > 0) {
-        const uri = result.assets[0].uri;
-        const fileName = uri.split('/').pop() || `profile_${Date.now()}.jpg`;
-        const fileType = result.assets[0].type?.split('/')[1] || fileName.split('.').pop() || 'jpeg';
-        const filePath = `profile_pictures/${fileName}`;
+      const imageResult = await pickImage();
+      if (!imageResult) return;
 
-        let base64Image: string | null = null;
+      const { fileType, filePath, base64Image } = await processImage(imageResult);
+      if (!base64Image) throw new Error('Failed to convert image to Base64');
 
-        if (Platform.OS === 'web') {
-          const response = await fetch(uri);
-          const blob = await response.blob();
-          base64Image = await new Promise<string | null>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-              if (typeof reader.result === 'string') {
-                resolve(reader.result.split(',')[1]);
-              } else {
-                reject('Failed to read as Data URL');
-              }
-            };
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-          });
-        } else {
-          base64Image = await RNFS.readFile(uri, 'base64');
-        }
+      await deleteOldProfilePicture();
 
-        if (!base64Image) {
-          throw new Error('Failed to convert image to Base64');
-        }
+      await uploadImageToSupabase(filePath, base64Image, fileType);
 
-        if (typeof profilePicture === 'string' && profilePicture.includes('supabase.co')) {
-          const oldFilePath = profilePicture.split('/storage/v1/object/public/profileimages/')[1]?.split('?')[0];
-          if (oldFilePath) {
-            console.log('Deleting old file:', oldFilePath);
-            const { error: deleteError } = await supabase.storage
-              .from('profileimages')
-              .remove([oldFilePath]);
-    
-            if (deleteError) {
-              console.log('Failed to delete old image:', deleteError.message);
-            } else {
-              console.log('Old image deleted successfully');
-            }
-          }
-        }
-
-        const binaryString = atob(base64Image);
-        const fileArray = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-          fileArray[i] = binaryString.charCodeAt(i);
-        }
-
-        const { data, error: uploadError } = await supabase.storage
-          .from('profileimages')
-          .upload(filePath, fileArray, {
-            contentType: `image/${fileType}`,
-            upsert: true,
-          });
-
-        if (uploadError) {
-          throw new Error(uploadError.message);
-        }
-
-        const { data: urlData } = supabase.storage
-          .from('profileimages')
-          .getPublicUrl(filePath);
-
-        if (!urlData.publicUrl) {
-          throw new Error('Failed to retrieve public URL');
-        }
-
-        const publicUrlWithCacheBust = `${urlData.publicUrl}?t=${Date.now()}`;
-
-        setProfilePicture(publicUrlWithCacheBust);
-        console.log('New profile picture updated:', publicUrlWithCacheBust);
-      }
+      const publicUrl = await getPublicUrl(filePath);
+      setProfilePicture(publicUrl);
+      console.log('New profile picture updated:', publicUrl);
     } catch (error: any) {
       alert('Error uploading image: ' + error.message);
     } finally {
       setLoading(false);
     }
+  };
+
+  const requestMediaLibraryPermission = async (): Promise<boolean> => {
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permissionResult.granted) {
+      alert('Permission Denied. Please grant permission to select an image.');
+      return false;
+    }
+    return true;
+  };
+
+  const pickImage = async (): Promise<ImagePicker.ImagePickerResult | null> => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 1,
+    });
+
+    return !result.canceled && result.assets.length > 0 ? result : null;
+  };
+
+  const processImage = async (result: ImagePicker.ImagePickerResult) => {
+    if (!result.assets || result.assets.length === 0) {
+      throw new Error('No assets found in the result.');
+    }
+    const uri = result.assets[0].uri;
+    const fileName = uri.split('/').pop() ?? `profile_${Date.now()}.jpg`;
+    const fileType = result.assets[0].type?.split('/')[1] ?? fileName.split('.').pop() ?? 'jpeg';
+    const filePath = `profile_pictures/${fileName}`;
+
+    const base64Image = await convertToBase64(uri);
+    return { uri, fileName, fileType, filePath, base64Image };
+  };
+
+  const convertToBase64 = async (uri: string): Promise<string | null> => {
+    if (Platform.OS === 'web') {
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      return new Promise<string | null>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(typeof reader.result === 'string' ? reader.result.split(',')[1] : null);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } else {
+      return await RNFS.readFile(uri, 'base64');
+    }
+  };
+
+  const deleteOldProfilePicture = async () => {
+    if (typeof profilePicture === 'string' && profilePicture.includes('supabase.co')) {
+      const oldFilePath = profilePicture.split('/storage/v1/object/public/profileimages/')[1]?.split('?')[0];
+      if (oldFilePath) {
+        console.log('Deleting old file:', oldFilePath);
+        const { error: deleteError } = await supabase.storage.from('profileimages').remove([oldFilePath]);
+        if (deleteError) console.log('Failed to delete old image:', deleteError.message);
+        else console.log('Old image deleted successfully');
+      }
+    }
+  };
+
+  const uploadImageToSupabase = async (filePath: string, base64Image: string, fileType: string) => {
+    const binaryString = atob(base64Image);
+    const fileArray = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      fileArray[i] = binaryString.charCodeAt(i);
+    }
+
+    const { error: uploadError } = await supabase.storage.from('profileimages').upload(filePath, fileArray, {
+      contentType: `image/${fileType}`,
+      upsert: true,
+    });
+
+    if (uploadError) throw new Error(uploadError.message);
+  };
+
+  const getPublicUrl = async (filePath: string): Promise<string> => {
+    const { data: urlData } = supabase.storage.from('profileimages').getPublicUrl(filePath);
+    if (!urlData.publicUrl) throw new Error('Failed to retrieve public URL');
+    return `${urlData.publicUrl}?t=${Date.now()}`;
   };
 
   const handleSave = async () => {
@@ -283,7 +278,7 @@ export default function Profile() {
     if (hasError) return;
   
     const user = auth.currentUser;
-    if (!user || !user.email) {
+    if (!user?.email) {
       setError('No user is currently signed in.');
       return;
     }

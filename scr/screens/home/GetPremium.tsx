@@ -56,7 +56,6 @@ export default function GetPremium() {
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('yearly');
   const [activeSlide, setActiveSlide] = useState(0);
   const carouselRef = useRef<ICarouselInstance>(null);
-  const [loading, setLoading] = useState<boolean>(false);
   const userPlanType = useSelector((state: RootState) => state.user.userData?.planType);
   const dispatch = useDispatch();
 
@@ -70,7 +69,6 @@ export default function GetPremium() {
   };
 
   const handlePurchase = async () => {
-    setLoading(true);
     const planDetails = getSelectedPlanDetails();
     const user = auth.currentUser;
   
@@ -94,37 +92,37 @@ export default function GetPremium() {
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Yes',
-        onPress: async () => {
-          try {
-            await setDoc(doc(firestore, 'users', user.uid), {
-              isPremium: true,
-              planType: selectedPlan,
-            }, { merge: true });
-  
-            dispatch(updateUser({
-              isPremium: true,
-              planType: selectedPlan,
-            }));
-  
-            Alert.alert(
-              selectedPlan === 'yearly' && userPlanType === 'monthly'
-                ? 'Upgraded!'
-                : 'Purchase Successful',
-              selectedPlan === 'yearly' && userPlanType === 'monthly'
-                ? 'You have successfully upgraded to the Yearly Premium plan!'
-                : 'You are now a premium member!'
-            );
-          } catch {
-            Alert.alert('Error', 'Something went wrong while processing your purchase.');
-          } finally {
-            setLoading(false);
-          }
+        onPress: () => {
+          (async () => {
+            try {
+              await setDoc(doc(firestore, 'users', user.uid), {
+                isPremium: true,
+                planType: selectedPlan,
+              }, { merge: true });
+    
+              dispatch(updateUser({
+                isPremium: true,
+                planType: selectedPlan,
+              }));
+    
+              Alert.alert(
+                selectedPlan === 'yearly' && userPlanType === 'monthly'
+                  ? 'Upgraded!'
+                  : 'Purchase Successful',
+                selectedPlan === 'yearly' && userPlanType === 'monthly'
+                  ? 'You have successfully upgraded to the Yearly Premium plan!'
+                  : 'You are now a premium member!'
+              );
+            } catch {
+              Alert.alert('Error', 'Something went wrong while processing your purchase.');
+            }
+          })();
         },
       },
     ]);
   };
   
-  let buttonText = 'Purchase';
+  let buttonText: string;
   let isDisabled = false;
 
   if (userPlanType === selectedPlan || userPlanType === 'yearly') {
@@ -132,7 +130,7 @@ export default function GetPremium() {
     isDisabled = true;
   } else if (userPlanType === 'monthly' && selectedPlan === 'yearly') {
     buttonText = 'Upgrade to Yearly';
-  } else if (!userPlanType) {
+  } else {
     buttonText = 'Purchase';
   }
 
@@ -176,10 +174,10 @@ export default function GetPremium() {
           </View>
 
           <View style={styles.paginationContainer}>
-            {carouselItems.map((_, index) => (
+            {carouselItems.map((item) => (
               <View
-                key={index}
-                style={[styles.dotStyle, activeSlide === index && styles.activeDotStyle]}
+              key={item.title}
+              style={[styles.dotStyle, activeSlide === carouselItems.indexOf(item) && styles.activeDotStyle]}
               />
             ))}
           </View>

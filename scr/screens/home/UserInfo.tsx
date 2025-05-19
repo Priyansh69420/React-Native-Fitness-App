@@ -30,7 +30,7 @@ const UserInfo = () => {
           ) : (
             <View style={styles.profileImagePlaceholder} />
           )}
-          <Text style={styles.userName}>{user?.name || 'User Name'}</Text>
+          <Text style={styles.userName}>{user?.name ?? 'User Name'}</Text>
           {user?.email && <Text style={styles.userEmail}>{user.email}</Text>}
         </View>
 
@@ -40,8 +40,8 @@ const UserInfo = () => {
             <Text style={[styles.sectionTitle, { color: '#27ae60' }]}>Goals</Text>
           </View>
           {user?.goals && user.goals.length > 0 ? (
-            user.goals.map((goal, index) => (
-              <Text key={index} style={styles.infoText}>• {goal}</Text>
+            user.goals.map((goal) => (
+                <Text key={goal} style={styles.infoText}>• {goal}</Text>
             ))
           ) : (
             <Text style={styles.emptyText}>No goals specified.</Text>
@@ -54,8 +54,8 @@ const UserInfo = () => {
             <Text style={[styles.sectionTitle, { color: '#e74c3c' }]}>Interests</Text>
           </View>
           {user?.interests && user.interests.length > 0 ? (
-            user.interests.map((interest, index) => (
-              <Text key={index} style={styles.infoText}>• {interest}</Text>
+            user.interests.map((interest) => (
+              <Text key={interest} style={styles.infoText}>• {interest}</Text>
             ))
           ) : (
             <Text style={styles.emptyText}>No interests specified.</Text>

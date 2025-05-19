@@ -325,9 +325,9 @@ export default function Nutrition() {
                 const rotation = -90;
 
                 return (
-                  <G key={`nutrition-arc-${index}`}>
+                    <G key={item.name}>
                     <Circle
-                      key={`bg-circle-${index}`} 
+                      key={`bg-circle-${item.name}`} 
                       cx={center}
                       cy={center}
                       r={currentRadius}
@@ -337,7 +337,7 @@ export default function Nutrition() {
                     />
 
                     <Circle
-                      key={`fg-circle-${index}`} 
+                      key={`fg-circle-${item.name}`} 
                       cx={center}
                       cy={center}
                       r={currentRadius}
@@ -349,7 +349,7 @@ export default function Nutrition() {
                       transform={`rotate(${rotation}, ${center}, ${center})`}
                       fill="none"
                     />
-                  </G>
+                    </G>
                 );
               })}
             </Svg>
@@ -357,8 +357,8 @@ export default function Nutrition() {
 
 					<View style={styles.legendContainer}>
 						{nutritionData.map((item, index) => (
-							<View key={`legend-item-${index}`} style={styles.legendItem}>
-								<View style={{ backgroundColor: item.color, width: 20, height: 20, borderRadius: 10 }} />
+              <View key={`legend-item-${item.name}`} style={styles.legendItem}>
+                <View style={{ backgroundColor: item.color, width: 20, height: 20, borderRadius: 10 }} />
 								<Text style={{ color: item.color, marginLeft: 10, fontSize: 12 }}>{item.name} {Math.round(item.percentage * 100)}%</Text>
 							</View>
 						))}

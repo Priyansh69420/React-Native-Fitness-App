@@ -29,8 +29,8 @@ export default function MoreDetail() {
   useEffect(() => {
     const fetchData = async () => {
       const data = await loadMonthlyProgress();
-      const sortedData = data.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-      setMonthlyData(sortedData);
+      data.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      setMonthlyData(data);
     };
     fetchData();
   }, []);
@@ -55,25 +55,38 @@ export default function MoreDetail() {
       <View style={styles.dailyEntryValueContainer}>
         {selectedMetric === 'steps' && (
           <>
-            <Ionicons name="walk" size={20} color="#6B4EFF" style={styles.dailyEntryIcon} />
+            <Ionicons name="walk" size={20} color="#7A5FFF" style={styles.dailyEntryIcon} />
             <Text style={styles.dailyEntryValue}>{item.steps.toLocaleString()} steps</Text>
           </>
         )}
         {selectedMetric === 'calories' && (
           <>
-            <Ionicons name="restaurant" size={20} color="#6B4EFF" style={styles.dailyEntryIcon} />
+            <Ionicons name="restaurant" size={20} color="#7A5FFF" style={styles.dailyEntryIcon} />
             <Text style={styles.dailyEntryValue}>{item.calories.toLocaleString()} cal</Text>
           </>
         )}
         {selectedMetric === 'water' && (
           <>
-            <Ionicons name="water" size={20} color="#6B4EFF" style={styles.dailyEntryIcon} />
+            <Ionicons name="water" size={20} color="#7A5FFF" style={styles.dailyEntryIcon} />
             <Text style={styles.dailyEntryValue}>{item.water.toFixed(1)} L</Text>
           </>
         )}
       </View>
     </View>
   );
+
+  const trendTitle = (() => {
+    switch (selectedMetric) {
+      case 'steps':
+        return 'Steps';
+      case 'calories':
+        return 'Calories';
+      case 'water':
+        return 'Water';
+      default:
+        return '';
+    }
+  })();
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -93,19 +106,19 @@ export default function MoreDetail() {
       <ScrollView style={styles.scrollContainer}>
         <View style={styles.summaryContainer}>
           <View style={styles.summaryCard}>
-            <Ionicons name='walk' size={30} color='#6B4EFF' />
+            <Ionicons name='walk' size={30} color='#7A5FFF' />
             <Text style={styles.summaryValue}>{totalSteps.toLocaleString()}</Text>
             <Text style={styles.summaryLabel}>Total Steps</Text>
           </View>
 
           <View style={styles.summaryCard}>
-            <Ionicons name='restaurant' size={30} color='#6B4EFF' />
+            <Ionicons name='restaurant' size={30} color='#7A5FFF' />
             <Text style={styles.summaryValue}>{totalCalories.toLocaleString()}</Text>
             <Text style={styles.summaryLabel}>Total Calories</Text>
           </View>
 
           <View style={styles.summaryCard}>
-            <Ionicons name='water' size={30} color='#6B4EFF' />
+            <Ionicons name='water' size={30} color='#7A5FFF' />
             <Text style={styles.summaryValue}>{totalWater.toLocaleString()}</Text>
             <Text style={styles.summaryLabel}>Total Water (L)</Text>
           </View>
@@ -135,9 +148,9 @@ export default function MoreDetail() {
         </View>
 
         <View style={styles.trendContainer}>
-          <Text style={styles.trendTitle}>
-            {selectedMetric === 'steps' ? 'Steps' : selectedMetric === 'calories' ? 'Calories' : 'Water'} Stats
-          </Text>
+            <Text style={styles.trendTitle}>
+            {trendTitle} Stats
+            </Text>
 
           {formattedData.length > 0 ? (
             <ScrollView
@@ -146,22 +159,30 @@ export default function MoreDetail() {
               contentContainerStyle={styles.trendGraphContent}
               style={styles.trendGraph}
             >
-              {formattedData.map((entry, index) => (
-                <View style={styles.trendPoint} key={index}>
-                  <View
-                    style={[styles.trendBar, 
-                      {
-                        height:
-                          selectedMetric === 'steps'
-                          ? (entry.steps / 15000) * 100 
-                          : selectedMetric === 'calories'
-                          ? (entry.calories / 3000) * 100 
-                          : (entry.water / 2) * 100,
-                        backgroundColor: '#6B4EFF',
-                      }]}
-                  ></View>
-                </View>
-              ))}
+              {formattedData.map((entry, index) => {
+                let barHeight = 0;
+                if (selectedMetric === 'steps') {
+                  barHeight = ((entry.steps || 0) / 15000) * 100;
+                } else if (selectedMetric === 'calories') {
+                  barHeight = ((entry.calories || 0) / 3000) * 100;
+                } else {
+                  barHeight = ((entry.water || 0) / 2) * 100;
+                }
+
+                return (
+                  <View style={styles.trendPoint} key={entry.date}>
+                    <View
+                      style={[
+                        styles.trendBar,
+                        {
+                          height: barHeight,
+                          backgroundColor: '#7A5FFF',
+                        },
+                      ]}
+                    ></View>
+                  </View>
+                );
+              })}
             </ScrollView>
           ) : (
             <Text style={styles.noDataText}>No data available for this month.</Text>
@@ -274,7 +295,7 @@ const styles = StyleSheet.create({
     marginHorizontal: width * 0.02,
   },
   toggleButtonSelected: {
-    backgroundColor: '#6B4EFF',
+    backgroundColor: '#7A5FFF',
   },
   toggleText: {
     fontSize: RFValue(14, height),

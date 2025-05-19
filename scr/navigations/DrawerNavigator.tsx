@@ -1,5 +1,5 @@
 import React from 'react';
-import { createDrawerNavigator, DrawerContentScrollView, DrawerItem, useDrawerProgress } from '@react-navigation/drawer';
+import { createDrawerNavigator, DrawerContentScrollView, DrawerItem } from '@react-navigation/drawer';
 import { DrawerParamList } from './DrawerParamList';
 import HomeStack from './HomeStack';
 import CommunityStack from './CommunityStack';
@@ -7,12 +7,13 @@ import Notifications from '../screens/home/Notifications';
 import SettingStack from './SettingStack';
 import GetPremium from '../screens/home/GetPremium';
 import { auth } from '../../firebaseConfig';
-import { View, Text, Image, StyleSheet, Animated, TouchableOpacity, Alert, Dimensions } from 'react-native';
+import { View, Text, Image, StyleSheet, Alert, Dimensions } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { clearUser } from '../store/slices/userSlice';
 import { persistor, RootState } from '../store/store';
 import { useNavigationState } from '@react-navigation/native';
 import { RFPercentage, RFValue } from 'react-native-responsive-fontsize';
+import { useAuth } from '../contexts/AuthContext'; 
 
 const Drawer = createDrawerNavigator<DrawerParamList>();
 
@@ -20,13 +21,19 @@ const { width, height } = Dimensions.get('window');
 
 function CustomDrawerContent(props: any) {
   const dispatch = useDispatch();
+  const { clearAuthUser } = useAuth();
+
   const handleSignOut = async () => {
     try {
       await auth.signOut();
+  
+      await clearAuthUser();
+  
       await persistor.purge();
       dispatch(clearUser());
     } catch (error: any) {
-      console.error("Sign out failed:"+ error.message);
+      console.error("Sign out failed: " + error.message);
+      Alert.alert("Error", "Failed to sign out. Please try again.");
     }
   };
 

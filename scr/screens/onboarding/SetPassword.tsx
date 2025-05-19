@@ -1,4 +1,4 @@
-import { View, Text, Dimensions, StyleSheet, SafeAreaView, TextInput, TouchableOpacity, Image, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, Dimensions, StyleSheet, SafeAreaView, TextInput, TouchableOpacity, Image } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { RootStackParamList } from '../../navigations/RootStackParamList';
@@ -17,7 +17,6 @@ export default function SetPassword() {
   const [error, setError] = useState<String>('');
   const [shouldValidate, setShouldValidate] = useState<boolean>(false);
   const {updateOnboardingData, onboardingData} = useOnboarding();
-  const email = onboardingData.email ?? "";
 
   useEffect(() => {
       if(onboardingData.password) setPassword(onboardingData.password);
@@ -58,7 +57,7 @@ export default function SetPassword() {
 
       updateOnboardingData({password});
       setError('');
-      navigation.navigate("SetName");
+      navigation.goBack();
   }
 
   const { minLength, hasUpperCase, hasNumber } = checkPasswordRequirements(password);

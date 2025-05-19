@@ -20,62 +20,48 @@ export default function FaceId() {
     const rnBiometrics = new ReactNativeBiometrics();
 
     rnBiometrics.isSensorAvailable()
-      .then((resultObject) => {
-        const {available, biometryType} = resultObject;
-
-        if (available && biometryType === BiometryTypes.TouchID) {
-          Alert.alert('TouchID', 'Would you like to enable TouchID authentication for the next time?', [
-            {
-              text: 'Yes please',
-              onPress: async () => {
-                await updateOnboardingData({ faceId: true });
-                Alert.alert('Success!', 'TouchID authentication enabled successfully!', [
-                  {text: 'OK', onPress: () => navigation.navigate("SetProfile")},
-                ]);
-              },
-            },
-            { text: 'Cancel', style: 'cancel' },
-          ]);
-        } else if (available && biometryType === BiometryTypes.FaceID) {
-          Alert.alert('Device Supported Biometrics', 'Would you like to enable biometric authentication for the next time?', [
-            {
-              text: 'Yes please',
-              onPress: async () => {
-                await updateOnboardingData({ faceId: true });
-                Alert.alert('Success!', 'Biometric authentication enabled successfully!', [
-                  { text: 'OK', onPress: () => navigation.navigate('SetProfile') }
-                ]);
-              },
-            },
-            { text: 'Cancel', style: 'cancel', onPress: () => navigation.navigate('SetProfile') },
-          ]);
-        } else if (available && biometryType === BiometryTypes.Biometrics) {
-          Alert.alert('Device Supported Biometrics', 'Would you like to enable biometric authentication for the next time?', [
-            {
-              text: 'Yes please',
-              onPress: async () => {
-                await updateOnboardingData({ faceId: true });
-                Alert.alert('Success!', 'Biometric authentication enabled successfully!', [
-                  { text: 'OK', onPress: () => navigation.navigate('SetProfile') }
-                ]);
-              },
-            },
-            { text: 'Cancel', style: 'cancel', onPress: () => navigation.navigate('SetProfile') },
-          ]);
-        } else {
-          Alert.alert('Biometrics not supported', 'This device does not support biometric authentication.', [
-            { text: 'OK', onPress: () => navigation.navigate('SetProfile') }
-          ]);
-        }
-      })
+      .then(handleBiometricAvailability)
       .catch((error) => {
         console.error('Error:', error);
         Alert.alert('Error', 'An error occurred while checking biometrics availability.');
       });
-  }
+  };
+
+  const handleBiometricAvailability = (resultObject: { available: boolean; biometryType?: keyof typeof BiometryTypes }) => {
+    const { available, biometryType } = resultObject;
+
+    if (available && biometryType === BiometryTypes.TouchID) {
+      promptBiometricAlert('TouchID', 'Would you like to enable TouchID authentication for the next time?', true);
+    } else if (available && (biometryType === BiometryTypes.FaceID || biometryType === BiometryTypes.Biometrics)) {
+      promptBiometricAlert('Device Supported Biometrics', 'Would you like to enable biometric authentication for the next time?', true);
+    } else {
+      Alert.alert('Biometrics not supported', 'This device does not support biometric authentication.', [
+        { text: 'OK', onPress: () => navigation.navigate('SetProfile') }
+      ]);
+    }
+  };
+
+  const promptBiometricAlert = (title: string, message: string, enableBiometrics: boolean) => {
+    Alert.alert(title, message, [
+      {
+        text: 'Yes please',
+        onPress: () => handleBiometricEnable(enableBiometrics),
+      },
+      { text: 'Cancel', style: 'cancel', onPress: () => navigation.navigate('SetProfile') },
+    ]);
+  };
+
+  const handleBiometricEnable = (enableBiometrics: boolean) => {
+    if (enableBiometrics) {
+      updateOnboardingData({ faceId: true });
+      Alert.alert('Success!', 'Biometric authentication enabled successfully!', [
+        { text: 'OK', onPress: () => navigation.navigate('SetProfile') }
+      ]);
+    }
+  };
 
   const handleNotNow = async () => {
-    await updateOnboardingData({ faceId: false });
+    updateOnboardingData({ faceId: false });
     navigation.navigate("SetProfile");
   }
 

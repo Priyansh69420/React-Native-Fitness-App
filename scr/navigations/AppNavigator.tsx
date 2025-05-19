@@ -2,16 +2,16 @@ import React, { useEffect, useState } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import OnboardingStack from "./OnboardingStack";
 import DrawerNavigator from "./DrawerNavigator";
-import { onAuthStateChanged, User } from "firebase/auth";
-import { auth, firestore } from "../../firebaseConfig";
-import { doc, getDoc, collection, collectionGroup, query, where, orderBy, limit, onSnapshot, Timestamp } from "firebase/firestore";
 import notifee, { AndroidImportance, EventType, RepeatFrequency, TimestampTrigger, TriggerType } from "@notifee/react-native";
-import { ActivityIndicator, View, StyleSheet } from "react-native";
+import { ActivityIndicator, View, StyleSheet, Alert } from "react-native";
 import ReactNativeBiometrics from "react-native-biometrics";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { UserData } from "../store/slices/userSlice";
 import { useNotifications } from "../contexts/NotificationsContext";
 import { navigationRef } from "./DrawerParamList";
+import { useAuth } from '../contexts/AuthContext';
+import { Timestamp, collection, collectionGroup, doc, getDoc, query, where, orderBy, limit, onSnapshot } from "firebase/firestore";
+import { firestore } from "../../firebaseConfig";
+import { UserData } from "../store/slices/userSlice";
 
 const waitForNavigationReady = async () => {
   let retries = 3;
@@ -61,7 +61,7 @@ const executePendingNavigation = async () => {
     if (pendingNav) {
       const { routeName, params } = JSON.parse(pendingNav);
       await waitForNavigationReady();
-      navigationRef.reset(routeName);
+      navigationRef.navigate(routeName, params);
       await AsyncStorage.removeItem('pendingNavigation');
     }
   } catch (error) {
@@ -78,40 +78,48 @@ const isWithinLast24Hours = (createdAt: any) => {
 const rnBiometrics = new ReactNativeBiometrics();
 
 const AppNavigator = () => {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [isPushEnabled, setPushEnabled] = useState(true);
-  const [isBiometricChecked, setBiometricChecked] = useState(false);
-  const [initialNotificationHandled, setInitialNotificationHandled] = useState(false);
+  const { user, loading, onboardingComplete, onboardingInProgress, clearAuthUser } = useAuth();
+  const [isPushEnabled, setIsPushEnabled] = useState<boolean>(true);
+  const [isBiometricChecked, setIsBiometricChecked] = useState<boolean>(false);
+  const [initialNotificationHandled, setInitialNotificationHandled] = useState<boolean>(false);
 
   const { addNotification } = useNotifications();
 
   const performBiometricCheck = async (uid: string) => {
-    const userDoc = await getDoc(doc(firestore, "users", uid));
-    if (!userDoc.exists() || !userDoc.data()?.faceId) return;
-
     try {
+      const userDoc = await getDoc(doc(firestore, "users", uid));
+      if (!userDoc.exists()) {
+        return;
+      }
+
+      const userData = userDoc.data();
+      const faceIdEnabled = userData?.faceId === true;
+
+      if (!faceIdEnabled) {
+        return;
+      }
+
       const { success } = await rnBiometrics.simplePrompt({
         promptMessage: "Authenticate to continue",
       });
+
       if (!success) {
-        await auth.signOut();
-        setUser(null);
-      }
+        await clearAuthUser();
+      } 
     } catch (e) {
-      console.error("Biometric prompt error", e);
-      await auth.signOut();
-      setUser(null);
+      console.error("Biometric check error:", e);
+      await clearAuthUser();
+      Alert.alert("Error", "An error occurred during biometric authentication. You have been signed out.");
     }
   };
 
   const handleInitialNotification = async () => {
     const initialNotification = await notifee.getInitialNotification();
-    if (initialNotification && initialNotification.pressAction) {
-      const postId = initialNotification.notification?.data?.postId as string | undefined;
+    if (initialNotification?.pressAction) {
+      const postId = initialNotification.notification?.data?.postId;
       try {
         await waitForNavigationReady();
-        if (user) {
+        if (user && onboardingComplete && !onboardingInProgress) {
           navigationRef.navigate('Notifications');
         } else {
           await storePendingNavigation('Notifications', postId ? { postId } : undefined);
@@ -125,21 +133,17 @@ const AppNavigator = () => {
   };
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      setLoading(true);
-      if (currentUser) {
-        setUser(currentUser);
-        if (!isBiometricChecked) {
-          await performBiometricCheck(currentUser.uid);
-          setBiometricChecked(true);
-        }
-      } else {
-        setUser(null);
-      }
-      setLoading(false);
-    });
-    return unsubscribe;
-  }, [isBiometricChecked]);
+    if (user && !loading && !isBiometricChecked) {
+      performBiometricCheck(user.uid);
+      setIsBiometricChecked(true);
+    }
+  }, [user, loading, isBiometricChecked, clearAuthUser]);
+
+  useEffect(() => {
+    if (!user) {
+      setIsBiometricChecked(false);
+    }
+  }, [user]);
 
   useEffect(() => {
     if (!isPushEnabled || !user?.uid) return;
@@ -157,12 +161,12 @@ const AppNavigator = () => {
         importance: AndroidImportance.HIGH,
       });
 
-      const unsubscribeForeground = notifee.onForegroundEvent(async ({ type, detail }) => {
+      notifee.onForegroundEvent(async ({ type, detail }) => {
         if (type === EventType.PRESS) {
-          const postId = detail.notification?.data?.postId as string | undefined;
+          const postId = detail.notification?.data?.postId;
           try {
             await waitForNavigationReady();
-            if (user) {
+            if (user && onboardingComplete && !onboardingInProgress) {
               navigationRef.navigate('Notifications');
             } else {
               await storePendingNavigation('Notifications', postId ? { postId } : undefined);
@@ -174,12 +178,12 @@ const AppNavigator = () => {
         }
       });
 
-      const unsubscribeBackground = notifee.onBackgroundEvent(async ({ type, detail }) => {
+      notifee.onBackgroundEvent(async ({ type, detail }) => {
         if (type === EventType.PRESS) {
-          const postId = detail.notification?.data?.postId as string | undefined;
+          const postId = detail.notification?.data?.postId;
           try {
             await waitForNavigationReady();
-            if (user) {
+            if (user && onboardingComplete && !onboardingInProgress) {
               navigationRef.navigate('Notifications');
             } else {
               await storePendingNavigation('Notifications', postId ? { postId } : undefined);
@@ -201,20 +205,20 @@ const AppNavigator = () => {
       unsubComments && unsubComments();
       unsubNewPosts && unsubNewPosts();
     };
-  }, [user?.uid, isPushEnabled]);
+  }, [user?.uid, isPushEnabled, onboardingComplete, onboardingInProgress]);
 
   useEffect(() => {
-    if (user) {
+    if (user && onboardingComplete && !onboardingInProgress) {
       scheduleDailyWaterReminders();
     }
-  }, [user]);
+  }, [user, onboardingComplete, onboardingInProgress]);
 
   useEffect(() => {
     const loadPushSetting = async () => {
       try {
         const value = await AsyncStorage.getItem('pushEnabled');
         if (value != null) {
-          setPushEnabled(JSON.parse(value));
+          setIsPushEnabled(JSON.parse(value));
         }
       } catch (error) {
         console.error('Failed to load push setting:', error);
@@ -227,7 +231,7 @@ const AppNavigator = () => {
     if (!initialNotificationHandled) {
       handleInitialNotification();
     }
-  }, [user, initialNotificationHandled]);
+  }, [user, initialNotificationHandled, onboardingComplete, onboardingInProgress]);
 
   useEffect(() => {
     if (user && !loading && initialNotificationHandled) {
@@ -402,20 +406,20 @@ const AppNavigator = () => {
                 const postOwnerId = postDoc.data()?.userId;
                 if (postOwnerId === uid) {
                   commentsCount++;
-                  await notifee.displayNotification({
+                    await notifee.displayNotification({
                     id: `comment-${comment.postId}-${change.doc.id}`,
                     title: "New Comment 💬",
-                    body: `${comment.username || "Someone"}: "${comment.content}"`,
+                    body: `${comment.username ?? "Someone"}: "${comment.content ?? ""}"`,
                     android: {
                       channelId: "default",
                       groupId: "comments",
                       pressAction: {
-                        id: 'default',
-                        launchActivity: 'default',
+                      id: 'default',
+                      launchActivity: 'default',
                       },
                     },
                     data: { postId: comment.postId, type: "comment" },
-                  });
+                    });
 
                   await notifee.displayNotification({
                     id: "comments-summary",
@@ -433,14 +437,14 @@ const AppNavigator = () => {
                     data: { type: "comment_summary" },
                   });
 
-                  addNotification({
+                    addNotification({
                     id: `${Date.now()}`,
                     title: 'New Comment 💬',
-                    body: `${comment.username || "Someone"} commented "${comment.content}"`,
-                    postId: comment.postId!,
+                    body: `${comment.username ?? "Someone"} commented "${comment.content ?? ""}"`,
+                    postId: comment.postId,
                     type: 'comment',
                     timestamp: comment.createdAt?.toMillis?.() ?? Date.now(),
-                  });
+                    });
                 }
               }
             }
@@ -535,7 +539,7 @@ const AppNavigator = () => {
 
   return (
     <NavigationContainer ref={navigationRef}>
-      {user ? <DrawerNavigator /> : <OnboardingStack />}
+      {onboardingInProgress || !onboardingComplete || !user ? <OnboardingStack /> : <DrawerNavigator />}
     </NavigationContainer>
   );
 };

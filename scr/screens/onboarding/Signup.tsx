@@ -1,10 +1,10 @@
-import { View, Text, Dimensions, StyleSheet, SafeAreaView, TextInput, TouchableOpacity, Image, KeyboardAvoidingView, Platform } from 'react-native';
-import React, { useEffect, useState } from 'react';
+import { View, Text, Dimensions, StyleSheet, SafeAreaView, TextInput, TouchableOpacity, Image, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigations/RootStackParamList';
 import { useOnboarding } from '../../contexts/OnboardingContext';
-import { fetchSignInMethodsForEmail } from 'firebase/auth';
+import { fetchSignInMethodsForEmail, createUserWithEmailAndPassword, sendEmailVerification, User } from 'firebase/auth';
 import { auth } from '../../../firebaseConfig';
 import { RFValue } from 'react-native-responsive-fontsize';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
@@ -16,17 +16,22 @@ const backIcon = require('../../assets/backIcon.png');
 export default function Signup() {
   const navigation = useNavigation<NavigationProp>();
   const [email, setEmail] = useState('');
-  const [error, setError] = useState<String>('');
+  const [error, setError] = useState<string>('');
   const [shouldValidate, setShouldValidate] = useState<boolean>(false);
+  const [verifying, setVerifying] = useState<boolean>(false);
+  const [verificationMessage, setVerificationMessage] = useState<string>('');
+  const [verificationError, setVerificationError] = useState<string>('');
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
-  const {updateOnboardingData, onboardingData} = useOnboarding();
-  
-  useEffect(() => {
-    if(onboardingData.email) setEmail(onboardingData.email);
-  }, [])
+  const { updateOnboardingData, onboardingData } = useOnboarding();
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    if(!shouldValidate) return;
+    if (onboardingData.email) setEmail(onboardingData.email);
+  }, []);
+
+  useEffect(() => {
+    if (!shouldValidate) return;
 
     if (email.length === 0) {
       setError('');
@@ -37,34 +42,46 @@ export default function Signup() {
     }
   }, [email, shouldValidate]);
 
+  useEffect(() => {
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, []);
+
   async function handleContinue() {
     setShouldValidate(true);
-  
+    setVerificationError('');
+
     const trimmedEmail = email.trim().toLowerCase();
-  
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (trimmedEmail.length === 0) {
       setError('Please enter your email address');
       return;
     }
-  
+
     if (!emailRegex.test(trimmedEmail)) {
       setError('That doesn’t look like a valid email address');
       return;
     }
-  
+
     try {
       const signInMethods = await fetchSignInMethodsForEmail(auth, trimmedEmail);
-  
+
       if (signInMethods.length > 0) {
         setError('An account with this email already exists. Please log in instead.');
         return;
       }
-  
-      updateOnboardingData({ email: trimmedEmail });
-      setError('');
-      navigation.navigate("SetPassword", { email: trimmedEmail });
-  
+
+      if (!onboardingData.password) {
+        updateOnboardingData({ email: trimmedEmail });
+        setError('');
+        navigation.navigate("SetPassword", { email: trimmedEmail });
+      } else {
+        await verifyEmail(trimmedEmail);
+      }
     } catch (error: any) {
       if (error.code === 'auth/invalid-email') {
         setError('That doesn’t look like a valid email address');
@@ -74,7 +91,62 @@ export default function Signup() {
       }
     }
   }
-  
+
+  async function verifyEmail(email: string) {
+    setVerifying(true);
+    setVerificationMessage('');
+    setVerificationError('');
+
+    if(!onboardingData.password) {
+      return;
+    }
+
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, onboardingData.password);
+      const user = userCredential.user;
+      setCurrentUser(user);
+
+      await sendEmailVerification(user);
+      setVerificationMessage('Verification email sent. Please check your inbox and verify your email.');
+
+      const intervalId = setInterval(async () => {
+        if (user) {
+          await user.reload();
+          if (user.emailVerified) {
+            clearInterval(intervalId);
+            intervalRef.current = null;
+            setVerifying(false);
+            setVerificationMessage('');
+            navigation.navigate('SetName');
+          }
+        }
+      }, 2000);
+
+      intervalRef.current = intervalId;
+
+      setTimeout(() => {
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+          if (!user?.emailVerified) {
+            setVerifying(false);
+            setVerificationError('Email verification timed out. Please try again.');
+          }
+        }
+      }, 5 * 60 * 1000);
+    } catch (error: any) {
+      console.error("Email verification error:", error.message);
+      setVerifying(false);
+      if (error.code === 'auth/email-already-in-use') {
+        setVerificationError('An account with this email already exists.');
+      } else if (error.code === 'auth/weak-password') {
+        setVerificationError('Password is too weak. Please set a stronger password.');
+      } else {
+        setVerificationError('Failed to send verification email. Please try again.');
+      }
+    }
+  }
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAwareScrollView
@@ -84,7 +156,6 @@ export default function Signup() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.container}>
-
           <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
             <Image source={backIcon} style={styles.backIcon} />
           </TouchableOpacity>
@@ -92,30 +163,54 @@ export default function Signup() {
           <View style={styles.centeredContent}>
             <Image source={logo} style={styles.appLogo} resizeMode="contain" />
 
-            <Text style={styles.title}>What is your Email address?</Text>
+            <Text style={styles.title}>
+              {onboardingData.password ? 'Verify Your Email' : 'What is your Email address?'}
+            </Text>
 
-            <View style={{marginBottom: height * 0.125, width: '100%', alignItems: 'center' }}>
-            <View style={styles.inputContainer}>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter your email address"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                value={email}
-                onChangeText={setEmail}
-              />
+            <View style={{ marginBottom: height * 0.125, width: '100%', alignItems: 'center' }}>
+              <View style={styles.inputContainer}>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter your email address"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  value={email}
+                  onChangeText={setEmail}
+                  editable={!verifying}
+                />
+              </View>
+
+              {error ? (
+                <Text style={{ color: 'red', width: '100%', textAlign: 'center' }}>{error}</Text>
+              ) : null}
+              {verificationMessage ? (
+                <Text style={{ color: '#333', width: '90%', textAlign: 'center', marginTop: 10 }}>
+                  {verificationMessage}
+                </Text>
+              ) : null}
+              {verificationError ? (
+                <Text style={{ color: 'red', width: '90%', textAlign: 'center', marginTop: 10 }}>
+                  {verificationError}
+                </Text>
+              ) : null}
             </View>
 
-            {error ? <Text style={{color: 'red', width: '100%', textAlign: 'center'}}>{error}</Text>: <></>}
-            </View>
-
-            <TouchableOpacity style={styles.button} onPress={() => handleContinue()}>
-              <Text style={styles.buttonText}>Continue</Text>
+            <TouchableOpacity
+              style={[styles.button, verifying && { backgroundColor: '#A9A9A9' }]}
+              onPress={handleContinue}
+              disabled={verifying}
+            >
+              {verifying ? (
+                <ActivityIndicator size="small" color="#FFF" />
+              ) : (
+                <Text style={styles.buttonText}>
+                  {onboardingData.password ? 'Verify Email' : 'Continue'}
+                </Text>
+              )}
             </TouchableOpacity>
-            
           </View>
         </View>
-      <View style={{marginBottom: height * 0.18, }}/>
+        <View style={{ marginBottom: height * 0.18 }} />
       </KeyboardAwareScrollView>
     </SafeAreaView>
   );
@@ -131,49 +226,49 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F5F7FA',
-    paddingHorizontal: width * 0.05, 
-    paddingTop: height * 0.025, 
+    paddingHorizontal: width * 0.05,
+    paddingTop: height * 0.025,
   },
   backButton: {
     position: 'absolute',
-    top: height * 0.05, 
-    left: width * 0.05, 
+    top: height * 0.05,
+    left: width * 0.05,
     zIndex: 1,
   },
   backIcon: {
-    width: width * 0.075, 
-    height: width * 0.075, 
+    width: width * 0.075,
+    height: width * 0.075,
     resizeMode: 'contain',
   },
   centeredContent: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: width * 0.05, 
+    paddingHorizontal: width * 0.05,
   },
   appLogo: {
-    width: width * 0.13, 
-    height: width * 0.13, 
-    borderRadius: width * 0.065, 
-    marginBottom: height * 0.05, 
+    width: width * 0.13,
+    height: width * 0.13,
+    borderRadius: width * 0.065,
+    marginBottom: height * 0.05,
     backgroundColor: 'transparent',
   },
   title: {
-    fontSize: RFValue(26, height), 
+    fontSize: RFValue(26, height),
     fontWeight: 'bold',
     color: '#333',
     textAlign: 'center',
-    marginBottom: height * 0.035, 
+    marginBottom: height * 0.035,
     width: "110%"
   },
   inputContainer: {
     backgroundColor: '#FFF',
-    borderRadius: width * 0.025, 
-    paddingHorizontal: width * 0.0375, 
-    marginBottom: height * 0.01, 
-    marginTop: height * 0.0125, 
+    borderRadius: width * 0.025,
+    paddingHorizontal: width * 0.0375,
+    marginBottom: height * 0.01,
+    marginTop: height * 0.0125,
     width: '90%',
-    height: height * 0.0625, 
+    height: height * 0.0625,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -182,7 +277,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   input: {
-    fontSize: RFValue(16, height), 
+    fontSize: RFValue(16, height),
     color: '#666',
     width: '100%',
     textAlign: 'center',
@@ -190,15 +285,16 @@ const styles = StyleSheet.create({
   },
   button: {
     backgroundColor: '#7A5FFF',
-    paddingVertical: height * 0.01875, 
-    paddingHorizontal: width * 0.1, 
-    borderRadius: width * 0.0725, 
+    paddingVertical: height * 0.01875,
+    paddingHorizontal: width * 0.1,
+    borderRadius: width * 0.0725,
     width: '85%',
     alignItems: 'center',
+    opacity: 1,
   },
   buttonText: {
     color: '#FFF',
-    fontSize: RFValue(18, height), 
+    fontSize: RFValue(18, height),
     fontWeight: 'bold',
   },
 });

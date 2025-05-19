@@ -14,7 +14,7 @@ import {
   Modal,
   Animated,
 } from 'react-native';
-import { collection, query, orderBy, onSnapshot, doc, updateDoc, arrayUnion, arrayRemove, addDoc, serverTimestamp, getDoc, where, limit, getDocs, deleteDoc } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, doc, updateDoc, arrayUnion, arrayRemove, addDoc, serverTimestamp, getDoc, where, deleteDoc } from 'firebase/firestore';
 import { auth, firestore } from '../../../firebaseConfig';
 import { useNavigation } from '@react-navigation/native';
 import { User } from '@firebase/auth';
@@ -111,10 +111,9 @@ const Community = () => {
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [editingPost, setEditingPost] = useState<Post | null>(null);
   const [editedContent, setEditedContent] = useState<string>('');
-  const [newStoryImage, setNewStoryImage] = useState<string | null>(null);
   const [likingPostId, setLikingPostId] = useState<string | null>(null);
 
-  const navigation = useNavigation<NavigationProp>();setNewPostVideo
+  const navigation = useNavigation<NavigationProp>();
 
   useEffect(() => {
     const postsCollection = collection(firestore, 'posts');
@@ -203,8 +202,8 @@ const Community = () => {
             if (!storiesByUser[userId]) {
               storiesByUser[userId] = {
                 user_id: userId,
-                user_name: userData.name || 'User',
-                user_image: userData.profilePicture || undefined,
+                user_name: userData.name ?? 'User',
+                user_image: userData.profilePicture ?? undefined,
                 stories: [],
               };
             }
@@ -281,7 +280,6 @@ const Community = () => {
       });
   
       if (!result.canceled && result.assets.length > 0) {
-        setNewStoryImage(result.assets[0].uri);
         handleUploadNewStory(result.assets[0].uri); 
       }
     } catch (error: any) {
@@ -299,8 +297,8 @@ const Community = () => {
         return;
       }
   
-      const fileName = uri.split('/').pop() || `story_${Date.now()}.jpg`;
-      const fileType = uri.split('.').pop() || 'jpeg';
+      const fileName = uri.split('/').pop() ?? `story_${Date.now()}.jpg`;
+      const fileType = uri.split('.').pop() ?? 'jpeg';
       const filePath = `stories/${fileName}`;
   
       const base64Image = await RNFS.readFile(uri, 'base64');
@@ -314,7 +312,7 @@ const Community = () => {
         fileArray[i] = binaryString.charCodeAt(i);
       }
 
-      const { data, error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('stories')
         .upload(filePath, fileArray, {
           contentType: `image/${fileType}`,
@@ -343,7 +341,6 @@ const Community = () => {
   
       await addDoc(storiesCollection, storyData);
   
-      setNewStoryImage(null);
     } catch (error: any) {
       console.error('Error uploading story:', error.message);
       Alert.alert('Error', 'Failed to upload story.');
@@ -355,8 +352,8 @@ const Community = () => {
   const uploadImageForPosts = async (uri: string): Promise<string | null> => {
     setUploadingImage(true);
     try {
-      const fileName = uri.split('/').pop() || `post_${Date.now()}.jpg`;
-      const fileType = uri.split('.').pop() || 'jpeg';
+      const fileName = uri.split('/').pop() ?? `post_${Date.now()}.jpg`;
+      const fileType = uri.split('.').pop() ?? 'jpeg';
       const filePath = `userposts/${fileName}`;
 
       const base64Image = await RNFS.readFile(uri, 'base64');
@@ -371,7 +368,7 @@ const Community = () => {
         fileArray[i] = binaryString.charCodeAt(i);
       }
 
-      const { data, error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('userposts')
         .upload(filePath, fileArray, {
           contentType: `image/${fileType}`,
@@ -403,8 +400,8 @@ const Community = () => {
     setUploadingImage(true);
 
     try {
-      const fileName = uri.split('/').pop() || `post_${Date.now()}.mp4`;
-      const fileType = uri.split('.').pop() || 'mp4';
+      const fileName = uri.split('/').pop() ?? `post_${Date.now()}.mp4`;
+      const fileType = uri.split('.').pop() ?? 'mp4';
       const filePath = `userposts/videos/${fileName}`;
   
       const base64Data = await RNFS.readFile(uri, 'base64');
@@ -605,7 +602,11 @@ const Community = () => {
                         { text: 'Cancel', style: 'cancel' },
                         {
                           text: 'Yes',
-                          onPress: () => handleDeletePost(item.id),
+                          onPress: () => {
+                            handleDeletePost(item.id).catch((error) =>
+                              console.error('Error deleting post:', error)
+                            );
+                          },
                           style: 'destructive',
                         },
                       ],
@@ -624,64 +625,72 @@ const Community = () => {
         {item.content ? <Text style={styles.content}>{item.content}</Text> : <></>}
   
         <View style={{ justifyContent: 'center', alignItems: 'center' }}>
-          {item.videoUrl ? (
-            <TapGestureHandler
-            numberOfTaps={2}
-            onActivated={() => {
-              handleLikePost(item.id);
-              setShowHeart(true);
-              setTimeout(() => setShowHeart(false), 600);
-            }}
-          >
-            <View>
-              <Video
-                source={{ uri: item.videoUrl }}
-                style={styles.postMedia}              
-                resizeMode={ResizeMode.COVER}         
-                useNativeControls={true}                 
-                shouldPlay={!isAddPostModalVisible}                    
-                isLooping={true}      
-              />
-              {showHeart && (
-                <Animated.View>
-                  <View style={styles.heartOverlay}>
-                    <Image
-                      source={require('../../assets/likedIcon.png')}
-                      style={{ width: 50, height: 50, tintColor: 'white' }}
-                    />
-                  </View>
-                </Animated.View>
-              )}
-            </View>
-          </TapGestureHandler>
-          ) : item.imageUrl ? (
+          {(() => {
+          if (item.videoUrl) {
+            return (
             <TapGestureHandler
               numberOfTaps={2}
               onActivated={() => {
-                handleLikePost(item.id);
-                setShowHeart(true);
-                setTimeout(() => setShowHeart(false), 600);
+              handleLikePost(item.id);
+              setShowHeart(true);
+              setTimeout(() => setShowHeart(false), 600);
               }}
             >
               <View>
-                <Image
-                  source={{ uri: item.imageUrl }}
-                  style={styles.postMedia}
-                  resizeMode="cover"
-                />
-                {showHeart && (
-                  <Animated.View>
-                    <View style={styles.heartOverlay}>
-                      <Image
-                        source={require('../../assets/likedIcon.png')}
-                        style={{ width: 50, height: 50, tintColor: 'white' }}
-                      />
-                    </View>
-                  </Animated.View>
-                )}
+              <Video
+                source={{ uri: item.videoUrl }}
+                style={styles.postMedia}
+                resizeMode={ResizeMode.COVER}
+                useNativeControls={true}
+                shouldPlay={!isAddPostModalVisible}
+                isLooping={true}
+              />
+              {showHeart && (
+                <Animated.View>
+                <View style={styles.heartOverlay}>
+                  <Image
+                  source={require('../../assets/likedIcon.png')}
+                  style={{ width: 50, height: 50, tintColor: 'white' }}
+                  />
+                </View>
+                </Animated.View>
+              )}
               </View>
             </TapGestureHandler>
-          ) : null}
+            );
+          } else if (item.imageUrl) {
+            return (
+            <TapGestureHandler
+              numberOfTaps={2}
+              onActivated={() => {
+              handleLikePost(item.id);
+              setShowHeart(true);
+              setTimeout(() => setShowHeart(false), 600);
+              }}
+            >
+              <View>
+              <Image
+                source={{ uri: item.imageUrl }}
+                style={styles.postMedia}
+                resizeMode="cover"
+              />
+              {showHeart && (
+                <Animated.View>
+                <View style={styles.heartOverlay}>
+                  <Image
+                  source={require('../../assets/likedIcon.png')}
+                  style={{ width: 50, height: 50, tintColor: 'white' }}
+                  />
+                </View>
+                </Animated.View>
+              )}
+              </View>
+            </TapGestureHandler>
+            );
+          } else {
+            return null;
+          }
+          })()}
         </View>
   
         <View style={styles.postActions}>
@@ -715,7 +724,7 @@ const Community = () => {
           >
             <SimpleLineIcons name="bubble" size={20} color="#000" />
             <Text style={styles.actionText}>
-              {item.commentCount || 0}
+              {item.commentCount ?? 0}
             </Text>
           </TouchableOpacity>
         </View>

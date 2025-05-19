@@ -12,6 +12,7 @@ import { persistor } from '../../store/store';
 import { clearUser } from '../../store/slices/userSlice';
 import * as Linking from 'expo-linking';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAuth } from '../../contexts/AuthContext'; 
 
 type NavigationProp = DrawerNavigationProp<SettingStackParamList, 'Settings'>;
 
@@ -19,12 +20,13 @@ const { width, height } = Dimensions.get('window');
 const scaleFactor = 1.1;
 
 export default function Settings() {
-    const [isPushEnabled, setPushEnabled] = useState(true);
-    const [isFeedbackModalVisible, setFeedbackModalVisible] = useState(false);
+    const [isPushEnabled, setIsPushEnabled] = useState(true);
+    const [isFeedbackModalVisible, setIsFeedbackModalVisible] = useState(false);
     const [feedbackText, setFeedbackText] = useState('');
-    const [isSupportModalVisible, setSupportModalVisible] = useState(false);
+    const [isSupportModalVisible, setIsSupportModalVisible] = useState(false);
     const navigation = useNavigation<NavigationProp>();
     const dispatch = useDispatch();
+    const { clearAuthUser } = useAuth();
 
     useEffect(() => {
       const savePushSetting = async () => {
@@ -64,7 +66,7 @@ export default function Settings() {
       
 
     const handleGiveFeedback = () => {
-        setFeedbackModalVisible(true);
+        setIsFeedbackModalVisible(true);
         setFeedbackText('');
     };
 
@@ -77,33 +79,36 @@ export default function Settings() {
             'Feedback Received',
             'Thanks for your feedback!\nWe will look into it as soon as possible.'
         );
-        setFeedbackModalVisible(false);
+        setIsFeedbackModalVisible(false);
         setFeedbackText('');
     };
 
     const handleCloseFeedbackModal = () => {
-        setFeedbackModalVisible(false);
+        setIsFeedbackModalVisible(false);
         setFeedbackText('');
     };
 
     const handleHelpAndSupport = () => {
-        setSupportModalVisible(true);
+        setIsSupportModalVisible(true);
     };
 
     const handleCloseSupportModal = () => {
-        setSupportModalVisible(false);
+        setIsSupportModalVisible(false);
     };
 
     const handleSignOut = async () => {
         try {
-            await auth.signOut();
-            await persistor.purge();
-            dispatch(clearUser());
+          await auth.signOut();
+      
+          await clearAuthUser();
+      
+          await persistor.purge();
+          dispatch(clearUser());
         } catch (error: any) {
-            console.error("Sign out failed:" + error.message);
+          console.error("Sign out failed: " + error.message);
+          Alert.alert("Error", "Failed to sign out. Please try again.");
         }
     };
-  
 
     return (
         <SafeAreaView style={styles.safeArea}>
@@ -126,7 +131,7 @@ export default function Settings() {
                     <Text style={styles.optionText}>Push Notification</Text>
                     <Switch
                         value={isPushEnabled}
-                        onValueChange={(value) => setPushEnabled(value)}
+                        onValueChange={(value) => setIsPushEnabled(value)}
                         trackColor={{ false: '#767577', true: '#B4A3FF' }} 
                         thumbColor={isPushEnabled ? '#7A5FFF' : '#f4f3f4'}
                     />
@@ -154,7 +159,7 @@ export default function Settings() {
                       'Are you sure you want to log out?',
                       [
                         { text: 'Cancel', style: 'cancel' },
-                        { text: 'Log Out', style: 'destructive', onPress: handleSignOut }
+                        { text: 'Log Out', style: 'destructive', onPress: () => { handleSignOut().catch(console.error); } }
                       ],
                       { cancelable: true }
                         );

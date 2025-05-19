@@ -33,7 +33,6 @@ export default function DailySteps() {
   const { userData } = useSelector((state: RootState) => state.user);
   const navigation = useNavigation<NavigationProp>();
   const [modalVisible, setModalVisible] = useState(false);
-  const [weeklySteps, setWeeklySteps] = useState<DailyStepsPerformance[]>([]);
   const [bestPerformance, setBestPerformance] = useState<DailyStepsPerformance | null>(null);
   const [worstPerformance, setWorstPerformance] = useState<DailyStepsPerformance | null>(null);
   
@@ -59,12 +58,11 @@ export default function DailySteps() {
   const graphWidth = width * 0.85;
   const graphHeight = height * 0.15;
   const maxValue = Math.max(...graphData, 77.5); 
-  const points = graphData.map((value, index) => {
+  graphData.forEach((value, index) => {
     const x = (index / (graphData.length - 1)) * graphWidth;
     const y = graphHeight - (value / maxValue) * graphHeight;
     return `${x},${y}`;
   });
-  const pathData = `M0,${graphHeight} ${points.join(' L ')} L${graphWidth},${graphHeight} Z`;
 
   const profileImageSource = typeof userData?.profilePicture === 'string'
   ? { uri: userData.profilePicture }
@@ -89,7 +87,6 @@ export default function DailySteps() {
       if (storedDate && storedDate !== currentDate) {
         const currentDayOfWeek = new Date(currentDate).getDay(); 
         if (currentDayOfWeek === 1) { 
-          setWeeklySteps([]);
           await AsyncStorage.removeItem('weeklyStepsPerformance');
         }
         await AsyncStorage.setItem('stepsLastDate', currentDate);
@@ -97,11 +94,9 @@ export default function DailySteps() {
   
       if (storedWeeklySteps) {
         const parsedData = JSON.parse(storedWeeklySteps);
-        setWeeklySteps(parsedData);
         updateBestAndWorstPerformance(parsedData);
       } else if (storedDate === currentDate && steps > 0) {
         const currentDay = getDayOfWeek(currentDate);
-        setWeeklySteps([{ day: currentDay, count: steps }]); 
         await AsyncStorage.setItem('weeklyStepsPerformance', JSON.stringify([{ day: currentDay, count: steps }]));
       }
     } catch (error) {
@@ -123,14 +118,13 @@ export default function DailySteps() {
   
         const baseData = DAYS.map((day) => {
           const existing = existingData.find((item) => item.day === day);
-          return existing ? existing : { day, count: 0 };
+          return existing ?? { day, count: 0 };
         });
   
         const updatedPerformance = baseData.map((item) =>
           item.day === currentDay ? { ...item, count: steps } : item
         );
   
-        setWeeklySteps(updatedPerformance);
         await AsyncStorage.setItem('weeklyStepsPerformance', JSON.stringify(updatedPerformance));
         updateBestAndWorstPerformance(updatedPerformance);
   
@@ -315,9 +309,9 @@ export default function DailySteps() {
                 />
               </View>
               <Text style={styles.performanceText}>Best Performance</Text>
-              <Text style={styles.performanceValue}>{bestPerformance?.count || '-'}</Text>
+              <Text style={styles.performanceValue}>{bestPerformance?.count ?? '-'}</Text>
             </View>
-            <Text style={styles.performanceDay}>{bestPerformance?.day || '-'}</Text>
+            <Text style={styles.performanceDay}>{bestPerformance?.day ?? '-'}</Text>
           </View>
 
           <View style={styles.performanceBox}>
@@ -329,9 +323,9 @@ export default function DailySteps() {
                 />
               </View>
               <Text style={styles.performanceText}>Worst Performance</Text>
-              <Text style={styles.performanceValue}>{worstPerformance?.count || '-'}</Text>
+              <Text style={styles.performanceValue}>{worstPerformance?.count ?? '-'}</Text>
             </View>
-            <Text style={styles.performanceDay}>{worstPerformance?.day || '-'}</Text>
+            <Text style={styles.performanceDay}>{worstPerformance?.day ?? '-'}</Text>
           </View>
         </View>
       </ScrollView>

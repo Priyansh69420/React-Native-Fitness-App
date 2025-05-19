@@ -24,7 +24,7 @@ const scaleFactor = 1.1;
 
 const NotificationsScreen = () => {
   const { notifications } = useNotifications();
-  const [isPushEnabled, setPushEnabled] = useState(true);
+  const [isPushEnabled, setIsPushEnabled] = useState(true);
   const navigation = useNavigation<NavigationProp>();
 
   useEffect(() => {
@@ -32,7 +32,7 @@ const NotificationsScreen = () => {
       try {
         const value = await AsyncStorage.getItem('pushEnabled');
 
-        if(value != null) setPushEnabled(JSON.parse(value));
+        if(value != null) setIsPushEnabled(JSON.parse(value));
       } catch (error: any) {
         console.error('Failed to load push setting:', error);
       }
@@ -45,12 +45,11 @@ const NotificationsScreen = () => {
     const time = item.timestamp 
       ? `${Math.floor((Date.now() - item.timestamp) / 60000)} minutes ago` 
       : 'Just now';
-    const title = item.type === 'new_post' 
-      ? `${item.title || 'Someone'}` 
-      : item.type === 'like' 
-      ? `${item.title || 'Someone'}` 
-      : `${item.title || 'Someone'}`;
-    const body = item.body || (item.type === 'comment' ? 'New comment' : '');
+    let title = 'Someone';
+    if (item.type === 'new_post' || item.type === 'comment' || item.type === 'like') {
+      title = item.title ?? 'Someone';
+    }
+    const body = item.body ?? (item.type === 'comment' ? 'New comment' : '');
 
     return (
       <View style={styles.notificationItem}>
@@ -73,24 +72,32 @@ const NotificationsScreen = () => {
       
 
       <View style={styles.notificationContainer}>
-        {isPushEnabled ? (
-          notifications.length > 0 ? (
-            <FlatList
-              data={notifications as any}
-              keyExtractor={(item) => item.id}
-              contentContainerStyle={styles.listContent}
-              renderItem={renderNotificationItem}
-            />
-          ) : (
-            <Text style={styles.noNotificationsText}>
-              No notifications available.
-            </Text>
-          )
-        ) : (
+        {(() => {
+          if (!isPushEnabled) {
+        return (
           <Text style={styles.notificationDisabledText}>
             Enable Notifications to receive updates about likes, comments, and more.
           </Text>
-        )}
+        );
+          }
+
+          if (notifications.length > 0) {
+        return (
+          <FlatList
+            data={notifications as any}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.listContent}
+            renderItem={renderNotificationItem}
+          />
+        );
+          }
+
+          return (
+        <Text style={styles.noNotificationsText}>
+          No notifications available.
+        </Text>
+          );
+        })()}
       </View>
     </SafeAreaView>
   );

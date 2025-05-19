@@ -34,10 +34,10 @@ const DeviceItem: React.FC<DeviceItemProps> = ({ item, onConnect }) => {
     <TouchableOpacity
       style={styles.deviceItem}
       onPress={() => onConnect(item)}
-      accessibilityLabel={`Connect to ${item.name || 'Unknown Device'}`}
+      accessibilityLabel={`Connect to ${item.name ?? 'Unknown Device'}`}
     >
       <Ionicons name="hardware-chip" size={24} color="#7A5FFF" style={styles.deviceIcon} />
-      <Text style={styles.deviceName}>{item.name || 'Unknown Device'}</Text>
+      <Text style={styles.deviceName}>{item.name ?? 'Unknown Device'}</Text>
     </TouchableOpacity>
   );
 };
@@ -52,68 +52,85 @@ const ConnectDeviceScreen: React.FC = () => {
   const requestPermissions = useCallback(async (): Promise<boolean> => {
     try {
       if (Platform.OS === 'android') {
-        const permissionsToRequest = [];
-        if (Platform.Version >= 31) {
-          permissionsToRequest.push(
-            'android.permission.BLUETOOTH_SCAN',
-            'android.permission.BLUETOOTH_CONNECT'
-          );
-          if (!SMARTWATCH_SERVICE_UUID) {
-            permissionsToRequest.push('android.permission.ACCESS_FINE_LOCATION');
-          }
-        } else {
-          permissionsToRequest.push(
-            'android.permission.BLUETOOTH',
-            'android.permission.BLUETOOTH_ADMIN',
-            'android.permission.ACCESS_FINE_LOCATION'
-          );
-        }
+      const permissionsToRequest = getAndroidPermissions();
+      const validPermissions = filterValidPermissions(permissionsToRequest);
 
-        const validPermissions = permissionsToRequest.filter(
-          (perm) => perm !== undefined && typeof perm === 'string'
-        );
-        if (validPermissions.length !== permissionsToRequest.length) {
-          throw new Error('Invalid permissions in request array');
-        }
+      if (validPermissions.length !== permissionsToRequest.length) {
+        throw new Error('Invalid permissions in request array');
+      }
 
-        const granted = await PermissionsAndroid.requestMultiple(validPermissions);
-        let allPermissionsGranted = true;
-        if (Platform.Version >= 31) {
-          allPermissionsGranted =
-            granted['android.permission.BLUETOOTH_SCAN'] === PermissionsAndroid.RESULTS.GRANTED &&
-            granted['android.permission.BLUETOOTH_CONNECT'] === PermissionsAndroid.RESULTS.GRANTED;
-          if (validPermissions.includes('android.permission.ACCESS_FINE_LOCATION')) {
-            allPermissionsGranted =
-              allPermissionsGranted &&
-              granted['android.permission.ACCESS_FINE_LOCATION'] === PermissionsAndroid.RESULTS.GRANTED;
-          }
-        } else {
-          allPermissionsGranted =
-            granted['android.permission.BLUETOOTH'] === PermissionsAndroid.RESULTS.GRANTED &&
-            granted['android.permission.BLUETOOTH_ADMIN'] === PermissionsAndroid.RESULTS.GRANTED &&
-            granted['android.permission.ACCESS_FINE_LOCATION'] === PermissionsAndroid.RESULTS.GRANTED;
-        }
+      const granted = await PermissionsAndroid.requestMultiple(validPermissions);
+      const allPermissionsGranted = checkAndroidPermissionsGranted(granted, validPermissions);
 
-        if (!allPermissionsGranted) {
-          console.warn(
-            'Bluetooth Permissions Required',
-            'Please grant all necessary Bluetooth permissions in the app settings to connect to devices.'
-          );
-          return false;
-        }
+      if (!allPermissionsGranted) {
+        warnPermissionsRequired();
+        return false;
+      }
 
-        return true;
+      return true;
       } else if (Platform.OS === 'ios') {
-        return true;
+      return true;
       }
 
       return true;
     } catch (error) {
-      console.warn(
-        'Permission Error',
-        'An error occurred while requesting permissions. Please try again or check your settings.'
-      );
+      warnPermissionError();
       return false;
+    }
+
+    function getAndroidPermissions() {
+      if (typeof Platform.Version === 'number' && Platform.Version >= 31) {
+      return [
+        'android.permission.BLUETOOTH_SCAN',
+        'android.permission.BLUETOOTH_CONNECT',
+        !SMARTWATCH_SERVICE_UUID && 'android.permission.ACCESS_FINE_LOCATION',
+      ].filter(Boolean);
+      } else {
+      return [
+        'android.permission.BLUETOOTH',
+        'android.permission.BLUETOOTH_ADMIN',
+        'android.permission.ACCESS_FINE_LOCATION',
+      ];
+      }
+    }
+
+    function filterValidPermissions(permissions: (string | false)[]) {
+      return permissions.filter((perm) => perm !== undefined && typeof perm === 'string');
+    }
+
+    function checkAndroidPermissionsGranted(granted: Record<string, string>, permissions: string[]) {
+      if (typeof Platform.Version === 'number' && Platform.Version >= 31) {
+      const requiredPermissions = [
+        granted['android.permission.BLUETOOTH_SCAN'] === PermissionsAndroid.RESULTS.GRANTED,
+        granted['android.permission.BLUETOOTH_CONNECT'] === PermissionsAndroid.RESULTS.GRANTED,
+      ];
+      if (permissions.includes('android.permission.ACCESS_FINE_LOCATION')) {
+        requiredPermissions.push(
+        granted['android.permission.ACCESS_FINE_LOCATION'] === PermissionsAndroid.RESULTS.GRANTED
+        );
+      }
+      return requiredPermissions.every(Boolean);
+      } else {
+      return (
+        granted['android.permission.BLUETOOTH'] === PermissionsAndroid.RESULTS.GRANTED &&
+        granted['android.permission.BLUETOOTH_ADMIN'] === PermissionsAndroid.RESULTS.GRANTED &&
+        granted['android.permission.ACCESS_FINE_LOCATION'] === PermissionsAndroid.RESULTS.GRANTED
+      );
+      }
+    }
+
+    function warnPermissionsRequired() {
+      console.warn(
+      'Bluetooth Permissions Required',
+      'Please grant all necessary Bluetooth permissions in the app settings to connect to devices.'
+      );
+    }
+
+    function warnPermissionError() {
+      console.warn(
+      'Permission Error',
+      'An error occurred while requesting permissions. Please try again or check your settings.'
+      );
     }
   }, []);
 
@@ -135,7 +152,7 @@ const ConnectDeviceScreen: React.FC = () => {
         return;
       }
 
-      if (device && device.name) {
+      if (device?.name) {
         if (!devices.some(d => d.id === device.id)) {
           setDevices(prevDevices => [...prevDevices, device]);
         }
@@ -162,11 +179,11 @@ const ConnectDeviceScreen: React.FC = () => {
 
         const targetService = services.find(service => service.uuid === SMARTWATCH_SERVICE_UUID);
         if (targetService) {
-          const characteristics = await targetService.characteristics();
+          await targetService.characteristics();
         }
       } catch (error: any) {
         setConnectedDevice(null);
-        console.warn('Connection Error', `Failed to connect to ${device.name || device.id}: ${error.message}`);
+        console.warn('Connection Error', `Failed to connect to ${device.name ?? device.id}: ${error.message}`);
       }
     },
     [bleManager, setConnectedDevice, setScanning]
@@ -241,7 +258,7 @@ const ConnectDeviceScreen: React.FC = () => {
       {connectedDevice && (
         <View style={styles.connectedContainer}>
           <Ionicons name="checkmark-circle" size={48} color="#4caf50" />
-          <Text style={styles.connectedText}>Connected to {connectedDevice.name || 'Device'}</Text>
+          <Text style={styles.connectedText}>Connected to {connectedDevice.name ?? 'Device'}</Text>
           <TouchableOpacity
             onPress={disconnectDevice}
             style={styles.disconnectButton}

@@ -1,9 +1,9 @@
 import React from "react";
-import { View, Text, Image, StyleSheet, Dimensions, TouchableOpacity, Button } from "react-native";
+import { View, Text, Image, StyleSheet, Dimensions, TouchableOpacity } from "react-native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useNavigation } from "@react-navigation/native";
 import { RootStackParamList } from "../../navigations/RootStackParamList";
-import { RFValue, RFPercentage } from "react-native-responsive-fontsize";
+import { RFValue } from "react-native-responsive-fontsize";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, "GettingStarted">;
 const logo = require('../../assets/logo.png');

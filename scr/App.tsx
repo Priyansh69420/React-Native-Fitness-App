@@ -6,11 +6,12 @@ import { store, persistor } from "./store/store";
 import { PersistGate } from "redux-persist/integration/react";
 import notifee, { AndroidImportance } from "@notifee/react-native";
 import { NotificationsProvider } from "./contexts/NotificationsContext";
+import { AuthProvider } from "./contexts/AuthContext";
 
 const App = () => {
   useEffect(() => {
     async function setupNotifications() {
-      const channelId = await notifee.createChannel({
+      await notifee.createChannel({
         id: "default",
         name: "Default Channel",
         importance: AndroidImportance.HIGH,
@@ -25,7 +26,9 @@ const App = () => {
       <PersistGate loading={null} persistor={persistor}>
         <GestureHandlerRootView style={{ flex: 1 }}>
           <NotificationsProvider>
-            <AppNavigator />
+            <AuthProvider>
+              <AppNavigator />
+            </AuthProvider>
           </NotificationsProvider>
         </GestureHandlerRootView>
       </PersistGate>

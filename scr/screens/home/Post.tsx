@@ -59,7 +59,7 @@ const getTimeAgo = (timestamp: any) => {
 
 export default function Post() {
   const route = useRoute<PostScreenRouteProp>();
-  const initialItem = route.params!.item;
+  const initialItem = route.params?.item || {} as Post;
   const { name, profilePic } = route.params;
   const [post, setPost] = useState<Post>(initialItem);
     const [loading, setLoading] = useState<boolean>(false);
@@ -104,29 +104,22 @@ export default function Post() {
     const unsubscribeComments = onSnapshot(
       commentsQuery,
       async (snapshot) => {
-        const fetchedComments = snapshot.docs.map(
-          (doc) =>
-            ({
-              id: doc.id,
-              ...doc.data(),
-            } as Comment)
-        );
+        try {
+          const fetchedComments = snapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          })) as Comment[];
 
-        const commenterIds = [...new Set(fetchedComments.map(comment => comment.userId))];
-        const commenterDataPromises = commenterIds.map(userId =>
-          getDoc(doc(firestore, 'users', userId)).then(doc =>
-            doc.exists() ? doc.data() as UserData : { name: 'User' }
-          )
-        );
-        const commenterDataResults = await Promise.all(commenterDataPromises);
-        const newUserDataMap = commenterIds.reduce((acc, id, index) => {
-          acc[id] = commenterDataResults[index];
-          return acc;
-        }, { ...userDataMap } as Record<string, UserData>);
+          const commenterIds = [...new Set(fetchedComments.map((comment) => comment.userId))];
+          const newUserDataMap = await fetchCommenterData(commenterIds);
 
-        setUserDataMap(newUserDataMap);
-        setComments(fetchedComments);
-        setLoadingComments(false);
+          setUserDataMap((prevMap) => ({ ...prevMap, ...newUserDataMap }));
+          setComments(fetchedComments);
+        } catch (error) {
+          console.error('Error processing comments:', error);
+        } finally {
+          setLoadingComments(false);
+        }
       },
       (error) => {
         console.error('Error fetching comments', error);
@@ -136,6 +129,19 @@ export default function Post() {
 
     return () => unsubscribeComments();
   }, [post.id]);
+
+  const fetchCommenterData = async (commenterIds: string[]) => {
+    const commenterDataPromises = commenterIds.map((userId) =>
+      getDoc(doc(firestore, 'users', userId)).then((doc) =>
+        doc.exists() ? (doc.data() as UserData) : { name: 'User' }
+      )
+    );
+    const commenterDataResults = await Promise.all(commenterDataPromises);
+    return commenterIds.reduce((acc, id, index) => {
+      acc[id] = commenterDataResults[index];
+      return acc;
+    }, {} as Record<string, UserData>);
+  };
 
   const handleLikePost = async () => {
     if (!user) {
@@ -184,7 +190,7 @@ export default function Post() {
   
       setPost(prevPost => ({
         ...prevPost,
-        commentCount: (prevPost.commentCount || 0) + 1,
+        commentCount: (prevPost.commentCount ?? 0) + 1,
       }));
   
       await addDoc(commentsCollectionRef, {
@@ -206,7 +212,7 @@ export default function Post() {
   
       setPost(prevPost => ({
         ...prevPost,
-        commentCount: (prevPost.commentCount || 1) - 1,
+        commentCount: (prevPost.commentCount ?? 1) - 1,
       }));
     } finally {
       setLoading(false);
@@ -262,7 +268,7 @@ export default function Post() {
               <View style={styles.avatarPlaceholder} />
             )}
             <View style={styles.userInfo}>
-              <Text style={styles.userName}>{name || 'User'}</Text>
+              <Text style={styles.userName}>{name ?? 'User'}</Text>
               <Text style={styles.timestamp}>
                 {getTimeAgo(post.timestamp)}
               </Text>
@@ -296,7 +302,7 @@ export default function Post() {
             </TouchableOpacity>
             <View style={styles.actionButton}>
               <SimpleLineIcons name="bubble" size={20} color="#000" />
-              <Text style={styles.actionText}>{post.commentCount || 0}</Text>
+              <Text style={styles.actionText}>{post.commentCount ?? 0}</Text>
             </View>
           </View>
         </View>

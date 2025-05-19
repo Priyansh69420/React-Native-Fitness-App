@@ -139,7 +139,7 @@ export default function Water() {
       await AsyncStorage.setItem(storedWeeklyPerformanceKey, JSON.stringify(updatedPerformance));
       updateBestAndWorstPerformance(updatedPerformance);
   
-      const waterLiters = newCount * 0.2;
+      const waterLiters = newCount * 0.25;
       await saveDailyProgress({ water: waterLiters });
     } catch (error) {
       console.error('Error saving glass count to AsyncStorage:', error);
@@ -223,20 +223,20 @@ export default function Water() {
         <View style={styles.glassesContainer}>
           {[...Array(totalGlasses)].map((_, index) => (
             <TouchableOpacity
-              key={index}
+              key={`glass-${getCurrentDate()}-${index}`}
               style={styles.glassWrapper}
               onPress={() => handleGlassPress(index)}
             >
               <Image
-                source={
-                  index < glassDrunk
-                    ? require('../../assets/filledGlass.png')
-                    : require('../../assets/emptyGlass.png')
-                }
-                style={styles.glassIcon}
+              source={
+                index < glassDrunk
+                ? require('../../assets/filledGlass.png')
+                : require('../../assets/emptyGlass.png')
+              }
+              style={styles.glassIcon}
               />
               {index >= glassDrunk && (
-                <Text style={styles.plusSign}>+</Text>
+              <Text style={styles.plusSign}>+</Text>
               )}
             </TouchableOpacity>
           ))}
@@ -270,9 +270,9 @@ export default function Water() {
                 />
               </View>
               <Text style={styles.performanceText}>Best Performance</Text>
-              <Text style={styles.performanceValue}>{bestPerformance?.count || '-'}</Text>
+              <Text style={styles.performanceValue}>{bestPerformance?.count ?? '-'}</Text>
             </View>
-            <Text style={styles.performanceDay}>{bestPerformance?.day || '-'}</Text>
+            <Text style={styles.performanceDay}>{bestPerformance?.day ?? '-'}</Text>
           </View>
 
           <View style={styles.performanceBox}>
@@ -284,9 +284,9 @@ export default function Water() {
                 />
               </View>
               <Text style={styles.performanceText}>Worst Performance</Text>
-              <Text style={styles.performanceValue}>{worstPerformance?.count || '-'}</Text>
+              <Text style={styles.performanceValue}>{worstPerformance?.count ?? '-'}</Text>
             </View>
-            <Text style={styles.performanceDay}>{worstPerformance?.day || '-'}</Text>
+            <Text style={styles.performanceDay}>{worstPerformance?.day ?? '-'}</Text>
           </View>
         </View>
       </SafeAreaView>

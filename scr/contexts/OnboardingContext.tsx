@@ -13,6 +13,7 @@ interface OnboardingData {
   interests?: string[];
   gender?: string;
   calories?: number;
+  verificationId?: string;
 }
 
 interface OnboardingContextType {

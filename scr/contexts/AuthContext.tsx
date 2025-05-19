@@ -1,0 +1,152 @@
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { auth, firestore } from '../../firebaseConfig';
+import { doc, getDoc } from 'firebase/firestore';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { UserData } from '../store/slices/userSlice';
+
+interface AuthContextType {
+  user: { uid: string } | null;
+  loading: boolean;
+  onboardingComplete: boolean;
+  onboardingInProgress: boolean;
+  setAuthUser: (uid: string) => Promise<void>;
+  clearAuthUser: () => Promise<void>;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
+
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [user, setUser] = useState<{ uid: string } | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [onboardingComplete, setOnboardingComplete] = useState<boolean>(false);
+  const [onboardingInProgress, setOnboardingInProgress] = useState<boolean>(false);
+
+  const setOnboardingInProgressFlag = async (inProgress: boolean) => {
+    try {
+      await AsyncStorage.setItem('onboardingInProgress', JSON.stringify(inProgress));
+      setOnboardingInProgress(inProgress);
+    } catch (error) {
+      console.error('Failed to set onboardingInProgress:', error);
+    }
+  };
+
+  const getOnboardingInProgressFlag = async (): Promise<boolean> => {
+    try {
+      const value = await AsyncStorage.getItem('onboardingInProgress');
+      return value ? JSON.parse(value) : false;
+    } catch (error) {
+      console.error('Failed to get onboardingInProgress:', error);
+      return false;
+    }
+  };
+
+  useEffect(() => {
+    const loadInitialState = async () => {
+      try {
+        setLoading(true);
+
+        const inProgress = await getOnboardingInProgressFlag();
+        setOnboardingInProgress(inProgress);
+
+        const authData = await AsyncStorage.getItem('authUser');
+        if (authData) {
+          const { uid } = JSON.parse(authData);
+          if (uid) {
+            const userDocRef = doc(firestore, 'users', uid);
+            const userDoc = await getDoc(userDocRef);
+
+            if (userDoc.exists()) {
+              const userData = userDoc.data() as UserData;
+              const isOnboardingComplete = userData.onboardingComplete === true;
+              setOnboardingComplete(isOnboardingComplete);
+              setUser({ uid });
+
+              if (isOnboardingComplete) {
+                await setOnboardingInProgressFlag(false);
+              }
+            } else {
+              await AsyncStorage.removeItem('authUser');
+              setUser(null);
+              setOnboardingComplete(false);
+            }
+          }
+        } else {
+          setUser(null);
+          setOnboardingComplete(false);
+        }
+      } catch (error) {
+        console.error('Error loading initial state:', error);
+        setUser(null);
+        setOnboardingComplete(false);
+        setOnboardingInProgress(false);
+        await setOnboardingInProgressFlag(false);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadInitialState();
+  }, []);
+
+  const setAuthUser = async (uid: string) => {
+    try {
+      setLoading(true);
+      await AsyncStorage.setItem('authUser', JSON.stringify({ uid }));
+      const userDocRef = doc(firestore, 'users', uid);
+      const userDoc = await getDoc(userDocRef);
+
+      if (userDoc.exists()) {
+        const userData = userDoc.data() as UserData;
+        const isOnboardingComplete = userData.onboardingComplete === true;
+        setOnboardingComplete(isOnboardingComplete);
+        setUser({ uid });
+
+        if (isOnboardingComplete) {
+          await setOnboardingInProgressFlag(false);
+        }
+      }
+    } catch (error) {
+      console.error('Error setting auth user:', error);
+      setUser(null);
+      setOnboardingComplete(false);
+      await setOnboardingInProgressFlag(false);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const clearAuthUser = async () => {
+    try {
+      setLoading(true);
+      await AsyncStorage.removeItem('authUser');
+      await auth.signOut(); 
+      setUser(null);
+      setOnboardingComplete(false);
+      setOnboardingInProgress(false);
+      await setOnboardingInProgressFlag(false);
+    } catch (error) {
+      console.error('Error clearing auth user:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const contextValue = React.useMemo(
+    () => ({ user, loading, onboardingComplete, onboardingInProgress, setAuthUser, clearAuthUser } as AuthContextType),
+    [user, loading, onboardingComplete, onboardingInProgress]
+  );
+
+  return (
+    <AuthContext.Provider value={contextValue}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
