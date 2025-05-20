@@ -1,4 +1,4 @@
-import { View, Text, Dimensions, StyleSheet, SafeAreaView, TextInput, TouchableOpacity, Image, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, Dimensions, StyleSheet, SafeAreaView, TextInput, TouchableOpacity, Image, ActivityIndicator, Alert } from 'react-native';
 import React, { useState } from 'react';
 import { useNavigation } from "@react-navigation/native";
 import { RootStackParamList } from "../../navigations/RootStackParamList";
@@ -35,7 +35,7 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>('');
-  const [isVisible, setVisible] = useState<boolean>(false);
+  const [isVisible, setIsVisible] = useState<boolean>(false);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -87,22 +87,20 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       await GoogleSignin.hasPlayServices();
-      const userInfo = await GoogleSignin.signIn();
+      await GoogleSignin.signIn();
       const tokens = await GoogleSignin.getTokens();
       const googleCredential = GoogleAuthProvider.credential(tokens.idToken);
       const creds = await signInWithCredential(auth, googleCredential);
       const user = creds.user;
-
-      await setAuthUser(user.uid);
-
+  
       const userDocRef = doc(firestore, 'users', user.uid);
       const userDoc = await getDoc(userDocRef);
-
+  
       if (!userDoc.exists()) {
         await setDoc(userDocRef, {
-          email: user.email || 'user@gmail.com',
-          name: user.displayName || 'User',
-          profilePicture: user.photoURL || '2',
+          email: user.email ?? 'user@gmail.com',
+          name: user.displayName ?? 'User',
+          profilePicture: user.photoURL ?? '2',
           goals: ['Weight Loss'],
           interests: ['Fitness'],
           gender: 'Male',
@@ -116,8 +114,9 @@ export default function LoginScreen() {
       } else {
         console.log("LoginScreen: User document already exists for Google Sign-in");
       }
-
-      await AsyncStorage.setItem('onboardingInProgress', JSON.stringify(false));
+  
+      await setAuthUser(user.uid);
+  
     } catch (error: any) {
       console.error("Google Sign-In Error:", error);
       let errorMessage = "Google Sign-In failed";
@@ -199,7 +198,7 @@ export default function LoginScreen() {
               secureTextEntry={!isVisible}
             />
             <TouchableOpacity
-              onPress={() => setVisible(v => !v)}
+              onPress={() => setIsVisible(v => !v)}
               style={styles.eyeButton}
               accessibilityLabel={isVisible ? "Hide password" : "Show password"}
             >

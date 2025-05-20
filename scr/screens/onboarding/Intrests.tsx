@@ -1,4 +1,4 @@
-import { View, Text, Dimensions, StyleSheet, SafeAreaView, TouchableOpacity, Image, Alert } from 'react-native';
+import { View, Text, Dimensions, StyleSheet, SafeAreaView, TouchableOpacity, Image } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { RootStackParamList } from '../../navigations/RootStackParamList';
@@ -11,13 +11,13 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList, "SetProfile"
 const logo = require("../../assets/logo.png");
 const backIcon = require("../../assets/backIcon.png");
 
-interface items {
+interface Items {
   id: number,
   label: string,
   source: any,
 }
 
-const interests: items[] = [
+const interests: Items[] = [
   {id: 1, label: "Fashion", source: require("../../assets/fashionIcon.png")},
   {id: 2, label: "Organic", source: require("../../assets/organicIcon.png")},
   {id: 3, label: "Meditation", source: require("../../assets/meditationIcon.png")},

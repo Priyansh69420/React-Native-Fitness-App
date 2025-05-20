@@ -23,15 +23,15 @@ export default function ReadyToGo() {
 
       await setDoc(doc(firestore, 'users', user.uid), {
         email: onboardingData.email ?? "",
-        name: `${onboardingData.firstName} ${onboardingData.lastName}` || '',
-        faceId: onboardingData.faceId || false,
-        profilePicture: onboardingData.profilePicture || '',
-        goals: onboardingData.goals || [],
-        interests: onboardingData.interests || [],
-        gender: onboardingData.gender || '',
+        name: `${onboardingData.firstName} ${onboardingData.lastName}`,
+        faceId: onboardingData.faceId ?? false,
+        profilePicture: onboardingData.profilePicture ?? '',
+        goals: onboardingData.goals ?? [],
+        interests: onboardingData.interests ?? [],
+        gender: onboardingData.gender ?? '',
         calories: 0,
-        userHeight: onboardingData.userHeight || 0,
-        userWeight: onboardingData.userWeight || 0,
+        userHeight: onboardingData.userHeight ?? 0,
+        userWeight: onboardingData.userWeight ?? 0,
         onboardingComplete: true,
       });
 

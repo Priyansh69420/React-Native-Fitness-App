@@ -1,4 +1,4 @@
-import { View, Text, Dimensions, StyleSheet, SafeAreaView, TouchableOpacity, Image, Alert, Modal, Button, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, Dimensions, StyleSheet, SafeAreaView, TouchableOpacity, Image, Modal, Button, Platform, ActivityIndicator } from 'react-native';
 import React, { useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { RootStackParamList } from '../../navigations/RootStackParamList';
@@ -13,12 +13,12 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList, "SetProfile"
 const logo = require('../../assets/logo.png');
 const backIcon = require('../../assets/backIcon.png'); 
 
-interface item {
+interface Item {
   id: number; 
   source: any;
 }
 
-const avatars: item[] = [
+const avatars: Item[] = [
   { id: 1, source: { uri: 'https://dojvycwbetqfeutcvsqe.supabase.co/storage/v1/object/public/profileimages/profile_pictures/avatar5-Photoroom-Photoroom.jpg' } },
   { id: 2, source: { uri: 'https://dojvycwbetqfeutcvsqe.supabase.co/storage/v1/object/public/profileimages/profile_pictures/avatar2-Photoroom-Photoroom.jpg' } },
   { id: 3, source: { uri: 'https://dojvycwbetqfeutcvsqe.supabase.co/storage/v1/object/public/profileimages/profile_pictures/avatar4-Photoroom-Photoroom%20(1).jpg' } },
@@ -35,87 +35,121 @@ export default function SetProfile() {
   const {updateOnboardingData} = useOnboarding();
 
   const handleAddCustomPhoto = async () => {
+    try {
+      if (!(await requestPermission())) return;
+
+      const result = await pickImage();
+      if (!result.canceled && result.assets.length > 0) {
+        setButtonLoading(true);
+
+        const uri = result.assets[0].uri;
+        const fileName = getFileName(uri);
+        const fileType = getFileType(result.assets[0], fileName);
+
+        const base64Image = await getBase64Image(uri);
+        if (!base64Image) throw new Error('Failed to convert image to Base64');
+
+        const fileArray = convertBase64ToUint8Array(base64Image);
+
+        const publicUrlWithCacheBust = await uploadImage(fileName, fileType, fileArray);
+        setCustomImg(publicUrlWithCacheBust);
+        setModalVisible(true);
+      }
+    } catch (error: any) {
+      alert('Error uploading image: ' + error.message);
+    } finally {
+      setButtonLoading(false);
+    }
+  };
+
+  const requestPermission = async () => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permissionResult.granted) {
-        alert('Permission Denied. Please grant permission to select an image.');
-        return;
+      alert('Permission Denied. Please grant permission to select an image.');
+      return false;
     }
+    return true;
+  };
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 1,
+  const pickImage = async () => {
+    return await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 1,
     });
+  };
 
-    if (!result.canceled && result.assets.length > 0) {
-        const uri = result.assets[0].uri;
-        const fileName = uri.split('/').pop() || `profile_${Date.now()}.jpg`;
-        const fileType = result.assets[0].type?.split('/')[1] || fileName.split('.').pop() || 'jpeg';
+  const getFileName = (uri: string) => {
+    return uri.split('/').pop() ?? `profile_${Date.now()}.jpg`;
+  };
 
-        try {
-            setButtonLoading(true);
+  const getFileType = (asset: any, fileName: string) => {
+    return asset.type?.split('/')[1] ?? fileName.split('.').pop() ?? 'jpeg';
+  };
 
-            let base64Image: string | null = null;
+  const getBase64Image = async (uri: string) => {
+    return Platform.OS === 'web'
+      ? await getBase64ImageWeb(uri)
+      : await getBase64ImageNative(uri);
+  };
 
-            if (Platform.OS === 'web') {
-                const response = await fetch(uri);
-                const blob = await response.blob();
-                base64Image = await new Promise<string | null>((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onloadend = () => {
-                        if (typeof reader.result === 'string') {
-                            resolve(reader.result.split(',')[1]);
-                        } else {
-                            reject('Failed to read as Data URL');
-                        }
-                    };
-                    reader.onerror = reject;
-                    reader.readAsDataURL(blob);
-                });
-            } else {
-                base64Image = await RNFS.readFile(uri, 'base64');
-            }
+  const getBase64ImageWeb = async (uri: string) => {
+    const response = await fetch(uri);
+    const blob = await response.blob();
+    return readBlobAsBase64(blob);
+  };
 
-            if (!base64Image) {
-                throw new Error('Failed to convert image to Base64');
-            }
+  const readBlobAsBase64 = (blob: Blob): Promise<string | null> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => handleReaderLoadEnd(reader, resolve, reject);
+      reader.onerror = reject;
+      reader.readAsArrayBuffer(blob);
+    });
+  };
 
-            const binaryString = atob(base64Image);
-            const fileArray = new Uint8Array(binaryString.length);
-            for (let i = 0; i < binaryString.length; i++) {
-                fileArray[i] = binaryString.charCodeAt(i);
-            }
-
-            const { data, error } = await supabase.storage
-                .from('profileimages')
-                .upload(`profile_pictures/${fileName}`, fileArray, {
-                    contentType: `image/${fileType}`,
-                    upsert: true,
-                });
-
-            if (error) {
-                throw new Error(error.message);
-            }
-
-            const { data: urlData } = supabase.storage
-                .from('profileimages')
-                .getPublicUrl(`profile_pictures/${fileName}`);
-
-            if (!urlData.publicUrl) {
-                throw new Error('Failed to retrieve public URL');
-            }
-
-            const publicUrlWithCacheBust = `${urlData.publicUrl}?t=${Date.now()}`;
-            setCustomImg(publicUrlWithCacheBust);
-            setModalVisible(true);
-        } catch (error: any) {
-            alert('Error uploading image: ' + error.message);
-        } finally {
-          setButtonLoading(false);
-        }
+  const handleReaderLoadEnd = (
+    reader: FileReader,
+    resolve: (value: string | null) => void,
+    reject: (reason?: any) => void
+  ) => {
+    if (typeof reader.result === 'string') {
+      resolve(reader.result.split(',')[1]);
+    } else {
+      reject(new Error('Failed to read as Data URL'));
     }
-};
+  };
+
+  const getBase64ImageNative = async (uri: string) => {
+    return await RNFS.readFile(uri, 'base64');
+  };
+
+  const convertBase64ToUint8Array = (base64Image: string) => {
+    const binaryString = atob(base64Image);
+    const fileArray = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      fileArray[i] = binaryString.charCodeAt(i);
+    }
+    return fileArray;
+  };
+
+  const uploadImage = async (fileName: string, fileType: string, fileArray: Uint8Array) => {
+    const { error } = await supabase.storage
+      .from('profileimages')
+      .upload(`profile_pictures/${fileName}`, fileArray, {
+        contentType: `image/${fileType}`,
+        upsert: true,
+      });
+    if (error) throw new Error(error.message);
+
+    const { data: urlData } = supabase.storage
+      .from('profileimages')
+      .getPublicUrl(`profile_pictures/${fileName}`);
+    if (!urlData.publicUrl) throw new Error('Failed to retrieve public URL');
+
+    return `${urlData.publicUrl}?t=${Date.now()}`;
+  };
 
   const confirmCustomImage = () => {
     if(customImg) {

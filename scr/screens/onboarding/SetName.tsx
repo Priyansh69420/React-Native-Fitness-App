@@ -72,7 +72,7 @@ export default function SetNameScreen() {
                 style={styles.input}
                 value={firstName}
                 onChangeText={(input) => {
-                  const filtered = input.replace(/[0-9]/g, '');
+                    const filtered = input.replace(/\d/g, '');
                   setFirstName(filtered);
                 }}
                 placeholder="First Name"
@@ -87,7 +87,7 @@ export default function SetNameScreen() {
                 style={styles.input}
                 value={lastName}
                 onChangeText={(input) => {
-                  const filtered = input.replace(/[0-9]/g, '');
+                  const filtered = input.replace(/\d/g, '');
                   setLastName(filtered);
                 }}
                 placeholder="Last Name"

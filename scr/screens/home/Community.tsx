@@ -128,14 +128,14 @@ const Community = () => {
         })) as Post[];
 
         const userIds = [...new Set(allPosts.map(post => post.userId))];
-        const userDataPromises = userIds.map(userId =>
-          getDoc(doc(firestore, 'users', userId)).then(doc =>
-            doc.exists() ? doc.data() as UserData : {
-              name: 'User',
-              profilePicture: undefined
-            }
-          )
-        );
+        const fetchUserData = async (userId: string): Promise<UserData> => {
+          const userDoc = await getDoc(doc(firestore, 'users', userId));
+          return userDoc.exists()
+            ? (userDoc.data() as UserData)
+            : { name: 'User', profilePicture: undefined };
+        };
+
+        const userDataPromises = userIds.map(fetchUserData);
 
         const userDataResults = await Promise.all(userDataPromises);
         const newUserDataMap = userIds.reduce((acc, id, index) => {
@@ -169,68 +169,80 @@ const Community = () => {
         where('timestamp', '>', twentyFourHoursAgo),
         orderBy('timestamp', 'desc')
       );
-  
-      const unsubscribe = onSnapshot(storiesQuery, async (snapshot) => {
-        try {
-          const allStories: IUserStory[] = [];
-          const storiesByUser: Record<string, IUserStory> = {};
-          const userIds = new Set<string>();
-  
-          snapshot.forEach((doc) => {
-            const storyData = doc.data();
-            userIds.add(storyData.userId);
-          });
-  
-          const userDataPromises = Array.from(userIds).map((userId) =>
-            getDoc(doc(firestore, 'users', userId)).then((userDoc) => ({
-              userId,
-              userData: userDoc.exists() ? (userDoc.data() as UserData) : { name: 'User', profilePicture: undefined },
-            }))
-          );
-  
-          const userDataResults = await Promise.all(userDataPromises);
-          const userDataMap = userDataResults.reduce((acc, { userId, userData }) => {
-            acc[userId] = userData;
-            return acc;
-          }, {} as Record<string, UserData>);
-  
-          snapshot.forEach((doc) => {
-            const storyData = doc.data();
-            const userId = storyData.userId;
-            const userData = userDataMap[userId];
-  
-            if (!storiesByUser[userId]) {
-              storiesByUser[userId] = {
-                user_id: userId,
-                user_name: userData.name ?? 'User',
-                user_image: userData.profilePicture ?? undefined,
-                stories: [],
-              };
-            }
-  
-            storiesByUser[userId].stories.push({
-              story_id: doc.id,
-              story_image: storyData.imageUrl,
-            });
-          });
-  
-          Object.values(storiesByUser).forEach((userStory) => {
-            if (userStory.stories.length > 0) {
-              allStories.push(userStory);
-            }
-          });
-  
-          setStoriesData(allStories);
-        } catch (error) {
-          console.error('Error fetching recent stories:', error);
+
+      const unsubscribe = onSnapshot(
+        storiesQuery,
+        async (snapshot) => {
+          try {
+            const userIds = extractUserIdsFromSnapshot(snapshot);
+            const userDataMap = await fetchUserDataMap(userIds);
+            const allStories = buildStoriesData(snapshot, userDataMap);
+            setStoriesData(allStories);
+          } catch (error) {
+            console.error('Error fetching recent stories:', error);
+          }
+        },
+        (error) => {
+          console.error('onSnapshot error:', error);
         }
-      }, (error) => {
-        console.error('onSnapshot error:', error);
-      });
-  
+      );
+
       return unsubscribe;
     };
-  
+
+    const extractUserIdsFromSnapshot = (snapshot: any): Set<string> => {
+      const userIds = new Set<string>();
+      snapshot.forEach((doc: any) => {
+        const storyData = doc.data();
+        userIds.add(storyData.userId);
+      });
+      return userIds;
+    };
+
+    const fetchUserDataMap = async (userIds: Set<string>): Promise<Record<string, UserData>> => {
+      const userDataPromises = Array.from(userIds).map(fetchUserData);
+      const userDataResults = await Promise.all(userDataPromises);
+
+      return userDataResults.reduce((acc, { userId, userData }) => {
+        acc[userId] = userData;
+        return acc;
+      }, {} as Record<string, UserData>);
+    };
+
+    const fetchUserData = async (userId: string) => {
+      const userDoc = await getDoc(doc(firestore, 'users', userId));
+      return {
+        userId,
+        userData: userDoc.exists() ? (userDoc.data() as UserData) : { name: 'User', profilePicture: undefined },
+      };
+    };
+
+    const buildStoriesData = (snapshot: any, userDataMap: Record<string, UserData>): IUserStory[] => {
+      const storiesByUser: Record<string, IUserStory> = {};
+
+      snapshot.forEach((doc: any) => {
+        const storyData = doc.data();
+        const userId = storyData.userId;
+        const userData = userDataMap[userId];
+
+        if (!storiesByUser[userId]) {
+          storiesByUser[userId] = {
+            user_id: userId,
+            user_name: userData.name ?? 'User',
+            user_image: userData.profilePicture ?? undefined,
+            stories: [],
+          };
+        }
+
+        storiesByUser[userId].stories.push({
+          story_id: doc.id,
+          story_image: storyData.imageUrl,
+        });
+      });
+
+      return Object.values(storiesByUser).filter((userStory) => userStory.stories.length > 0);
+    };
+
     const unsubscribe = fetchRecentStories();
     return () => unsubscribe();
   }, []);
@@ -244,7 +256,7 @@ const Community = () => {
       }
   
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.All,  
+        mediaTypes: ['images', 'videos'],
         allowsEditing: true,
         aspect: [4, 3],
         quality: 0.8,
@@ -273,7 +285,7 @@ const Community = () => {
       }
   
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images, 
+        mediaTypes: ['images'],
         allowsEditing: true,
         aspect: [9, 16], 
         quality: 0.7,
@@ -496,49 +508,55 @@ const Community = () => {
       );
       return;
     }
-  
+
     const postRef = doc(firestore, 'posts', postId);
-  
     const currentPost = posts.find(p => p.id === postId);
     if (!currentPost) return;
-  
+
     const hasLiked = currentPost.likes?.includes(user.uid);
-  
-    setPosts(prevPosts =>
-      prevPosts.map(p =>
-        p.id === postId
-          ? {
-              ...p,
-              likes: hasLiked
-                ? p.likes?.filter(uid => uid !== user.uid)
-                : [...(p.likes || []), user.uid],
-            }
-          : p
-      )
-    );
-  
+    updateLocalPostLikes(postId, hasLiked ?? false, user.uid);
+
     try {
-      await updateDoc(postRef, {
-        likes: hasLiked ? arrayRemove(user.uid) : arrayUnion(user.uid),
-      });
+      await updateRemotePostLikes(postRef, hasLiked ?? false, user.uid);
     } catch (error: any) {
       console.error('Error liking post:', error.message);
-  
-      setPosts(prevPosts =>
-        prevPosts.map(p =>
-          p.id === postId
-            ? {
-                ...p,
-                likes: hasLiked
-                  ? [...(p.likes || []), user.uid]
-                  : p.likes?.filter(uid => uid !== user.uid),
-              }
-            : p
-        )
-      );
+      revertLocalPostLikes(postId, hasLiked ?? false, user.uid);
     }
   };
-  
+
+  const updateLocalPostLikes = (postId: string, hasLiked: boolean, userId: string) => {
+    setPosts(prevPosts => prevPosts.map(p => updatePostLikes(p, postId, hasLiked, userId)));
+  };
+
+  const updatePostLikes = (post: Post, postId: string, hasLiked: boolean, userId: string): Post => {
+    if (post.id !== postId) return post;
+
+    const updatedLikes = hasLiked
+      ? post.likes?.filter(uid => uid !== userId)
+      : [...(post.likes || []), userId];
+
+    return { ...post, likes: updatedLikes };
+  };
+
+  const updateRemotePostLikes = async (postRef: any, hasLiked: boolean, userId: string) => {
+    await updateDoc(postRef, {
+      likes: hasLiked ? arrayRemove(userId) : arrayUnion(userId),
+    });
+  };
+
+  const revertLocalPostLikes = (postId: string, hasLiked: boolean, userId: string) => {
+    setPosts(prevPosts => prevPosts.map(p => revertPostLikes(p, postId, hasLiked, userId)));
+
+  const revertPostLikes = (post: Post, postId: string, hasLiked: boolean, userId: string): Post => {
+    if (post.id !== postId) return post;
+
+    const updatedLikes = hasLiked
+    ? [...(post.likes || []), userId]
+    : post.likes?.filter(uid => uid !== userId);
+
+    return { ...post, likes: updatedLikes };
+  };
+  };
 
   const handleDeletePost = async (postId: string) => {
     try {
@@ -554,6 +572,12 @@ const Community = () => {
     const isLiked = user ? item.likes?.includes(user.uid) : false;
     const name = userData?.name;
     const profilePic = userData?.profilePicture;
+
+    const handleDoubleTap = (id: string) => {
+      handleLikePost(id);
+      setShowHeart(true);
+      setTimeout(() => setShowHeart(false), 500);
+    }
   
     return (
       <View style={styles.postContainer}>
@@ -603,9 +627,7 @@ const Community = () => {
                         {
                           text: 'Yes',
                           onPress: () => {
-                            handleDeletePost(item.id).catch((error) =>
-                              console.error('Error deleting post:', error)
-                            );
+                            handleDeletePost(item.id)
                           },
                           style: 'destructive',
                         },
@@ -630,11 +652,7 @@ const Community = () => {
             return (
             <TapGestureHandler
               numberOfTaps={2}
-              onActivated={() => {
-              handleLikePost(item.id);
-              setShowHeart(true);
-              setTimeout(() => setShowHeart(false), 600);
-              }}
+              onActivated={() => handleDoubleTap(item.id)}
             >
               <View>
               <Video
@@ -662,11 +680,7 @@ const Community = () => {
             return (
             <TapGestureHandler
               numberOfTaps={2}
-              onActivated={() => {
-              handleLikePost(item.id);
-              setShowHeart(true);
-              setTimeout(() => setShowHeart(false), 600);
-              }}
+              onActivated={() => handleDoubleTap(item.id)}
             >
               <View>
               <Image
@@ -832,7 +846,7 @@ const Community = () => {
             />
 
             <TouchableOpacity style={styles.modalImagePlaceholder} onPress={handlePickMedia}>
-              <Text style={{ color: '#757575' }}>Tap to add image</Text>
+              <Text style={{ color: '#757575' }}>Tap to add Media</Text>
               {uploadingImage && <ActivityIndicator size="small" color="#7A5FFF" />}
               {newPostImage && <Image source={{ uri: newPostImage }} style={styles.modalImagePreview} />}
               {newPostVideo && 
@@ -851,6 +865,7 @@ const Community = () => {
                 onPress={() => {
                   setIsAddPostModalVisible(false)
                   setNewPostImage(null)
+                  setNewPostVideo(null)
                   setNewPostContent('')
                 }}
               >

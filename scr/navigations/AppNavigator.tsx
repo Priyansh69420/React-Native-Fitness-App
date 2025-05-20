@@ -409,7 +409,7 @@ const AppNavigator = () => {
                     await notifee.displayNotification({
                     id: `comment-${comment.postId}-${change.doc.id}`,
                     title: "New Comment 💬",
-                    body: `${comment.username ?? "Someone"}: "${comment.content ?? ""}"`,
+                    body: `${comment.username ?? ""}: "${comment.content ?? ""}"`,
                     android: {
                       channelId: "default",
                       groupId: "comments",

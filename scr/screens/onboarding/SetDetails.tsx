@@ -72,7 +72,7 @@ export default function SetDetails() {
           <View style={styles.centeredContent}>
             <Image source={logo} style={styles.appLogo} resizeMode="contain" />
 
-            <Text style={styles.title}>What are your height & weight?</Text>
+            <Text style={styles.title}>Please enter your height and weight.</Text>
 
             <View style={styles.inputContainer}>
               <TextInput

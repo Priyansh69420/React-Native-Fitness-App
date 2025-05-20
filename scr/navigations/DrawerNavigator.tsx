@@ -7,7 +7,7 @@ import Notifications from '../screens/home/Notifications';
 import SettingStack from './SettingStack';
 import GetPremium from '../screens/home/GetPremium';
 import { auth } from '../../firebaseConfig';
-import { View, Text, Image, StyleSheet, Alert, Dimensions } from 'react-native';
+import { View, Text, Image, StyleSheet, Alert } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { clearUser } from '../store/slices/userSlice';
 import { persistor, RootState } from '../store/store';
@@ -17,18 +17,72 @@ import { useAuth } from '../contexts/AuthContext';
 
 const Drawer = createDrawerNavigator<DrawerParamList>();
 
-const { width, height } = Dimensions.get('window');
+const DrawerMenuItem = ({
+  label,
+  icon,
+  isActive,
+  onPress,
+}: {
+  label: string;
+  icon: React.ReactNode;
+  isActive?: boolean;
+  onPress: () => void;
+}) => (
+  <DrawerItem
+    label={label}
+    onPress={onPress}
+    icon={() => icon}
+    labelStyle={[styles.label, isActive && styles.activeLabel]}
+    style={isActive && styles.activeItem}
+  />
+);
+
 
 function CustomDrawerContent(props: any) {
   const dispatch = useDispatch();
   const { clearAuthUser } = useAuth();
+  const { userData } = useSelector((state: RootState) => state.user);
+  const navigationState = useNavigationState(state => state);
+  const currentRouteName = navigationState?.routes?.[navigationState.index]?.name ?? 'HomeStack';
+
+  const navigateToHome = () => props.navigation.navigate('HomeStack');
+  const navigateToCommunity = () => props.navigation.navigate('Community');
+  const navigateToNotifications = () => props.navigation.navigate('Notifications');
+  const navigateToSettings = () => props.navigation.navigate('SettingStack');
+  const navigateToGetPremium = () => props.navigation.navigate('GetPremium');
+
+  const confirmLogout = () => {
+    Alert.alert(
+      'Confirm Logout',
+      'Are you sure you want to log out?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Log Out', style: 'destructive', onPress: () => { handleSignOut(); } }
+      ],
+      { cancelable: true }
+    );
+  };
+
+  const handleCommunityNavigation = () => {
+    if (!userData?.isPremium) {
+      Alert.alert(
+        'Premium Feature',
+        'Unlock all features of the app by upgrading to Premium.',
+        [
+          { text: 'Maybe Later' },
+          { text: 'Buy Premium', onPress: navigateToGetPremium }
+        ],
+        { cancelable: true }
+      );
+      return;
+    }
+    navigateToCommunity();
+  };
 
   const handleSignOut = async () => {
     try {
       await auth.signOut();
-  
       await clearAuthUser();
-  
       await persistor.purge();
       dispatch(clearUser());
     } catch (error: any) {
@@ -37,24 +91,33 @@ function CustomDrawerContent(props: any) {
     }
   };
 
-  const { userData } = useSelector((state: RootState) => state.user);
-  const navigationState = useNavigationState(state => state);
-  const currentRouteName = navigationState?.routes?.[navigationState.index]?.name;
+  const communityLabel = () => (
+    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flex: 1 }}>
+      <Text style={[styles.label, currentRouteName === 'Community' && styles.activeLabel]}>
+        Community
+      </Text>
+      {!userData?.isPremium && (
+        <Image source={require('../assets/lockIcon.png')} style={styles.lockIcon} />
+      )}
+    </View>
+  );
+
+  const communityIcon = () => <Image source={require('../assets/CommunityIcon.png')} style={styles.icon} />;
 
   const profileImageSource = typeof userData?.profilePicture === 'string'
     ? { uri: userData.profilePicture }
     : undefined;
-  
-    const isCustomImg = typeof userData?.profilePicture === 'string'
-      && !userData.profilePicture.includes('avatar');
-  
-      const profilePictureStyle = {
-        width: isCustomImg ? RFValue(75) : RFValue(85),
-        height: isCustomImg ? RFValue(75) : RFValue(85),
-        borderRadius: RFValue(60),
-        marginBottom: RFPercentage(1.5),
-      };
-    
+
+  const isCustomImg = typeof userData?.profilePicture === 'string'
+    && !userData.profilePicture.includes('avatar');
+
+  const profilePictureStyle = {
+    width: isCustomImg ? RFValue(75) : RFValue(85),
+    height: isCustomImg ? RFValue(75) : RFValue(85),
+    borderRadius: RFValue(60),
+    marginBottom: RFPercentage(1.5),
+  };
+
   return (
     <DrawerContentScrollView {...props} contentContainerStyle={styles.contentContainer}>
       <View style={styles.profileContainer}>
@@ -69,92 +132,46 @@ function CustomDrawerContent(props: any) {
       </View>
 
       <View style={styles.menuContainer}>
-        <DrawerItem
+        <DrawerMenuItem
           label="Home"
-          onPress={() => props.navigation.navigate('HomeStack')}
-          icon={() => <Image source={require('../assets/HomeIcon.png')} style={styles.icon} />}
-          labelStyle={[styles.label, currentRouteName === 'HomeStack' && styles.activeLabel]}
-          style={currentRouteName === 'HomeStack' && styles.activeItem}
+          icon={<Image source={require('../assets/HomeIcon.png')} style={styles.icon} />}
+          isActive={currentRouteName === 'HomeStack'}
+          onPress={navigateToHome}
         />
-        
+
         <DrawerItem
-          label={() => (
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flex: 1 }}>
-              <Text style={[styles.label, currentRouteName === 'Community' && styles.activeLabel]}>
-                Community
-              </Text>
-              {!userData?.isPremium && (
-                <Image source={require('../assets/lockIcon.png')} style={styles.lockIcon} />
-              )}
-            </View>
-          )}
-          onPress={() => {
-            if(!userData?.isPremium) {
-              Alert.alert(
-                'Premium Feature',
-                'Unlock all features of the app by upgrading to Premium.',
-                [
-                  {
-                    text: 'Maybe Later',
-                  },
-                  {
-                    text: 'Buy Premium',
-                    onPress: () => {
-                     props.navigation.navigate('GetPremium');
-                    },
-                    style: 'default',
-                  },
-                ],
-                { cancelable: true }
-              );
-              return;
-            }
-            props.navigation.navigate('Community')
-          }}
-          icon={() => <Image source={require('../assets/CommunityIcon.png')} style={styles.icon} />}
+          label={communityLabel}
+          onPress={handleCommunityNavigation}
+          icon={communityIcon}
           labelStyle={[styles.label, currentRouteName === 'Community' && styles.activeLabel]}
           style={currentRouteName === 'Community' && styles.activeItem}
         />
 
-        <DrawerItem
+        <DrawerMenuItem
           label="Notifications"
-          onPress={() => props.navigation.navigate('Notifications')}
-          icon={() => <Image source={require('../assets/NotificationsIcon.png')} style={styles.icon} />}
-          labelStyle={[styles.label, currentRouteName === 'Notifications' && styles.activeLabel]}
-          style={currentRouteName === 'Notifications' && styles.activeItem}
+          icon={<Image source={require('../assets/NotificationsIcon.png')} style={styles.icon} />}
+          isActive={currentRouteName === 'Notifications'}
+          onPress={navigateToNotifications}
         />
 
-        <DrawerItem
+        <DrawerMenuItem
           label="Settings"
-          onPress={() => props.navigation.navigate('SettingStack')}
-          icon={() => <Image source={require('../assets/SettingsIcon.png')} style={styles.icon} />}
-          labelStyle={[styles.label, currentRouteName === 'SettingStack' && styles.activeLabel]}
-          style={currentRouteName === 'SettingStack' && styles.activeItem}
+          icon={<Image source={require('../assets/SettingsIcon.png')} style={styles.icon} />}
+          isActive={currentRouteName === 'SettingStack'}
+          onPress={navigateToSettings}
         />
 
-        <DrawerItem
+        <DrawerMenuItem
           label="Get Premium"
-          onPress={() => props.navigation.navigate('GetPremium')}
-          icon={() => <Image source={require('../assets/PremiumIcon.png')} style={styles.icon} />}
-          labelStyle={[styles.label, currentRouteName === 'GetPremium' && styles.activeLabel]}
-          style={currentRouteName === 'GetPremium' && styles.activeItem}
+          icon={<Image source={require('../assets/PremiumIcon.png')} style={styles.icon} />}
+          isActive={currentRouteName === 'GetPremium'}
+          onPress={navigateToGetPremium}
         />
 
-        <DrawerItem
+        <DrawerMenuItem
           label="Logout"
-          onPress={() => {
-            Alert.alert(
-              'Confirm Logout',
-              'Are you sure you want to log out?',
-              [
-                { text: 'Cancel', style: 'cancel' },
-                { text: 'Log Out', style: 'destructive', onPress: handleSignOut }
-              ],
-              { cancelable: true }
-            );
-          }}
-          icon={() => <Image source={require('../assets/LogoutIcon.png')} style={styles.icon} />}
-          labelStyle={styles.label}
+          icon={<Image source={require('../assets/LogoutIcon.png')} style={styles.icon} />}
+          onPress={confirmLogout}
         />
       </View>
     </DrawerContentScrollView>
@@ -199,21 +216,21 @@ const styles = StyleSheet.create({
   },  
   menuContainer: {
     flex: 1,
-    justifyContent: 'flex-start', 
+    justifyContent: 'flex-start',
     paddingVertical: 10,
   },
   icon: {
-    width: 24, 
-    height: 24, 
-    tintColor: '#333', 
+    width: 24,
+    height: 24,
+    tintColor: '#333',
   },
   label: {
     fontSize: 16,
     color: '#333',
-    fontWeight: '500'
+    fontWeight: '500',
   },
   activeItem: {
-    backgroundColor: '#f0f0f0', 
+    backgroundColor: '#f0f0f0',
     borderRadius: 5,
   },
   activeLabel: {
@@ -224,16 +241,20 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     marginLeft: 8,
-    tintColor: '#000'
+    tintColor: '#000',
   },
+});
 
-})
+function renderCustomDrawerContent(props: any) {
+  return <CustomDrawerContent {...props} />;
+}
+
 export default function DrawerNavigator() {
   return (
     <Drawer.Navigator
       initialRouteName="HomeStack"
-      drawerContent={(props) => <CustomDrawerContent {...props} />}
-      screenOptions={{headerShown: false}}
+      drawerContent={renderCustomDrawerContent}
+      screenOptions={{ headerShown: false }}
     >
       <Drawer.Screen
         name="HomeStack"

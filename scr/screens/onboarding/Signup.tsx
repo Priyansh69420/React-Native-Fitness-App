@@ -1,10 +1,10 @@
-import { View, Text, Dimensions, StyleSheet, SafeAreaView, TextInput, TouchableOpacity, Image, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, Dimensions, StyleSheet, SafeAreaView, TextInput, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigations/RootStackParamList';
 import { useOnboarding } from '../../contexts/OnboardingContext';
-import { fetchSignInMethodsForEmail, createUserWithEmailAndPassword, sendEmailVerification, User } from 'firebase/auth';
+import { fetchSignInMethodsForEmail, createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
 import { auth } from '../../../firebaseConfig';
 import { RFValue } from 'react-native-responsive-fontsize';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
@@ -21,7 +21,6 @@ export default function Signup() {
   const [verifying, setVerifying] = useState<boolean>(false);
   const [verificationMessage, setVerificationMessage] = useState<string>('');
   const [verificationError, setVerificationError] = useState<string>('');
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   const { updateOnboardingData, onboardingData } = useOnboarding();
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -35,7 +34,7 @@ export default function Signup() {
 
     if (email.length === 0) {
       setError('');
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+    } else if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email.trim())) {
       setError('Please enter a valid email address');
     } else {
       setError('');
@@ -56,7 +55,7 @@ export default function Signup() {
 
     const trimmedEmail = email.trim().toLowerCase();
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (trimmedEmail.length === 0) {
       setError('Please enter your email address');
       return;
@@ -104,7 +103,6 @@ export default function Signup() {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, onboardingData.password);
       const user = userCredential.user;
-      setCurrentUser(user);
 
       await sendEmailVerification(user);
       setVerificationMessage('Verification email sent. Please check your inbox and verify your email.');

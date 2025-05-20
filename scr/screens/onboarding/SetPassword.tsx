@@ -14,7 +14,7 @@ const backIcon = require('../../assets/backIcon.png');
 export default function SetPassword() {
   const navigation = useNavigation<NavigationProp>();
   const [password, setPassword] = useState('');
-  const [error, setError] = useState<String>('');
+  const [error, setError] = useState<string>('');
   const [shouldValidate, setShouldValidate] = useState<boolean>(false);
   const {updateOnboardingData, onboardingData} = useOnboarding();
 
