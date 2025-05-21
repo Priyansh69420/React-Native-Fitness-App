@@ -60,14 +60,14 @@ export default function Intrests() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
+    <SafeAreaView style={styles.intrestSafeArea}>
+      <View style={styles.intrestContainer}>
 
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} >
-          <Image source={backIcon} style={styles.backIcon}/>
+        <TouchableOpacity style={styles.intrestBackButton} onPress={() => navigation.goBack()} >
+          <Image source={backIcon} style={styles.intrestBackIcon}/>
         </TouchableOpacity>
 
-        <View style={styles.centeredContent}>
+        <View style={styles.intrestCenteredContent}>
           <Image source={logo} style={styles.appLogo} resizeMode='contain' />
 
           <Text style={styles.title}>Time to customize your interests</Text>
@@ -114,31 +114,30 @@ const guidelineBaseHeight = 844;
 
 const scale = (size: number) => (width / guidelineBaseWidth) * size;
 const verticalScale = (size: number) => (height / guidelineBaseHeight) * size;
-const moderateScale = (size: number, factor = 0.5) => size + (scale(size) - size) * factor;
 
 const styles = StyleSheet.create({
-  safeArea: {
+  intrestSafeArea: {
     flex: 1,
     backgroundColor: '#F5F7FA',
   },
-  container: {
+  intrestContainer: {
     flex: 1,
     backgroundColor: '#F5F7FA',
     paddingHorizontal: scale(20),
     paddingTop: verticalScale(20),
   },
-  backButton: {
+  intrestBackButton: {
     position: 'absolute',
     top: verticalScale(40),
     left: scale(20),
     zIndex: 1,
   },
-  backIcon: {
+  intrestBackIcon: {
     width: scale(30),
     height: scale(30),
     resizeMode: 'contain',
   },
-  centeredContent: {
+  intrestCenteredContent: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',

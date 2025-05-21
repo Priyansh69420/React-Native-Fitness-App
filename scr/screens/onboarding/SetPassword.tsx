@@ -63,26 +63,26 @@ export default function SetPassword() {
   const { minLength, hasUpperCase, hasNumber } = checkPasswordRequirements(password);
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea2}>
       <KeyboardAwareScrollView
         contentContainerStyle={{ flexGrow: 1 }}
         enableOnAndroid={true}
         extraScrollHeight={-2000}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={styles.container}>
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-            <Image source={backIcon} style={styles.backIcon} />
+        <View style={styles.container2}>
+          <TouchableOpacity style={styles.backButton2} onPress={() => navigation.goBack()}>
+            <Image source={backIcon} style={styles.backIcon2} />
           </TouchableOpacity>
 
-          <View style={styles.centeredContent}>
-            <Image source={logo} style={styles.appLogo} resizeMode="contain" />
+          <View style={styles.centeredContent2}>
+            <Image source={logo} style={styles.appLogo2} resizeMode="contain" />
 
-            <Text style={styles.title}>Now let's set up your password</Text>
+            <Text style={styles.title2}>Now let's set up your password</Text>
 
-            <View style={styles.inputContainer}>
+            <View style={styles.inputContainer2}>
               <TextInput
-                style={styles.input}
+                style={styles.input2}
                 value={password}
                 onChangeText={setPassword}
                 placeholder="Enter your password"
@@ -93,35 +93,35 @@ export default function SetPassword() {
 
             {error ? <Text style={{color: 'red', width: '85%', marginBottom: 20, textAlign: 'center', marginTop: -10}}>{error}</Text>: <></>}
 
-            <View style={styles.requirementsContainer}>
-              <View style={styles.requirementRow}>
+            <View style={styles.requirementsContainer2}>
+              <View style={styles.requirementRow2}>
                 {minLength ? (
-                  <View style={styles.checkedBox} />
+                  <View style={styles.checkedBox2} />
                 ) : (
-                  <View style={styles.uncheckedBox} />
+                  <View style={styles.uncheckedBox2} />
                 )}
-                <Text style={styles.requirementText}>  8+ characters</Text>
+                <Text style={styles.requirementText2}>  8+ characters</Text>
               </View>
-              <View style={styles.requirementRow}>
+              <View style={styles.requirementRow2}>
                 {hasUpperCase ? (
-                  <View style={styles.checkedBox} />
+                  <View style={styles.checkedBox2} />
                 ) : (
-                  <View style={styles.uncheckedBox} />
+                  <View style={styles.uncheckedBox2} />
                 )}
-                <Text style={styles.requirementText}>  At least 1 uppercase</Text>
+                <Text style={styles.requirementText2}>  At least 1 uppercase</Text>
               </View>
-              <View style={styles.requirementRow}>
+              <View style={styles.requirementRow2}>
                 {hasNumber ? (
-                  <View style={styles.checkedBox} />
+                  <View style={styles.checkedBox2} />
                 ) : (
-                  <View style={styles.uncheckedBox} />
+                  <View style={styles.uncheckedBox2} />
                 )}
-                <Text style={styles.requirementText}>  At least 1 number</Text>
+                <Text style={styles.requirementText2}>  At least 1 number</Text>
               </View>
             </View>
 
-            <TouchableOpacity style={styles.button} onPress={handleContinue}>
-              <Text style={styles.buttonText}>Continue</Text>
+            <TouchableOpacity style={styles.button2} onPress={handleContinue}>
+              <Text style={styles.buttonText2}>Continue</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -134,48 +134,48 @@ export default function SetPassword() {
 const { width, height } = Dimensions.get('window');
 
 const styles = StyleSheet.create({
-  safeArea: {
+  safeArea2: {
     flex: 1,
     backgroundColor: '#F5F7FA',
   },
-  container: {
+  container2: {
     flex: 1,
     backgroundColor: '#F5F7FA',
     paddingHorizontal: width * 0.05, 
     paddingTop: height * 0.025, 
   },
-  backButton: {
+  backButton2: {
     position: 'absolute',
     top: height * 0.05, 
     left: width * 0.05, 
     zIndex: 1,
   },
-  backIcon: {
+  backIcon2: {
     width: width * 0.075, 
     height: width * 0.075, 
     resizeMode: 'contain',
   },
-  centeredContent: {
+  centeredContent2: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: width * 0.05, 
   },
-  appLogo: {
+  appLogo2: {
     width: width * 0.13,
     height: width * 0.13,
     borderRadius: width * 0.065, 
     marginBottom: height * 0.05, 
     backgroundColor: 'transparent',
   },
-  title: {
+  title2: {
     fontSize: RFValue(26, height), 
     fontWeight: 'bold',
     color: '#333',
     textAlign: 'center',
     marginBottom: height * 0.035, 
   },
-  inputContainer: {
+  inputContainer2: {
     backgroundColor: '#FFF',
     borderRadius: width * 0.025, 
     paddingHorizontal: width * 0.0375, 
@@ -190,43 +190,43 @@ const styles = StyleSheet.create({
     elevation: 2,
     justifyContent: 'center',
   },
-  input: {
+  input2: {
     fontSize: RFValue(16, height), 
     color: '#666',
     width: '100%',
     textAlign: 'center',
   },
-  requirementsContainer: {
+  requirementsContainer2: {
     marginBottom: height * 0.1, 
     alignItems: 'flex-start',
     justifyContent: 'center',
     width: "90%"
   },
-  requirementRow: {
+  requirementRow2: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: height * 0.00625, 
   },
-  checkedBox: {
+  checkedBox2: {
     width: width * 0.045, 
     height: width * 0.045, 
     backgroundColor: '#7A5FFF', 
     borderRadius: width * 0.0075, 
     marginRight: width * 0.0125, 
   },
-  uncheckedBox: {
+  uncheckedBox2: {
     width: width * 0.045, 
     height: width * 0.045, 
     backgroundColor: '#D9D9D9',
     borderRadius: width * 0.0075, 
     marginRight: width * 0.0125, 
   },
-  requirementText: {
+  requirementText2: {
     fontSize: RFValue(14, height), 
     color: '#A9A9A9',
     textAlign: 'left',
   },
-  button: {
+  button2: {
     backgroundColor: '#7A5FFF',
     paddingVertical: height * 0.01875, 
     paddingHorizontal: width * 0.1, 
@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
     width: '85%',
     alignItems: 'center',
   },
-  buttonText: {
+  buttonText2: {
     color: '#FFF',
     fontSize: RFValue(18, height), 
     fontWeight: 'bold',

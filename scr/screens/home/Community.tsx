@@ -1,19 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  TextInput,
-  Alert,
-  SafeAreaView,
-  Image,
-  StyleSheet,
-  Dimensions,
-  ActivityIndicator,
-  Modal,
-  Animated,
-} from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, TextInput, Alert, SafeAreaView, Image, StyleSheet, Dimensions, ActivityIndicator, Modal, Animated } from 'react-native';
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, arrayUnion, arrayRemove, addDoc, serverTimestamp, getDoc, where, deleteDoc } from 'firebase/firestore';
 import { auth, firestore } from '../../../firebaseConfig';
 import { useNavigation } from '@react-navigation/native';
@@ -29,19 +15,9 @@ import { ScrollView, TapGestureHandler } from 'react-native-gesture-handler';
 import { Menu, MenuItem } from 'react-native-material-menu';
 import { ResizeMode, Video } from 'expo-av';
 import InstaStory from 'react-native-insta-story';
+import { Post } from './Post';
 
 type NavigationProp = DrawerNavigationProp<CommunityStackParamList, 'Community'>;
-
-export interface Post {
-  id: string;
-  userId: string;
-  content: string;
-  imageUrl?: string;
-  videoUrl?: string;
-  timestamp?: any;
-  likes?: string[];
-  commentCount?: number;
-}
 
 export interface UserData {
   email?: string;
@@ -67,7 +43,7 @@ interface IUserStory {
   stories: IUserStoryItem[];
 }
 
-const getTimeAgo = (timestamp: any) => {
+export const getTimeAgo = (timestamp: any) => {
   if (!timestamp) return 'Just now';
 
   const date = timestamp.toDate();
@@ -87,12 +63,6 @@ const getTimeAgo = (timestamp: any) => {
     return `${days} day${days > 1 ? 's' : ''} ago`;
   }
 };
-
-const avatars = [
-  { id: 1, source: require('../../assets/avatar5.png') },
-  { id: 2, source: require('../../assets/avatar2.png') },
-  { id: 3, source: require('../../assets/avatar4.png') },
-];
 
 const Community = () => {
   const [posts, setPosts] = useState<Post[]>([]);
@@ -247,6 +217,125 @@ const Community = () => {
     return () => unsubscribe();
   }, []);
 
+  const uploadMedia = async (
+    uri: string,
+    mediaType: 'image' | 'video',
+    uploadType: 'story' | 'post',
+    postData?: { content: string; likes: string[]; commentCount: number }
+  ): Promise<string | null> => {
+    setUploadingImage(true);
+
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        Alert.alert('Authentication Required', `You need to be logged in to add a ${uploadType}.`);
+        return null;
+      }
+
+      const { bucket, fileExtension, filePath, collectionName } = getUploadConfig(uri, mediaType, uploadType);
+
+      const fileArray = await convertToBinary(uri, mediaType);
+      if (!fileArray) throw new Error(`Failed to convert ${mediaType} to binary`);
+
+      await uploadToSupabase(bucket, filePath, fileArray, mediaType, fileExtension);
+
+      const publicUrl = await getPublicUrl(bucket, filePath);
+      if (!publicUrl) throw new Error(`Failed to retrieve public URL for ${uploadType}`);
+
+      await saveToFirestore(collectionName, user.uid, publicUrl, uploadType, mediaType, postData);
+
+      return publicUrl;
+    } catch (error: any) {
+      console.error(`Error uploading ${uploadType}:`, error.message);
+      Alert.alert('Error', `Failed to upload ${uploadType}.`);
+      return null;
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const getUploadConfig = (uri: string, mediaType: string, uploadType: string) => {
+    const isStory = uploadType === 'story';
+    const bucket = isStory ? 'stories' : 'userposts';
+    const subFolder = mediaType === 'video' && !isStory ? 'videos' : '';
+    const fileExtension = mediaType === 'image' ? 'jpg' : 'mp4';
+    const fileName = uri.split('/').pop() ?? `${uploadType}_${Date.now()}.${fileExtension}`;
+    const filePath = subFolder ? `${bucket}/${subFolder}/${fileName}` : `${bucket}/${fileName}`;
+    const collectionName = isStory ? 'stories' : 'posts';
+
+    return { bucket, subFolder, fileExtension, filePath, collectionName };
+  };
+
+  const convertToBinary = async (uri: string, mediaType: string): Promise<Uint8Array | null> => {
+    try {
+      const base64Data = await RNFS.readFile(uri, 'base64');
+      if (!base64Data) return null;
+
+      const binaryString = atob(base64Data);
+      const fileArray = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        fileArray[i] = binaryString.charCodeAt(i);
+      }
+      return fileArray;
+    } catch (error: any) {
+      console.error(`Error converting ${mediaType} to binary:`, error.message);
+      return null;
+    }
+  };
+
+  const uploadToSupabase = async (
+    bucket: string,
+    filePath: string,
+    fileArray: Uint8Array,
+    mediaType: string,
+    fileExtension: string
+  ) => {
+    const { error: uploadError } = await supabase.storage
+      .from(bucket)
+      .upload(filePath, fileArray, {
+        contentType: `${mediaType}/${fileExtension}`,
+        upsert: false,
+      });
+
+    if (uploadError) {
+      console.error(`Supabase upload error:`, uploadError);
+      throw new Error(uploadError.message);
+    }
+  };
+
+  const getPublicUrl = async (bucket: string, filePath: string): Promise<string | null> => {
+    const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(filePath);
+    return urlData?.publicUrl ?? null;
+  };
+
+  const saveToFirestore = async (
+    collectionName: string,
+    userId: string,
+    publicUrl: string,
+    uploadType: string,
+    mediaType: string,
+    postData?: { content: string; likes: string[]; commentCount: number }
+  ) => {
+    const collectionRef = collection(firestore, collectionName);
+    const docData = uploadType === 'story'
+      ? {
+          userId,
+          imageUrl: publicUrl,
+          timestamp: serverTimestamp(),
+        }
+      : {
+          userId,
+          content: postData?.content ?? '',
+          imageUrl: mediaType === 'image' ? publicUrl : null,
+          videoUrl: mediaType === 'video' ? publicUrl : null,
+          timestamp: serverTimestamp(),
+          likes: postData?.likes || [],
+          commentCount: postData?.commentCount ?? 0,
+        };
+
+    await addDoc(collectionRef, docData);
+  };
+
   const handlePickMedia = async () => {
     try {
       const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -254,17 +343,16 @@ const Community = () => {
         Alert.alert('Permission Denied', 'Please grant permission to access your media library.');
         return;
       }
-  
+
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images', 'videos'],
         allowsEditing: true,
         aspect: [4, 3],
         quality: 0.8,
       });
-  
+
       if (!result.canceled && result.assets.length > 0) {
         const selected = result.assets[0];
-        
         if (selected.type === 'video') {
           setNewPostVideo(selected.uri);
         } else {
@@ -283,211 +371,63 @@ const Community = () => {
         Alert.alert('Permission Denied', 'Please grant permission to access your media library.');
         return;
       }
-  
+
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
         allowsEditing: true,
-        aspect: [9, 16], 
+        aspect: [9, 16],
         quality: 0.7,
       });
-  
+
       if (!result.canceled && result.assets.length > 0) {
-        handleUploadNewStory(result.assets[0].uri); 
+        await uploadMedia(result.assets[0].uri, 'image', 'story');
       }
     } catch (error: any) {
       console.error('Error picking story media:', error.message);
     }
   };
-  
-  const handleUploadNewStory = async (uri: string) => {
-    setUploadingImage(true);
-
-    try {
-      const user = auth.currentUser;
-      if (!user) {
-        Alert.alert('Authentication Required', 'You need to be logged in to add a story.');
-        return;
-      }
-  
-      const fileName = uri.split('/').pop() ?? `story_${Date.now()}.jpg`;
-      const fileType = uri.split('.').pop() ?? 'jpeg';
-      const filePath = `stories/${fileName}`;
-  
-      const base64Image = await RNFS.readFile(uri, 'base64');
-      if (!base64Image) {
-        throw new Error('Failed to convert image to Base64');
-      }
-  
-      const binaryString = atob(base64Image);
-      const fileArray = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        fileArray[i] = binaryString.charCodeAt(i);
-      }
-
-      const { error: uploadError } = await supabase.storage
-        .from('stories')
-        .upload(filePath, fileArray, {
-          contentType: `image/${fileType}`,
-          upsert: false,
-        });
-  
-      if (uploadError) {
-        console.error('Supabase upload error:', uploadError);
-        throw new Error(uploadError.message);
-      }
-  
-      const { data: urlData } = supabase.storage
-        .from('stories')
-        .getPublicUrl(filePath);
-  
-      if (!urlData?.publicUrl) {
-        throw new Error('Failed to retrieve public URL');
-      }
-    
-      const storiesCollection = collection(firestore, 'stories');
-      const storyData = {
-        userId: user.uid,
-        imageUrl: urlData.publicUrl,
-        timestamp: serverTimestamp(),
-      };
-  
-      await addDoc(storiesCollection, storyData);
-  
-    } catch (error: any) {
-      console.error('Error uploading story:', error.message);
-      Alert.alert('Error', 'Failed to upload story.');
-    } finally {
-      setUploadingImage(false);
-    }
-  };
-
-  const uploadImageForPosts = async (uri: string): Promise<string | null> => {
-    setUploadingImage(true);
-    try {
-      const fileName = uri.split('/').pop() ?? `post_${Date.now()}.jpg`;
-      const fileType = uri.split('.').pop() ?? 'jpeg';
-      const filePath = `userposts/${fileName}`;
-
-      const base64Image = await RNFS.readFile(uri, 'base64');
-
-      if (!base64Image) {
-        throw new Error('Failed to convert image to Base64');
-      }
-
-      const binaryString = atob(base64Image);
-      const fileArray = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        fileArray[i] = binaryString.charCodeAt(i);
-      }
-
-      const { error: uploadError } = await supabase.storage
-        .from('userposts')
-        .upload(filePath, fileArray, {
-          contentType: `image/${fileType}`,
-          upsert: false, 
-        });
-
-      if (uploadError) {
-        throw new Error(uploadError.message);
-      }
-
-      const { data: urlData } = supabase.storage
-        .from('userposts')
-        .getPublicUrl(filePath);
-
-      if (!urlData?.publicUrl) {
-        throw new Error('Failed to retrieve public URL');
-      }
-
-      return urlData.publicUrl;
-    } catch (error: any) {
-      console.error('Error uploading image to Supabase:', error.message);
-      return null;
-    } finally {
-      setUploadingImage(false);
-    }
-  };
-
-  const uploadVideoForPosts = async (uri: string): Promise<string | null> => {
-    setUploadingImage(true);
-
-    try {
-      const fileName = uri.split('/').pop() ?? `post_${Date.now()}.mp4`;
-      const fileType = uri.split('.').pop() ?? 'mp4';
-      const filePath = `userposts/videos/${fileName}`;
-  
-      const base64Data = await RNFS.readFile(uri, 'base64');
-      if (!base64Data) throw new Error('Failed to convert video to Base64');
-  
-      const binaryString = atob(base64Data);
-      const fileArray = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        fileArray[i] = binaryString.charCodeAt(i);
-      }
-  
-      const { error: uploadError } = await supabase
-        .storage
-        .from('userposts')
-        .upload(filePath, fileArray, {
-          contentType: `video/${fileType}`,
-          upsert: false,
-        });
-      if (uploadError) throw new Error(uploadError.message);
-  
-      const { data: urlData } = supabase
-        .storage
-        .from('userposts')
-        .getPublicUrl(filePath);
-      if (!urlData?.publicUrl) throw new Error('Failed to retrieve public URL');
-  
-      return urlData.publicUrl;
-    } catch (err: any) {
-      console.error('Error uploading video to Supabase:', err.message);
-      return null;
-    } finally {
-      setUploadingImage(false);
-    }
-  };
 
   const handleCreateNewPost = async () => {
     setPostLoading(true);
-  
+
     if (!newPostContent.trim() && !newPostImage && !newPostVideo) {
       setPostLoading(false);
       return;
     }
-  
+
     try {
-      const user = auth.currentUser;
-      if (!user) {
-        Alert.alert('Authentication Required', 'You need to be logged in to create a post.');
-        return;
-      }
-  
-      let imageUrl: string | null = null;
-      let videoUrl: string | null = null;
-  
       if (newPostImage) {
-        imageUrl = await uploadImageForPosts(newPostImage);
-        if (!imageUrl) return;
+        await uploadMedia(newPostImage, 'image', 'post', {
+          content: newPostContent,
+          likes: [],
+          commentCount: 0,
+        });
+      } else if (newPostVideo) {
+        await uploadMedia(newPostVideo, 'video', 'post', {
+          content: newPostContent,
+          likes: [],
+          commentCount: 0,
+        });
+      } else {
+        // If there's no media, just create a text post
+        const user = auth.currentUser;
+        if (!user) {
+          Alert.alert('Authentication Required', 'You need to be logged in to create a post.');
+          return;
+        }
+
+        const postsCollectionRef = collection(firestore, 'posts');
+        await addDoc(postsCollectionRef, {
+          userId: user.uid,
+          content: newPostContent,
+          imageUrl: null,
+          videoUrl: null,
+          timestamp: serverTimestamp(),
+          likes: [],
+          commentCount: 0,
+        });
       }
-  
-      if (newPostVideo) {
-        videoUrl = await uploadVideoForPosts(newPostVideo);
-        if (!videoUrl) return;
-      }
-  
-      const postsCollectionRef = collection(firestore, 'posts');
-      await addDoc(postsCollectionRef, {
-        userId: user.uid,
-        content: newPostContent,
-        imageUrl,  
-        videoUrl,   
-        timestamp: serverTimestamp(),
-        likes: [],
-        commentCount: 0,
-      });
-  
+
       setNewPostContent('');
       setNewPostImage(null);
       setNewPostVideo(null);
@@ -546,16 +486,16 @@ const Community = () => {
 
   const revertLocalPostLikes = (postId: string, hasLiked: boolean, userId: string) => {
     setPosts(prevPosts => prevPosts.map(p => revertPostLikes(p, postId, hasLiked, userId)));
+  };
 
   const revertPostLikes = (post: Post, postId: string, hasLiked: boolean, userId: string): Post => {
     if (post.id !== postId) return post;
 
     const updatedLikes = hasLiked
-    ? [...(post.likes || []), userId]
-    : post.likes?.filter(uid => uid !== userId);
+      ? [...(post.likes || []), userId]
+      : post.likes?.filter(uid => uid !== userId);
 
     return { ...post, likes: updatedLikes };
-  };
   };
 
   const handleDeletePost = async (postId: string) => {
@@ -564,7 +504,7 @@ const Community = () => {
     } catch (error: any) {
       console.error('Error deleting post:', error);
     }
-  }
+  };
 
   const renderPostItem = ({ item }: { item: Post }) => {
     const userData = userDataMap[item.userId] || { name: 'User', profilePicture: undefined };
@@ -577,8 +517,8 @@ const Community = () => {
       handleLikePost(id);
       setShowHeart(true);
       setTimeout(() => setShowHeart(false), 500);
-    }
-  
+    };
+
     return (
       <View style={styles.postContainer}>
         <View style={styles.postHeader}>
@@ -595,7 +535,7 @@ const Community = () => {
               <Text style={styles.timestamp}>{getTimeAgo(item.timestamp)}</Text>
             </View>
           </View>
-  
+
           <View>
             {user?.uid === item.userId && (
               <Menu
@@ -627,7 +567,7 @@ const Community = () => {
                         {
                           text: 'Yes',
                           onPress: () => {
-                            handleDeletePost(item.id)
+                            handleDeletePost(item.id);
                           },
                           style: 'destructive',
                         },
@@ -643,70 +583,70 @@ const Community = () => {
             )}
           </View>
         </View>
-  
+
         {item.content ? <Text style={styles.content}>{item.content}</Text> : <></>}
-  
+
         <View style={{ justifyContent: 'center', alignItems: 'center' }}>
           {(() => {
-          if (item.videoUrl) {
-            return (
-            <TapGestureHandler
-              numberOfTaps={2}
-              onActivated={() => handleDoubleTap(item.id)}
-            >
-              <View>
-              <Video
-                source={{ uri: item.videoUrl }}
-                style={styles.postMedia}
-                resizeMode={ResizeMode.COVER}
-                useNativeControls={true}
-                shouldPlay={!isAddPostModalVisible}
-                isLooping={true}
-              />
-              {showHeart && (
-                <Animated.View>
-                <View style={styles.heartOverlay}>
-                  <Image
-                  source={require('../../assets/likedIcon.png')}
-                  style={{ width: 50, height: 50, tintColor: 'white' }}
-                  />
-                </View>
-                </Animated.View>
-              )}
-              </View>
-            </TapGestureHandler>
-            );
-          } else if (item.imageUrl) {
-            return (
-            <TapGestureHandler
-              numberOfTaps={2}
-              onActivated={() => handleDoubleTap(item.id)}
-            >
-              <View>
-              <Image
-                source={{ uri: item.imageUrl }}
-                style={styles.postMedia}
-                resizeMode="cover"
-              />
-              {showHeart && (
-                <Animated.View>
-                <View style={styles.heartOverlay}>
-                  <Image
-                  source={require('../../assets/likedIcon.png')}
-                  style={{ width: 50, height: 50, tintColor: 'white' }}
-                  />
-                </View>
-                </Animated.View>
-              )}
-              </View>
-            </TapGestureHandler>
-            );
-          } else {
-            return null;
-          }
+            if (item.videoUrl) {
+              return (
+                <TapGestureHandler
+                  numberOfTaps={2}
+                  onActivated={() => handleDoubleTap(item.id)}
+                >
+                  <View>
+                    <Video
+                      source={{ uri: item.videoUrl }}
+                      style={styles.postMedia}
+                      resizeMode={ResizeMode.COVER}
+                      useNativeControls={true}
+                      shouldPlay={!isAddPostModalVisible}
+                      isLooping={true}
+                    />
+                    {showHeart && (
+                      <Animated.View>
+                        <View style={styles.heartOverlay}>
+                          <Image
+                            source={require('../../assets/likedIcon.png')}
+                            style={{ width: 50, height: 50, tintColor: 'white' }}
+                          />
+                        </View>
+                      </Animated.View>
+                    )}
+                  </View>
+                </TapGestureHandler>
+              );
+            } else if (item.imageUrl) {
+              return (
+                <TapGestureHandler
+                  numberOfTaps={2}
+                  onActivated={() => handleDoubleTap(item.id)}
+                >
+                  <View>
+                    <Image
+                      source={{ uri: item.imageUrl }}
+                      style={styles.postMedia}
+                      resizeMode="cover"
+                    />
+                    {showHeart && (
+                      <Animated.View>
+                        <View style={styles.heartOverlay}>
+                          <Image
+                            source={require('../../assets/likedIcon.png')}
+                            style={{ width: 50, height: 50, tintColor: 'white' }}
+                          />
+                        </View>
+                      </Animated.View>
+                    )}
+                  </View>
+                </TapGestureHandler>
+              );
+            } else {
+              return null;
+            }
           })()}
         </View>
-  
+
         <View style={styles.postActions}>
           <TouchableOpacity
             style={styles.actionButton}
@@ -724,9 +664,7 @@ const Community = () => {
                   ? require('../../assets/likedIcon.png')
                   : require('../../assets/likeIcon.png')
               }
-              style={[styles.likeIcon,
-                !isLiked && {tintColor: '#000'}
-              ]}
+              style={[styles.likeIcon, !isLiked && { tintColor: '#000' }]}
             />
             <Text style={styles.actionText}>
               {item.likes ? item.likes.length : 0}
@@ -785,23 +723,23 @@ const Community = () => {
         <View style={styles.header}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
             <Text style={styles.headerTitle}>Community</Text>
-              <View style={{ flexDirection: 'row', marginTop: height * 0.008 }}>
-                <TouchableOpacity onPress={handlePickStoryMedia} style={{ paddingVertical: height * 0.03, paddingHorizontal: width * 0.02 }}>
-                  <Feather name="plus-square" size={24} color="#222" />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={{ paddingVertical: height * 0.03, paddingHorizontal: width * 0.02 }}
-                  onPress={() => setIsAddPostModalVisible(true)}
-                >
-                  <Feather name="inbox" size={24} color="#222" />
-                </TouchableOpacity>
-              </View>
+            <View style={{ flexDirection: 'row', marginTop: height * 0.008 }}>
+              <TouchableOpacity onPress={handlePickStoryMedia} style={{ paddingVertical: height * 0.03, paddingHorizontal: width * 0.02 }}>
+                <Feather name="plus-square" size={24} color="#222" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{ paddingVertical: height * 0.03, paddingHorizontal: width * 0.02 }}
+                onPress={() => setIsAddPostModalVisible(true)}
+              >
+                <Feather name="inbox" size={24} color="#222" />
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
 
         <View style={styles.suggestedUsersContainer}>
           <InstaStory
-            key={JSON.stringify(storiesData)} 
+            key={JSON.stringify(storiesData)}
             data={storiesData}
             duration={10}
             avatarSize={RFValue(65 * scaleFactor, height)}
@@ -850,26 +788,26 @@ const Community = () => {
               {uploadingImage && <ActivityIndicator size="small" color="#7A5FFF" />}
               {newPostImage && <Image source={{ uri: newPostImage }} style={styles.modalImagePreview} />}
               {newPostVideo && 
-              <Video
-                source={{ uri: newPostVideo }}
-                style={styles.modalImagePreview}              
-                resizeMode={ResizeMode.COVER}                         
-                shouldPlay={true}                    
-                isLooping={true}      
-              />}
+                <Video
+                  source={{ uri: newPostVideo }}
+                  style={styles.modalImagePreview}
+                  resizeMode={ResizeMode.COVER}
+                  shouldPlay={true}
+                  isLooping={true}
+                />}
             </TouchableOpacity>
 
             <View style={styles.modalButtonsContainer}>
               <TouchableOpacity
                 style={[styles.modalButton, styles.modalCancelButton]}
                 onPress={() => {
-                  setIsAddPostModalVisible(false)
-                  setNewPostImage(null)
-                  setNewPostVideo(null)
-                  setNewPostContent('')
+                  setIsAddPostModalVisible(false);
+                  setNewPostImage(null);
+                  setNewPostVideo(null);
+                  setNewPostContent('');
                 }}
               >
-                <Text style={[styles.modalButtonText, {color: '#7A5FFF'}]}>Cancel</Text>
+                <Text style={[styles.modalButtonText, { color: '#7A5FFF' }]}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalButton, styles.modalPostButton]}
@@ -905,7 +843,7 @@ const Community = () => {
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={async () => {
-                  if(!editedContent.trim()) return; 
+                  if (!editedContent.trim()) return;
 
                   if (editingPost) {
                     await updateDoc(doc(firestore, 'posts', editingPost.id), {

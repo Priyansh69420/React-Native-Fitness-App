@@ -30,7 +30,7 @@ export default function OnboardingStack() {
           <Stack.Screen name='SetProfile' component={SetProfile} />
           <Stack.Screen name='Goals' component={Goals} />
           <Stack.Screen name='Intrests' component={Intrests} />
-          <Stack.Screen name='Gender' component={Gender} />
+          <Stack.Screen name='Gender' component={Gender} />     
           <Stack.Screen name='ReadyToGo' component={ReadyToGo} />
       </Stack.Navigator>
     </OnboardingProvider>

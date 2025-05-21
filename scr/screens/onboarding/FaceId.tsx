@@ -66,14 +66,14 @@ export default function FaceId() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
+    <SafeAreaView style={styles.bioSafeArea}>
+      <View style={styles.bioContainer}>
 
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Image source={backIcon} style={styles.backIcon} />
+        <TouchableOpacity style={styles.bioBackButton} onPress={() => navigation.goBack()}>
+          <Image source={backIcon} style={styles.bioBackIcon} />
         </TouchableOpacity>
 
-        <View style={styles.centeredContent}>
+        <View style={styles.bioCenteredContent}>
           <Image source={logo} style={styles.appLogo} resizeMode="contain" />
 
           <Image source={fingerprintIcon} style={styles.fingerprintIcon} resizeMode="contain" />
@@ -100,28 +100,28 @@ export default function FaceId() {
 const { width, height } = Dimensions.get('window');
 
 const styles = StyleSheet.create({
-  safeArea: {
+  bioSafeArea: {
     flex: 1,
     backgroundColor: '#F5F7FA',
   },
-  container: {
+  bioContainer: {
     flex: 1,
     backgroundColor: '#F5F7FA',
     paddingHorizontal: width * 0.05, 
     paddingTop: height * 0.025, 
   },
-  backButton: {
+  bioBackButton: {
     position: 'absolute',
     top: height * 0.05, 
     left: width * 0.05, 
     zIndex: 1,
   },
-  backIcon: {
+  bioBackIcon: {
     width: width * 0.075, 
     height: width * 0.075, 
     resizeMode: 'contain',
   },
-  centeredContent: {
+  bioCenteredContent: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
@@ -129,9 +129,9 @@ const styles = StyleSheet.create({
     marginTop: -height * 0.1, 
   },
   appLogo: {
-    width: width * 0.15, 
-    height: width * 0.15, 
-    borderRadius: width * 0.075, 
+    width: width * 0.14,
+    height: width * 0.14,
+    borderRadius: width * 0.065, 
     marginBottom: height * 0.05, 
     backgroundColor: 'transparent',
   },

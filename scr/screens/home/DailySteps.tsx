@@ -13,14 +13,15 @@ import LineGraph from '../../components/LineGraph';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Linking from 'expo-linking';
 import { saveDailyProgress } from '../../utils/monthlyProgressUtils';
+import PerformanceContainer from '../../components/PerformanceContainer';
 
 type NavigationProp = DrawerNavigationProp<HomeStackParamList, 'DailySteps'>;
 
 const { width, height } = Dimensions.get('window');
-const CIRCLE_RADIUS = width * 0.35; 
+const CIRCLE_RADIUS = width * 0.35;
 const CIRCLE_CIRCUMFERENCE = 2 * Math.PI * CIRCLE_RADIUS;
 
-const graphData = [15.5, 31, 46.5, 62, 77.5, 46.5, 31]; 
+const graphData = [15.5, 31, 46.5, 62, 77.5, 46.5, 31];
 
 interface DailyStepsPerformance {
   day: string;
@@ -35,29 +36,31 @@ export default function DailySteps() {
   const [modalVisible, setModalVisible] = useState(false);
   const [bestPerformance, setBestPerformance] = useState<DailyStepsPerformance | null>(null);
   const [worstPerformance, setWorstPerformance] = useState<DailyStepsPerformance | null>(null);
-  
+
   useEffect(() => {
-    dispatch(fetchSteps());
+    const initializeData = async () => {
+      // Fetch steps first
+      await dispatch(fetchSteps()).unwrap();
+      // Then load performance data
+      await loadData();
+    };
+    initializeData();
   }, [dispatch]);
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (!loading && !error && steps > 0) {
+      saveDailySteps();
+    }
+  }, [steps, loading, error]);
 
-  useEffect(() => {
-  if (!loading && !error) {
-    saveDailySteps();
-  }
-}, [steps, loading, error]);
-
-  const progress = Math.min(steps / 10000, 1); 
+  const progress = Math.min(steps / 10000, 1);
   const strokeDashoffset = CIRCLE_CIRCUMFERENCE * (1 - progress);
 
   const caloriesBurned = Math.round(steps * 0.03);
 
   const graphWidth = width * 0.85;
   const graphHeight = height * 0.15;
-  const maxValue = Math.max(...graphData, 77.5); 
+  const maxValue = Math.max(...graphData, 77.5);
   graphData.forEach((value, index) => {
     const x = (index / (graphData.length - 1)) * graphWidth;
     const y = graphHeight - (value / maxValue) * graphHeight;
@@ -65,12 +68,11 @@ export default function DailySteps() {
   });
 
   const profileImageSource = typeof userData?.profilePicture === 'string'
-  ? { uri: userData.profilePicture }
-  : undefined;
+    ? { uri: userData.profilePicture }
+    : undefined;
 
-  const isCustomImg = typeof userData?.profilePicture === 'string'
-    && !userData.profilePicture.includes('avatar');
-  
+  const isCustomImg = typeof userData?.profilePicture === 'string' && !userData.profilePicture.includes('avatar');
+
   const profilePictureStyle = {
     width: isCustomImg ? RFValue(50, height) : RFValue(65, height),
     height: isCustomImg ? RFValue(50, height) : RFValue(65, height),
@@ -83,26 +85,28 @@ export default function DailySteps() {
       const storedDate = await AsyncStorage.getItem('stepsLastDate');
       const storedWeeklySteps = await AsyncStorage.getItem('weeklyStepsPerformance');
       const currentDate = new Date().toISOString().split('T')[0];
-  
+
       if (storedDate && storedDate !== currentDate) {
-        const currentDayOfWeek = new Date(currentDate).getDay(); 
-        if (currentDayOfWeek === 1) { 
+        const currentDayOfWeek = new Date(currentDate).getDay();
+        if (currentDayOfWeek === 1) {
           await AsyncStorage.removeItem('weeklyStepsPerformance');
         }
         await AsyncStorage.setItem('stepsLastDate', currentDate);
       }
-  
+
       if (storedWeeklySteps) {
         const parsedData = JSON.parse(storedWeeklySteps);
+        console.log('Loaded Weekly Steps Performance:', parsedData); // Debug log
         updateBestAndWorstPerformance(parsedData);
       } else if (storedDate === currentDate && steps > 0) {
         const currentDay = getDayOfWeek(currentDate);
-        await AsyncStorage.setItem('weeklyStepsPerformance', JSON.stringify([{ day: currentDay, count: steps }]));
+        const initialData = [{ day: currentDay, count: steps }];
+        await AsyncStorage.setItem('weeklyStepsPerformance', JSON.stringify(initialData));
+        console.log('Initialized Weekly Steps Performance:', initialData); // Debug log
+        updateBestAndWorstPerformance(initialData);
       }
     } catch (error) {
       console.error('Error loading steps data from AsyncStorage:', error);
-    } finally {
-      dispatch(fetchSteps());
     }
   };
 
@@ -112,22 +116,23 @@ export default function DailySteps() {
         const currentDate = new Date().toISOString().split('T')[0];
         const currentDay = getDayOfWeek(currentDate);
         const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-  
+
         const stored = await AsyncStorage.getItem('weeklyStepsPerformance');
         let existingData: DailyStepsPerformance[] = stored ? JSON.parse(stored) : [];
-  
+
         const baseData = DAYS.map((day) => {
           const existing = existingData.find((item) => item.day === day);
           return existing ?? { day, count: 0 };
         });
-  
+
         const updatedPerformance = baseData.map((item) =>
           item.day === currentDay ? { ...item, count: steps } : item
         );
-  
+
         await AsyncStorage.setItem('weeklyStepsPerformance', JSON.stringify(updatedPerformance));
+        console.log('Saved Weekly Steps Performance:', updatedPerformance); // Debug log
         updateBestAndWorstPerformance(updatedPerformance);
-  
+
         await saveDailyProgress({ steps });
       } catch (error) {
         console.error('Error saving weekly steps performance to AsyncStorage:', error);
@@ -143,32 +148,28 @@ export default function DailySteps() {
       setWorstPerformance(null);
       return;
     }
-  
+
     if (nonZeroData.length === 1) {
       setBestPerformance(nonZeroData[0]);
       setWorstPerformance(null);
       return;
     }
-  
-    if (nonZeroData.length > 0) {
-      let best = nonZeroData[0];
-      let worst = nonZeroData[0];
-  
-      nonZeroData.forEach((dayData) => {
-        if (dayData.count > best.count) {
-          best = dayData;
-        }
-        if (dayData.count < worst.count) {
-          worst = dayData;
-        }
-      });
-  
-      setBestPerformance(best);
-      setWorstPerformance(worst);
-    } else {
-      setBestPerformance(null);
-      setWorstPerformance(null);
-    }
+
+    let best = nonZeroData[0];
+    let worst = nonZeroData[0];
+
+    nonZeroData.forEach((dayData) => {
+      if (dayData.count > best.count) {
+        best = dayData;
+      }
+      if (dayData.count < worst.count) {
+        worst = dayData;
+      }
+    });
+
+    setBestPerformance(best);
+    setWorstPerformance(worst);
+    console.log('Best Performance:', best, 'Worst Performance:', worst); // Debug log
   };
 
   const getDayOfWeek = (dateString: string): string => {
@@ -181,12 +182,12 @@ export default function DailySteps() {
     try {
       const message = `We have completed a total of ${steps} steps today.`;
       const encodedMessage = encodeURIComponent(message);
-  
+
       const url =
         Platform.OS === 'ios'
-          ? `sms:&body=${encodedMessage}` 
+          ? `sms:&body=${encodedMessage}`
           : `sms:?body=${encodedMessage}`;
-  
+
       const supported = await Linking.canOpenURL(url);
       if (supported) {
         await Linking.openURL(url);
@@ -197,7 +198,7 @@ export default function DailySteps() {
       console.error('Error', `Could not open SMS app: ${error.message}`);
     }
   };
-    
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -205,7 +206,7 @@ export default function DailySteps() {
           <Image
             source={require('../../assets/backArrowIcon.png')}
             style={styles.backIcon}
-          />          
+          />
           <Text style={styles.backButton}>Back</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => setModalVisible(true)}>
@@ -218,68 +219,67 @@ export default function DailySteps() {
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.stepsContainer}>
-          <Text style={styles.title}>You walked <Text style={styles.highlight}>{loading ? '...' : steps }</Text> steps today</Text>
+          <Text style={styles.title}>You walked <Text style={styles.highlight}>{loading ? '...' : steps}</Text> steps today</Text>
         </View>
 
         <View style={styles.progressContainer}>
-        <View style={{ width: CIRCLE_RADIUS * 1.5, height: CIRCLE_RADIUS * 1.5 }}>
-        <Svg
-          height={CIRCLE_RADIUS * 1.5} 
-          width={CIRCLE_RADIUS * 1.5} 
-          style={StyleSheet.absoluteFill} 
-          >
-            <Circle
-              cx={CIRCLE_RADIUS * 0.75} 
-              cy={CIRCLE_RADIUS * 0.75} 
-              r={(CIRCLE_RADIUS - 10) * 0.75} 
-              stroke="#fff"
-              strokeWidth={13} 
-              fill="none"
-            />
-            <Circle
-              cx={CIRCLE_RADIUS * 0.75} 
-              cy={CIRCLE_RADIUS * 0.75} 
-              r={(CIRCLE_RADIUS - 10) * 0.75} 
-              stroke="#7A5FFF"
-              strokeWidth={9} 
-              fill="none"
-              strokeDasharray={(CIRCLE_CIRCUMFERENCE * 0.75)} 
-              strokeDashoffset={strokeDashoffset * 0.75} 
-              strokeLinecap="round"
-              transform={`rotate(-90 ${CIRCLE_RADIUS * 0.75} ${CIRCLE_RADIUS * 0.75})`} 
-            />
-          </Svg>
+          <View style={{ width: CIRCLE_RADIUS * 1.5, height: CIRCLE_RADIUS * 1.5 }}>
+            <Svg
+              height={CIRCLE_RADIUS * 1.5}
+              width={CIRCLE_RADIUS * 1.5}
+              style={StyleSheet.absoluteFill}
+            >
+              <Circle
+                cx={CIRCLE_RADIUS * 0.75}
+                cy={CIRCLE_RADIUS * 0.75}
+                r={(CIRCLE_RADIUS - 10) * 0.75}
+                stroke="#fff"
+                strokeWidth={13}
+                fill="none"
+              />
+              <Circle
+                cx={CIRCLE_RADIUS * 0.75}
+                cy={CIRCLE_RADIUS * 0.75}
+                r={(CIRCLE_RADIUS - 10) * 0.75}
+                stroke="#7A5FFF"
+                strokeWidth={9}
+                fill="none"
+                strokeDasharray={(CIRCLE_CIRCUMFERENCE * 0.75)}
+                strokeDashoffset={strokeDashoffset * 0.75}
+                strokeLinecap="round"
+                transform={`rotate(-90 ${CIRCLE_RADIUS * 0.75} ${CIRCLE_RADIUS * 0.75})`}
+              />
+            </Svg>
 
-          <Image
-            source={require('../../assets/stepsIcon.png')}
-            style={{
-              position: 'absolute',
-              top: CIRCLE_RADIUS * 0.75 - 75,
-              left: CIRCLE_RADIUS * 0.75 - 20,
-              width: 40,
-              height: 40,
-            }}
-          />
+            <Image
+              source={require('../../assets/stepsIcon.png')}
+              style={{
+                position: 'absolute',
+                top: CIRCLE_RADIUS * 0.75 - 75,
+                left: CIRCLE_RADIUS * 0.75 - 20,
+                width: 40,
+                height: 40,
+              }}
+            />
 
-          <Text
-            style={{
-              position: 'absolute',
-              top: CIRCLE_RADIUS * 0.75 + 10,
-              left: 0,
-              right: 0,
-              textAlign: 'center',
-              fontSize: 20,
-              color: '#000',
-              fontWeight: 'bold',
-            }}
-          >
-            {Math.round(progress * 100)}%{'\n'}
-            <Text style={{ fontSize: 18, fontWeight: 'normal' }}>
-              of daily goal
+            <Text
+              style={{
+                position: 'absolute',
+                top: CIRCLE_RADIUS * 0.75 + 10,
+                left: 0,
+                right: 0,
+                textAlign: 'center',
+                fontSize: 20,
+                color: '#000',
+                fontWeight: 'bold',
+              }}
+            >
+              {Math.round(progress * 100)}%{'\n'}
+              <Text style={{ fontSize: 18, fontWeight: 'normal' }}>
+                of daily goal
+              </Text>
             </Text>
-          </Text>
-        </View>
-
+          </View>
         </View>
 
         <View style={styles.statsContainer}>
@@ -299,35 +299,10 @@ export default function DailySteps() {
           <LineGraph />
         </View>
 
-        <View style={styles.performanceContainer}>
-          <View style={[styles.performanceBox, {borderBottomWidth: 0.5, borderBottomColor: "#d9d9d9"}]}>
-            <View style={styles.performanceRow}>
-              <View style={styles.smileyContainer}>
-                <Image
-                  source={require('../../assets/greenSmiley.png')}
-                  style={styles.smileyIcon}
-                />
-              </View>
-              <Text style={styles.performanceText}>Best Performance</Text>
-              <Text style={styles.performanceValue}>{bestPerformance?.count ?? '-'}</Text>
-            </View>
-            <Text style={styles.performanceDay}>{bestPerformance?.day ?? '-'}</Text>
-          </View>
-
-          <View style={styles.performanceBox}>
-            <View style={styles.performanceRow}>
-              <View style={styles.smileyContainer}>
-                <Image
-                  source={require('../../assets/pinkSmiley.png')}
-                  style={styles.smileyIcon}
-                />
-              </View>
-              <Text style={styles.performanceText}>Worst Performance</Text>
-              <Text style={styles.performanceValue}>{worstPerformance?.count ?? '-'}</Text>
-            </View>
-            <Text style={styles.performanceDay}>{worstPerformance?.day ?? '-'}</Text>
-          </View>
-        </View>
+        <PerformanceContainer
+          bestPerformance={bestPerformance}
+          worstPerformance={worstPerformance}
+        />
       </ScrollView>
 
       <Modal
@@ -335,7 +310,7 @@ export default function DailySteps() {
         transparent={true}
         visible={modalVisible}
         onRequestClose={() => setModalVisible(false)}
-        style={{height: height, width: width}}
+        style={{ height: height, width: width }}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
@@ -345,7 +320,7 @@ export default function DailySteps() {
             </View>
 
             <TouchableOpacity
-              style={styles.modalCloseButton} 
+              style={styles.modalCloseButton}
               onPress={() => setModalVisible(false)}
             >
               <Text style={styles.modalCloseButtonText}>✕</Text>
@@ -358,45 +333,45 @@ export default function DailySteps() {
 
             <View style={styles.floatingCardScrollView}>
               <View style={styles.floatingCard}>
-                  <View style={styles.userInfo}>
-                    <Image source={profileImageSource} style={profilePictureStyle} />
-                    <Text style={styles.userName}>{userData?.name}</Text>
-                    <Image
-                      source={require('../../assets/logo.png')} 
-                      style={styles.logo}
-                    />
-                  </View>
+                <View style={styles.userInfo}>
+                  <Image source={profileImageSource} style={profilePictureStyle} />
+                  <Text style={styles.userName}>{userData?.name}</Text>
+                  <Image
+                    source={require('../../assets/logo.png')}
+                    style={styles.logo}
+                  />
+                </View>
 
-                  <View style={styles.modalProgressContainer}>
-                    <Svg
-                      height={CIRCLE_RADIUS * 1.5}
-                      width={CIRCLE_RADIUS * 1.5}
-                      style={styles.modalSvg}
-                    >
-                      <Circle cx={CIRCLE_RADIUS * 0.75} cy={CIRCLE_RADIUS * 0.75} r={(CIRCLE_RADIUS - 10) * 0.75} stroke="#d9d9d9" strokeWidth={13} fill="none"/>
-                      <Circle cx={CIRCLE_RADIUS * 0.75} cy={CIRCLE_RADIUS * 0.75} r={(CIRCLE_RADIUS - 10) * 0.75} stroke="#7A5FFF" strokeWidth={9} fill="none" strokeDasharray={CIRCLE_CIRCUMFERENCE * 0.75} strokeDashoffset={strokeDashoffset * 0.75} strokeLinecap="round" transform={`rotate(-90 ${CIRCLE_RADIUS * 0.75} ${CIRCLE_RADIUS * 0.75})`}/>
-                    </Svg>
-                    <Image
-                      source={require('../../assets/stepsIcon.png')} 
-                      style={styles.progressIcon}
-                    />
-                    <View style={styles.progressTextContainer}>
-                      <Text style={styles.progressStepsValue}>{steps}</Text>
-                      <Text style={styles.progressStepsLabel}>steps today</Text>
-                    </View>
+                <View style={styles.modalProgressContainer}>
+                  <Svg
+                    height={CIRCLE_RADIUS * 1.5}
+                    width={CIRCLE_RADIUS * 1.5}
+                    style={styles.modalSvg}
+                  >
+                    <Circle cx={CIRCLE_RADIUS * 0.75} cy={CIRCLE_RADIUS * 0.75} r={(CIRCLE_RADIUS - 10) * 0.75} stroke="#d9d9d9" strokeWidth={13} fill="none" />
+                    <Circle cx={CIRCLE_RADIUS * 0.75} cy={CIRCLE_RADIUS * 0.75} r={(CIRCLE_RADIUS - 10) * 0.75} stroke="#7A5FFF" strokeWidth={9} fill="none" strokeDasharray={CIRCLE_CIRCUMFERENCE * 0.75} strokeDashoffset={strokeDashoffset * 0.75} strokeLinecap="round" transform={`rotate(-90 ${CIRCLE_RADIUS * 0.75} ${CIRCLE_RADIUS * 0.75})`} />
+                  </Svg>
+                  <Image
+                    source={require('../../assets/stepsIcon.png')}
+                    style={styles.progressIcon}
+                  />
+                  <View style={styles.progressTextContainer}>
+                    <Text style={styles.progressStepsValue}>{steps}</Text>
+                    <Text style={styles.progressStepsLabel}>steps today</Text>
                   </View>
+                </View>
 
-                  <View style={styles.modalStatsRow}>
-                    <View style={styles.stat}>
-                      <Text style={styles.statValueGray}>{caloriesBurned}</Text>
-                      <Text style={styles.statLabel}>Cal Burned</Text>
-                    </View>
-                    <View style={styles.divider} />
-                    <View style={styles.stat}>
-                      <Text style={styles.statValueGray}>10000</Text>
-                      <Text style={styles.statLabel}>Daily goal</Text>
-                    </View>
+                <View style={styles.modalStatsRow}>
+                  <View style={styles.stat}>
+                    <Text style={styles.statValueGray}>{caloriesBurned}</Text>
+                    <Text style={styles.statLabel}>Cal Burned</Text>
                   </View>
+                  <View style={styles.divider} />
+                  <View style={styles.stat}>
+                    <Text style={styles.statValueGray}>10000</Text>
+                    <Text style={styles.statLabel}>Daily goal</Text>
+                  </View>
+                </View>
               </View>
             </View>
 
@@ -415,12 +390,12 @@ export default function DailySteps() {
   );
 }
 
-const REFERENCE_HEIGHT = 932; 
+const REFERENCE_HEIGHT = 932;
 
-const MIN_MODAL_WIDTH = 300; 
-const MAX_MODAL_WIDTH = 400; 
-const MIN_MODAL_HEIGHT = 500; 
-const MAX_MODAL_HEIGHT = 750; 
+const MIN_MODAL_WIDTH = 300;
+const MAX_MODAL_WIDTH = 400;
+const MIN_MODAL_HEIGHT = 500;
+const MAX_MODAL_HEIGHT = 750;
 
 const styles = StyleSheet.create({
   container: {
@@ -480,19 +455,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: RFPercentage(6),
   },
-  svg: {
-    alignSelf: 'center',
-  },
-  statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    width: '60%',
-    marginTop: RFPercentage(3),
-  },
-  statValue: {
-    fontSize: RFPercentage(2.5),
-    color: '#333',
-  },
   statsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -516,59 +478,16 @@ const styles = StyleSheet.create({
     marginVertical: RFPercentage(1),
     textAlign: 'center',
   },
-  performanceContainer: {
-    backgroundColor: '#F8F8F8',
-  },
-  performanceBox: {
-    backgroundColor: '#FFFFFF',
-    padding: width * 0.05,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-    marginBlock: height * 0.001,
-  },
-  performanceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: height * 0.01,
-    width: '90%',
-  },
-  smileyContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  smileyIcon: {
-    width: RFValue(24, REFERENCE_HEIGHT),
-    height: RFValue(24, REFERENCE_HEIGHT),
-    marginRight: width * 0.03,
-  },
-  performanceText: {
-    fontSize: RFPercentage(2.2),
-    color: '#333',
-    flex: 1,
-  },
-  performanceValue: {
-    fontSize: RFPercentage(2.4),
-    color: '#333',
-  },
-  performanceDay: {
-    fontSize: RFPercentage(1.7),
-    color: '#888',
-    marginLeft: width * 0.088,
-    marginTop: -(height * 0.009),
-  },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: RFValue(16, REFERENCE_HEIGHT), 
+    paddingHorizontal: RFValue(16, REFERENCE_HEIGHT),
   },
   modalContainer: {
-    width: Math.min(Math.max(width * 0.9, MIN_MODAL_WIDTH), MAX_MODAL_WIDTH), 
-    height: Math.min(Math.max(height * 0.85, MIN_MODAL_HEIGHT), MAX_MODAL_HEIGHT), 
+    width: Math.min(Math.max(width * 0.9, MIN_MODAL_WIDTH), MAX_MODAL_WIDTH),
+    height: Math.min(Math.max(height * 0.85, MIN_MODAL_HEIGHT), MAX_MODAL_HEIGHT),
     borderRadius: RFValue(20, REFERENCE_HEIGHT),
     overflow: 'hidden',
     position: 'relative',
@@ -626,7 +545,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     zIndex: 1,
-    marginHorizontal: RFValue(35, REFERENCE_HEIGHT), 
+    marginHorizontal: RFValue(35, REFERENCE_HEIGHT),
   },
   floatingCard: {
     backgroundColor: '#FFFFFF',
@@ -703,6 +622,10 @@ const styles = StyleSheet.create({
   stat: {
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  statValue: {
+    fontSize: RFPercentage(2.5),
+    color: '#333',
   },
   statValueGray: {
     fontSize: RFPercentage(2.4),

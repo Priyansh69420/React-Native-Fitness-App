@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Image,
   ActivityIndicator,
+  ScrollView,
 } from 'react-native';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { HomeStackParamList } from '../../navigations/HomeStackParamList';
@@ -15,8 +16,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { RFPercentage, RFValue } from 'react-native-responsive-fontsize';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { auth } from '../../../firebaseConfig';
-import { ScrollView } from 'react-native-gesture-handler';
 import { saveDailyProgress } from '../../utils/monthlyProgressUtils';
+import PerformanceContainer from '../../components/PerformanceContainer';
 
 type NavigationProp = DrawerNavigationProp<HomeStackParamList, 'Water'>;
 
@@ -30,35 +31,35 @@ const getCurrentDate = () => {
 const getUserStorageKey = (baseKey: string) => {
   const userId = auth.currentUser?.uid;
   return userId ? `${userId}_${baseKey}` : '';
-}
+};
 
-export const loadData = async (setGlassDrunk: any) => {
+export const loadData = async (setGlassDrunk: React.Dispatch<React.SetStateAction<number>>) => {
   const userId = auth.currentUser?.uid;
-    if (!userId) return; 
+  if (!userId) return;
 
-    try {
-      const storedDateKey = getUserStorageKey('lastDate');
-      const storedGlassDrunkKey = getUserStorageKey('glassDrunk');
+  try {
+    const storedDateKey = getUserStorageKey('lastDate');
+    const storedGlassDrunkKey = getUserStorageKey('glassDrunk');
 
-      const storedDate = await AsyncStorage.getItem(storedDateKey);
-      const storedGlassDrunk = await AsyncStorage.getItem(storedGlassDrunkKey);
+    const storedDate = await AsyncStorage.getItem(storedDateKey);
+    const storedGlassDrunk = await AsyncStorage.getItem(storedGlassDrunkKey);
 
-      const currentDate = getCurrentDate();
+    const currentDate = getCurrentDate();
 
-      if (storedDate && storedDate !== currentDate) {
-        setGlassDrunk(0);
-        await AsyncStorage.setItem(storedGlassDrunkKey, '0');
-        await AsyncStorage.setItem(storedDateKey, currentDate);
-      } else if (storedGlassDrunk) {
-        setGlassDrunk(parseInt(storedGlassDrunk, 10));
-      }
-
-      if (!storedDate) {
-        await AsyncStorage.setItem(storedDateKey, currentDate);
-      }
-    } catch (error) {
-      console.error('Error loading data from AsyncStorage:', error);
+    if (storedDate && storedDate !== currentDate) {
+      setGlassDrunk(0);
+      await AsyncStorage.setItem(storedGlassDrunkKey, '0');
+      await AsyncStorage.setItem(storedDateKey, currentDate);
+    } else if (storedGlassDrunk) {
+      setGlassDrunk(parseInt(storedGlassDrunk, 10));
     }
+
+    if (!storedDate) {
+      await AsyncStorage.setItem(storedDateKey, currentDate);
+    }
+  } catch (error) {
+    console.error('Error loading data from AsyncStorage:', error);
+  }
 };
 
 export default function Water() {
@@ -72,73 +73,56 @@ export default function Water() {
 
   useEffect(() => {
     const fetchData = async () => {
-      await loadData();
+      await loadData(setGlassDrunk); 
+      await loadWeeklyPerformance(); 
     };
     fetchData().finally(() => setLoading(false));
   }, []);
 
-  const loadData = async () => {
+  const loadWeeklyPerformance = async () => {
     const userId = auth.currentUser?.uid;
-    if (!userId) return; 
+    if (!userId) return;
 
     try {
-      const storedDateKey = getUserStorageKey('lastDate');
-      const storedGlassDrunkKey = getUserStorageKey('glassDrunk');
       const storedWeeklyPerformanceKey = getUserStorageKey('weeklyPerformance');
-
-      const storedDate = await AsyncStorage.getItem(storedDateKey);
-      const storedGlassDrunk = await AsyncStorage.getItem(storedGlassDrunkKey);
       const storedWeeklyPerformance = await AsyncStorage.getItem(storedWeeklyPerformanceKey);
 
-      const currentDate = getCurrentDate();
-
-      if (storedDate && storedDate !== currentDate) {
-        setGlassDrunk(0);
-        await AsyncStorage.setItem(storedGlassDrunkKey, '0');
-        await AsyncStorage.setItem(storedDateKey, currentDate);
-      } else if (storedGlassDrunk) {
-        setGlassDrunk(parseInt(storedGlassDrunk, 10));
-      }
-
-      if (!storedDate) {
-        await AsyncStorage.setItem(storedDateKey, currentDate);
-      }
-
       if (storedWeeklyPerformance) {
-        setWeeklyPerformance(JSON.parse(storedWeeklyPerformance));
-        updateBestAndWorstPerformance(JSON.parse(storedWeeklyPerformance)); 
+        const parsedData = JSON.parse(storedWeeklyPerformance);
+        setWeeklyPerformance(parsedData);
+        updateBestAndWorstPerformance(parsedData);
       }
     } catch (error) {
-      console.error('Error loading data from AsyncStorage:', error);
+      console.error('Error loading weekly performance from AsyncStorage:', error);
     }
   };
 
   const saveGlassDrunk = async (newCount: number) => {
     const userId = auth.currentUser?.uid;
     if (!userId) return;
-  
+
     try {
       const storedGlassDrunkKey = getUserStorageKey('glassDrunk');
       const storedWeeklyPerformanceKey = getUserStorageKey('weeklyPerformance');
-  
+
       await AsyncStorage.setItem(storedGlassDrunkKey, newCount.toString());
-  
+
       const currentDate = getCurrentDate();
       const currentDay = getDayOfWeek(currentDate);
-  
+
       const updatedPerformance = weeklyPerformance.map((item) =>
         item.day === currentDay ? { ...item, count: newCount } : item
       );
-  
+
       const dayExists = updatedPerformance.some((item) => item.day === currentDay);
       if (!dayExists) {
         updatedPerformance.push({ day: currentDay, count: newCount });
       }
-  
+
       setWeeklyPerformance(updatedPerformance);
       await AsyncStorage.setItem(storedWeeklyPerformanceKey, JSON.stringify(updatedPerformance));
       updateBestAndWorstPerformance(updatedPerformance);
-  
+
       const waterLiters = newCount * 0.25;
       await saveDailyProgress({ water: waterLiters });
     } catch (error) {
@@ -147,61 +131,59 @@ export default function Water() {
   };
 
   const updateBestAndWorstPerformance = (performanceData: { day: string; count: number }[]) => {
-  if (performanceData.length === 0) {
-    setBestPerformance(null);
-    setWorstPerformance(null);
-    return;
-  }
+    if (performanceData.length === 0) {
+      setBestPerformance(null);
+      setWorstPerformance(null);
+      return;
+    }
 
-  const uniqueDays = new Set(performanceData.map(item => item.day));
+    const uniqueDays = new Set(performanceData.map(item => item.day));
 
-  if (uniqueDays.size === 1) {
-    setBestPerformance(performanceData[0]);
-    setWorstPerformance(null);
-    return;
-  }
+    if (uniqueDays.size === 1) {
+      setBestPerformance(performanceData[0]);
+      setWorstPerformance(null);
+      return;
+    }
 
-  let best = performanceData[0];
-  let worst = performanceData[0];
+    let best = performanceData[0];
+    let worst = performanceData[0];
 
-  for (const dayData of performanceData) {
-    if (dayData.count >= best.count) best = dayData;
-    if (dayData.count < worst.count) worst = dayData;
-  }
+    for (const dayData of performanceData) {
+      if (dayData.count >= best.count) best = dayData;
+      if (dayData.count < worst.count) worst = dayData;
+    }
 
-  setBestPerformance(best);
-  setWorstPerformance(worst);
-};
+    setBestPerformance(best);
+    setWorstPerformance(worst);
+  };
 
   const getDayOfWeek = (dateString: string): string => {
     const date = new Date(dateString);
     const options: Intl.DateTimeFormatOptions = { weekday: 'long' };
     return new Intl.DateTimeFormat('en-US', options).format(date);
   };
-  
 
   const handleGlassPress = (index: number) => {
-    const newCount = index + 1; 
+    const newCount = index + 1;
 
     if (index < glassDrunk) {
       setGlassDrunk(index);
       saveGlassDrunk(index);
-    } 
-    else if (index >= glassDrunk) {
+    } else if (index >= glassDrunk) {
       setGlassDrunk(newCount);
       saveGlassDrunk(newCount);
     }
   };
 
   if (loading) {
-      return (
-        <SafeAreaView style={styles.safeArea}>
-          <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
-            <ActivityIndicator size="large" color="#7A5FFF" />
-          </View>
-        </SafeAreaView>
-      );
-    }
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color="#7A5FFF" />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <ScrollView>
@@ -228,15 +210,15 @@ export default function Water() {
               onPress={() => handleGlassPress(index)}
             >
               <Image
-              source={
-                index < glassDrunk
-                ? require('../../assets/filledGlass.png')
-                : require('../../assets/emptyGlass.png')
-              }
-              style={styles.glassIcon}
+                source={
+                  index < glassDrunk
+                    ? require('../../assets/filledGlass.png')
+                    : require('../../assets/emptyGlass.png')
+                }
+                style={styles.glassIcon}
               />
               {index >= glassDrunk && (
-              <Text style={styles.plusSign}>+</Text>
+                <Text style={styles.plusSign}>+</Text>
               )}
             </TouchableOpacity>
           ))}
@@ -256,39 +238,17 @@ export default function Water() {
 
         {glassDrunk < totalGlasses ? (
           <View style={styles.warningContainer}>
-          <Text style={styles.warningText}>You didn’t drink enough water for today.</Text>
-        </View>
-        ) : (<View />)}
-
-        <View style={styles.performanceContainer}>
-          <View style={[styles.performanceBox, {borderBottomWidth: 0.5, borderBottomColor: "#d9d9d9"}]}>
-            <View style={styles.performanceRow}>
-              <View style={styles.smileyContainer}>
-                <Image
-                  source={require('../../assets/greenSmiley.png')}
-                  style={styles.smileyIcon}
-                />
-              </View>
-              <Text style={styles.performanceText}>Best Performance</Text>
-              <Text style={styles.performanceValue}>{bestPerformance?.count ?? '-'}</Text>
-            </View>
-            <Text style={styles.performanceDay}>{bestPerformance?.day ?? '-'}</Text>
+            <Text style={styles.warningText}>You didn’t drink enough water for today.</Text>
           </View>
+        ) : (
+          <View />
+        )}
 
-          <View style={styles.performanceBox}>
-            <View style={styles.performanceRow}>
-              <View style={styles.smileyContainer}>
-                <Image
-                  source={require('../../assets/pinkSmiley.png')}
-                  style={styles.smileyIcon}
-                />
-              </View>
-              <Text style={styles.performanceText}>Worst Performance</Text>
-              <Text style={styles.performanceValue}>{worstPerformance?.count ?? '-'}</Text>
-            </View>
-            <Text style={styles.performanceDay}>{worstPerformance?.day ?? '-'}</Text>
-          </View>
-        </View>
+        <PerformanceContainer
+          showBorderTop={true}
+          bestPerformance={bestPerformance}
+          worstPerformance={worstPerformance}
+        />
       </SafeAreaView>
     </ScrollView>
   );
@@ -343,13 +303,13 @@ const styles = StyleSheet.create({
     marginBottom: height * 0.03,
   },
   glassWrapper: {
-    width: (width - RFValue(30, width) * 3) / 4, 
-    height: (width - RFValue(30, width) * 3) / 4, 
+    width: (width - RFValue(30, width) * 3) / 4,
+    height: (width - RFValue(30, width) * 3) / 4,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: height * 0.05, 
+    marginBottom: height * 0.05,
     position: 'relative',
-    marginHorizontal: RFValue(10, width), 
+    marginHorizontal: RFValue(10, width),
   },
   glassIcon: {
     width: RFValue(60, height),
@@ -394,50 +354,5 @@ const styles = StyleSheet.create({
     fontSize: RFPercentage(1.8),
     fontWeight: 'bold',
     color: '#FF6347',
-  },
-  performanceContainer: {
-    backgroundColor: '#F8F8F8',
-    borderTopWidth: 1,
-    borderTopColor: '#E5E5E5',
-  },
-  performanceBox: {
-    backgroundColor: '#FFFFFF',
-    padding: width * 0.05,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    marginBlock: height * 0.001,
-  },
-  performanceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: height * 0.01,
-    width: '90%',
-  },
-  smileyContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  smileyIcon: {
-    width: RFValue(24, height),
-    height: RFValue(24, height),
-    marginRight: width * 0.03,
-  },
-  performanceText: {
-    fontSize: RFPercentage(2.2),
-    color: '#333',
-    flex: 1,
-  },
-  performanceValue: {
-    fontSize: RFPercentage(2.4),
-    color: '#333',
-  },
-  performanceDay: {
-    fontSize: RFPercentage(1.7),
-    color: '#888',
-    marginLeft: width * 0.088,
-    marginTop: -(height * 0.009),
   },
 });

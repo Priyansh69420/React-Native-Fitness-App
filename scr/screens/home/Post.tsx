@@ -9,6 +9,7 @@ import { RFPercentage, RFValue } from 'react-native-responsive-fontsize';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { CommunityStackParamList } from '../../navigations/CommunityStackParamList';
 import { ResizeMode, Video } from 'expo-av';
+import { getTimeAgo } from './Community';
 
 type NavigationProp = DrawerNavigationProp<CommunityStackParamList, 'Community'>;
 
@@ -35,27 +36,6 @@ interface UserData {
   name?: string;
   profilePicture?: string;
 }
-
-const getTimeAgo = (timestamp: any) => {
-  if (!timestamp) return 'Just now';
-
-  const date = timestamp.toDate();
-  const now = new Date();
-  const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-
-  if (seconds < 60) {
-    return 'Just now';
-  } else if (seconds < 3600) {
-    const minutes = Math.floor(seconds / 60);
-    return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
-  } else if (seconds < 86400) {
-    const hours = Math.floor(seconds / 3600);
-    return `${hours} hour${hours > 1 ? 's' : ''} ago`;
-  } else {
-    const days = Math.floor(seconds / 86400);
-    return `${days} day${days > 1 ? 's' : ''} ago`;
-  }
-};
 
 export default function Post() {
   const route = useRoute<PostScreenRouteProp>();
@@ -252,10 +232,10 @@ export default function Post() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButtonContainer}>
-          <Image source={require('../../assets/backArrowIcon.png')} style={styles.backIcon} />
-          <Text style={styles.backButton}>Back</Text>
+      <View style={styles.header1}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButtonContainer1}>
+          <Image source={require('../../assets/backArrowIcon.png')} style={styles.backIcon1} />
+          <Text style={styles.backButton1}>Back</Text>
         </TouchableOpacity>
       </View>
 
@@ -348,7 +328,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFF',
   },
-  header: {
+  header1: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -357,16 +337,16 @@ const styles = StyleSheet.create({
     paddingBottom: RFPercentage(1),
     backgroundColor: '#FFF',
   },
-  backButtonContainer: {
+  backButtonContainer1: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  backIcon: {
+  backIcon1: {
     width: RFValue(24, height),
     height: RFValue(24, height),
     marginRight: -(width * 0.02),
   },
-  backButton: {
+  backButton1: {
     fontSize: RFPercentage(1.8),
     color: '#007AFF',
     fontWeight: '500',

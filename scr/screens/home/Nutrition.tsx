@@ -293,14 +293,14 @@ export default function Nutrition() {
   );  
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButtonContainer}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backContainer}>
           <Image
             source={require('../../assets/backArrowIcon.png')}
-            style={styles.backIcon}
+            style={styles.backlogo}
           />          
-          <Text style={styles.backButton}>Back</Text>
+          <Text style={styles.backButton1}>Back</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => setModalVisible(true)}>
           <Image
@@ -512,7 +512,7 @@ export default function Nutrition() {
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
     backgroundColor: '#F5F7FA',
   },
@@ -525,16 +525,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5F7FA',
     marginBottom: RFPercentage(0),
   },
-  backButtonContainer: {
+  backContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  backIcon: {
+  backlogo: {
     width: RFValue(24, height),
     height: RFValue(24, height),
     marginRight: -(width * 0.02),
   },
-  backButton: {
+  backButton1: {
     fontSize: RFPercentage(1.8),
     color: '#007AFF',
     fontWeight: '500',

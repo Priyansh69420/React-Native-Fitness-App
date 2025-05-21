@@ -43,14 +43,14 @@ export default function SetGenderScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
+    <SafeAreaView style={styles.genderSafeArea}>
+      <View style={styles.gendercontainer}>
 
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Image source={backIcon} style={styles.backIcon} />
+        <TouchableOpacity style={styles.genderBackButton} onPress={() => navigation.goBack()}>
+          <Image source={backIcon} style={styles.genderBackIcon} />
         </TouchableOpacity>
 
-        <View style={styles.centeredContent}>
+        <View style={styles.genderCenteredContent}>
           <Image source={logo} style={styles.appLogo} resizeMode="contain" />
 
           <Text style={styles.title}>Which one are you?</Text>
@@ -103,28 +103,28 @@ const verticalScale = (size: number) => (height / guidelineBaseHeight) * size;
 const moderateScale = (size: number, factor = 0.5) => size + (scale(size) - size) * factor;
 
 const styles = StyleSheet.create({
-  safeArea: {
+  genderSafeArea: {
     flex: 1,
     backgroundColor: '#F5F7FA',
   },
-  container: {
+  gendercontainer: {
     flex: 1,
     backgroundColor: '#F5F7FA',
     paddingHorizontal: scale(20),
     paddingTop: verticalScale(20),
   },
-  backButton: {
+  genderBackButton: {
     position: 'absolute',
     top: verticalScale(40),
     left: scale(20),
     zIndex: 1,
   },
-  backIcon: {
+  genderBackIcon: {
     width: scale(30),
     height: scale(30),
     resizeMode: 'contain',
   },
-  centeredContent: {
+  genderCenteredContent: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',

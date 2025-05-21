@@ -70,7 +70,7 @@ export default function LoginScreen() {
 
       const errorMessages: { [key: string]: string } = {
         'auth/user-not-found': 'No user found with this email.',
-        'auth/wrong-password': 'Incorrect password. Please try again.',
+        'auth/wrong-password': `Incorrect password. Please try again.`,
         'auth/invalid-email': 'Email address is invalid.',
         'auth/user-disabled': 'This account has been disabled.',
         'auth/too-many-requests': 'Too many failed attempts. Try again later.',
@@ -228,7 +228,7 @@ export default function LoginScreen() {
 
           <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={loading}>
             {loading ? <ActivityIndicator size='small' color='#FFF' /> :
-              <Text style={styles.buttonText}>Continue</Text>}
+              <Text style={styles.buttonText}>Sign In</Text>}
           </TouchableOpacity>
         </View>
 

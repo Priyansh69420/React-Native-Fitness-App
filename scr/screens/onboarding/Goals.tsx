@@ -51,14 +51,14 @@ export default function SetGoalsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
+    <SafeAreaView style={styles.goalSafeArea}>
+      <View style={styles.goalContainer}>
 
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Image source={backIcon} style={styles.backIcon} />
+        <TouchableOpacity style={styles.goalBackButton} onPress={() => navigation.goBack()}>
+          <Image source={backIcon} style={styles.goalBackIcon} />
         </TouchableOpacity>
 
-        <View style={styles.centeredContent}>
+        <View style={styles.goalCenteredContent}>
           <Image source={logo} style={styles.appLogo} resizeMode="contain" />
 
           <Text style={styles.title}>Let us know how we can help you</Text>
@@ -107,28 +107,28 @@ const widthRatio = width / baseWidth;
 const heightRatio = height / baseHeight;
 
 const styles = StyleSheet.create({
-  safeArea: {
+  goalSafeArea: {
     flex: 1,
     backgroundColor: '#F5F7FA',
   },
-  container: {
+  goalContainer: {
     flex: 1,
     backgroundColor: '#F5F7FA',
     paddingHorizontal: 10 * widthRatio,
     paddingTop: 20 * heightRatio,
   },
-  backButton: {
+  goalBackButton: {
     position: 'absolute',
     top: 40 * heightRatio,
     left: 20 * widthRatio,
     zIndex: 1,
   },
-  backIcon: {
+  goalBackIcon: {
     width: 30 * widthRatio,
     height: 30 * widthRatio,
     resizeMode: 'contain',
   },
-  centeredContent: {
+  goalCenteredContent: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
