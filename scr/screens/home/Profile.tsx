@@ -29,6 +29,9 @@ interface UserData {
   onboardingCompleted: boolean;
   userHeight: number;
   userWeight: number;
+  calorieGoal: number;
+  glassGoal: number;
+  stepGoal: number;
 }
 
 interface Avatar {
@@ -79,6 +82,12 @@ export default function Profile() {
   const [showCurrent, setShowCurrent] = useState<boolean>(false);
   const [showNew, setShowNew] = useState<boolean>(false);
   const [showConfirm, setShowConfirm] = useState<boolean>(false);
+  const [calorieGoal, setCalorieGoal] = useState<string>(userData?.calorieGoal?.toString() ?? '2000');
+  const [glassGoal, setGlassGoal] = useState<string>(userData?.glassGoal?.toString() ?? '8');
+  const [stepGoal, setStepGoal] = useState<string>(userData?.stepGoal?.toString() ?? '10000');
+  const [calorieGoalError, setCalorieGoalError] = useState<string>('');
+  const [glassGoalError, setGlassGoalError] = useState<string>('');
+  const [stepGoalError, setStepGoalError] = useState<string>('');
 
   useEffect(() => {
     if (userData) {
@@ -93,12 +102,19 @@ export default function Profile() {
       setGoals(userData.goals);
       setInterests(userData.interests);
       setGender(userData.gender);
+      setCalorieGoal(userData.calorieGoal?.toString() || '2000');
+      setGlassGoal(userData.glassGoal?.toString() || '8');
+      setStepGoal(userData.stepGoal?.toString() || '10000');
     }
   }, [userData]);
 
   useEffect(() => {
     setError('');
   }, [currentPassword, newPassword, confirmNewPassword]);
+
+  useEffect(() => {
+    validateDailyMilestones();
+  }, [calorieGoal, glassGoal, stepGoal])
 
   const toggleGoal = (goal: string) => {
     if (goals.includes(goal)) {
@@ -118,13 +134,13 @@ export default function Profile() {
 
   const handleAddCustomPhoto = async () => {
     try {
-      setLoading(true);
-
       const permissionGranted = await requestMediaLibraryPermission();
       if (!permissionGranted) return;
 
       const imageResult = await pickImage();
       if (!imageResult) return;
+
+      setLoading(true);
 
       const { fileType, filePath, base64Image } = await processImage(imageResult);
       if (!base64Image) throw new Error('Failed to convert image to Base64');
@@ -236,6 +252,9 @@ export default function Profile() {
         goals,
         interests,
         gender,
+        calorieGoal: parseFloat(calorieGoal) || 2000,
+        glassGoal: parseFloat(glassGoal) || 8,
+        stepGoal: parseFloat(stepGoal) || 10000,
       };
 
       dispatch(updateUser(updatedUserData));
@@ -305,6 +324,61 @@ export default function Profile() {
     }
   };
 
+  const validateDailyMilestones = () => {
+    let isValid = true;
+
+    const calorieValue = parseFloat(calorieGoal);
+    if (isNaN(calorieValue) || calorieGoal === '') {
+      setCalorieGoalError('Calorie goal must be a valid number');
+      isValid = false;
+    } else if (calorieValue < 500) {
+      setCalorieGoalError('Calorie goal must be at least 500');
+      isValid = false;
+    } else if (calorieValue > 5000) {
+      setCalorieGoalError('Calorie goal cannot exceed 5000');
+      isValid = false;
+    } else {
+      setCalorieGoalError('');
+    }
+
+    const glassValue = parseFloat(glassGoal);
+    if (isNaN(glassValue) || glassGoal === '') {
+      setGlassGoalError('Water intake goal must be a valid number');
+      isValid = false;
+    } else if (glassValue < 1) {
+      setGlassGoalError('Water intake goal must be at least 1 glass');
+      isValid = false;
+    } else if (glassValue > 16) {
+      setGlassGoalError('Water intake goal cannot exceed 16 glasses');
+      isValid = false;
+    } else {
+      setGlassGoalError('');
+    }
+
+    const stepValue = parseFloat(stepGoal);
+    if (isNaN(stepValue) || stepGoal === '') {
+      setStepGoalError('Step goal must be a valid number');
+      isValid = false;
+    } else if (stepValue < 1000) {
+      setStepGoalError('Step goal must be at least 1000 steps');
+      isValid = false;
+    } else if (stepValue > 50000) {
+      setStepGoalError('Step goal cannot exceed 50000 steps');
+      isValid = false;
+    } else {
+      setStepGoalError('');
+    }
+
+    return isValid;
+  };
+
+  const disableSave = () => {
+    if(!calorieGoalError && !glassGoalError && !stepGoalError && !error) {
+      return false
+    }
+    return true;
+  }
+
   const profileImageSource = profilePicture ? { uri: profilePicture } : null;
 
   return (
@@ -317,6 +391,44 @@ export default function Profile() {
           </TouchableOpacity>
           <Text style={styles.title}>Edit Profile</Text>
           <View style={styles.headerSpacer} />
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Profile Picture</Text>
+          <View style={styles.profilePictureContainer}>
+            {!imageLoading && (
+              <ActivityIndicator 
+                size="small" 
+                color="#b6b6b6" 
+                style={styles.activityIndicator} 
+              /> 
+            )}
+
+            {profileImageSource && (
+              <TouchableOpacity onPress={handleAddCustomPhoto}>
+                <Image source={profileImageSource} style={styles.profilePicture} onLoad={() => setImageLoading(false)} />
+              </TouchableOpacity>
+            )}
+          </View>
+          <FlatList
+            horizontal
+            data={avatars}
+            keyExtractor={(item) => item.id.toString()}
+            contentContainerStyle={styles.avatarList}
+            scrollEnabled={false}
+            showsHorizontalScrollIndicator={false}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={[styles.avatarItem, profilePicture === item.source.uri && styles.selectedAvatar]}
+                onPress={() => setProfilePicture(item.source.uri)}
+              >
+                <Image source={item.source} style={styles.avatarImage} />
+              </TouchableOpacity>
+            )}
+          />
+          <TouchableOpacity style={styles.addPhotoButton} onPress={handleAddCustomPhoto}>
+            <Text style={styles.addPhotoText}>Add Custom Photo</Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.section}>
@@ -359,39 +471,58 @@ export default function Profile() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Profile Picture</Text>
-          <View style={styles.profilePictureContainer}>
-            {!imageLoading && (
-              <ActivityIndicator 
-                size="small" 
-                color="#b6b6b6" 
-                style={styles.activityIndicator} 
-              /> 
-            )}
-
-            {profileImageSource && (
-              <Image source={profileImageSource} style={styles.profilePicture} onLoad={() => setImageLoading(false)} />
-            )}
-          </View>
-          <FlatList
-            horizontal
-            data={avatars}
-            keyExtractor={(item) => item.id.toString()}
-            contentContainerStyle={styles.avatarList}
-            scrollEnabled={false}
-            showsHorizontalScrollIndicator={false}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={[styles.avatarItem, profilePicture === item.source.uri && styles.selectedAvatar]}
-                onPress={() => setProfilePicture(item.source.uri)}
-              >
-                <Image source={item.source} style={styles.avatarImage} />
-              </TouchableOpacity>
-            )}
+          <Text style={styles.sectionTitle}>Daily Milestones</Text>
+          
+          <Text style={styles.subtitle}>Daily Calories</Text>
+          <TextInput
+            style={styles.textInput}
+            value={String(calorieGoal ?? '')}
+            onChangeText={(text) => {
+              const filtered = text.replace(/[^0-9.]/g, '');
+              setCalorieGoal(filtered);
+              validateDailyMilestones(); 
+            }}
+            placeholder="Set your daily calorie intake"
+            placeholderTextColor="#999"
+            keyboardType="numeric"
           />
-          <TouchableOpacity style={styles.addPhotoButton} onPress={handleAddCustomPhoto}>
-            <Text style={styles.addPhotoText}>Add Custom Photo</Text>
-          </TouchableOpacity>
+          {calorieGoalError ? (
+            <Text style={styles.errorText}>{calorieGoalError}</Text>
+          ) : null}
+
+          <Text style={styles.subtitle}>Daily Water Intake</Text>
+          <TextInput
+            style={styles.textInput}
+            value={String(glassGoal ?? '')}
+            onChangeText={(text) => {
+              const filtered = text.replace(/[^0-9.]/g, '');
+              setGlassGoal(filtered);
+              validateDailyMilestones(); 
+            }}
+            placeholder="Set your daily water intake"
+            placeholderTextColor="#999"
+            keyboardType="numeric"
+          />
+          {glassGoalError ? (
+            <Text style={styles.errorText}>{glassGoalError}</Text>
+          ) : null}
+
+          <Text style={styles.subtitle}>Daily Steps</Text>
+          <TextInput
+            style={styles.textInput}
+            value={String(stepGoal ?? '')}
+            onChangeText={(text) => {
+              const filtered = text.replace(/[^0-9.]/g, '');
+              setStepGoal(filtered);
+              validateDailyMilestones(); 
+            }}
+            placeholder="Set your daily steps intake"
+            placeholderTextColor="#999"
+            keyboardType="numeric"
+          />
+          {stepGoalError ? (
+            <Text style={styles.errorText}>{stepGoalError}</Text>
+          ) : null}
         </View>
 
         <View style={styles.section}>
@@ -535,7 +666,7 @@ export default function Profile() {
         </View>
 
         <View style={{ paddingHorizontal: 60 }}>
-          <TouchableOpacity onPress={handleSave} style={styles.saveButton}>
+          <TouchableOpacity onPress={handleSave} style={styles.saveButton} disabled={disableSave()}>
             {loading ? <ActivityIndicator size='small' color='#d0d0d0'/> : <Text style={styles.buttonText}>Save Changes</Text>}
           </TouchableOpacity>
 
@@ -735,5 +866,10 @@ const styles = StyleSheet.create({
     transform: [{ translateY: -11 }],
     padding: 2,
     marginHorizontal: 10
+  },
+  errorText: {
+    color: 'red',
+    fontSize: 14,
+    marginTop: 5,
   },
 });

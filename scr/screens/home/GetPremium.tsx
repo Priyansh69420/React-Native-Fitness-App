@@ -89,7 +89,7 @@ export default function GetPremium() {
     }
   
     Alert.alert('Confirm Purchase', confirmText, [
-      { text: 'Cancel', style: 'cancel' },
+      { text: 'Cancel' },
       {
         text: 'Yes',
         onPress: () => {
@@ -111,7 +111,13 @@ export default function GetPremium() {
                   : 'Purchase Successful',
                 selectedPlan === 'yearly' && userPlanType === 'monthly'
                   ? 'You have successfully upgraded to the Yearly Premium plan!'
-                  : 'You are now a premium member!'
+                  : 'You are now a premium member!',
+                [
+                  {
+                    text: 'OK',
+                    onPress: () => navigation.navigate('HomeStack')
+                  }
+                ]
               );
             } catch {
               Alert.alert('Error', 'Something went wrong while processing your purchase.');

@@ -40,21 +40,23 @@ export default function SetDetails() {
       onContinue={handleContinuePress}
       nextScreen="FaceId"
     >
-      <View style={onboardingStyles.inputContainer}>
+      <View style={onboardingStyles.onboardingInputContainer}>
         <TextInput
-          style={onboardingStyles.input}
+          style={onboardingStyles.onboardingInput}
           value={userHeight !== undefined ? String(userHeight) : ''}
           onChangeText={(text) => setUserHeight(text ? parseFloat(text) : undefined)}
           placeholder="Height (cm)"
           keyboardType="numeric"
+          autoFocus
         />
       </View>
       {errors.userHeight ? (
-        <Text style={onboardingStyles.errorText}>{errors.userHeight}</Text>
+        <Text style={onboardingStyles.onboardingErrorText}>{errors.userHeight}</Text>
       ) : null}
-      <View style={onboardingStyles.inputContainer}>
+
+      <View style={onboardingStyles.onboardingInputContainer}>
         <TextInput
-          style={onboardingStyles.input}
+          style={onboardingStyles.onboardingInput}
           value={userWeight !== undefined ? String(userWeight) : ''}
           onChangeText={(text) => setUserWeight(text ? parseFloat(text) : undefined)}
           placeholder="Weight (kg)"
@@ -62,7 +64,7 @@ export default function SetDetails() {
         />
       </View>
       {errors.userWeight ? (
-        <Text style={onboardingStyles.errorText}>{errors.userWeight}</Text>
+        <Text style={onboardingStyles.onboardingErrorText}>{errors.userWeight}</Text>
       ) : null}
     </OnboardingForm>
   );

@@ -175,6 +175,7 @@ export default function Signup() {
                   value={email}
                   onChangeText={setEmail}
                   editable={!verifying}
+                  autoFocus
                 />
               </View>
 

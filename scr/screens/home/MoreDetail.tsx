@@ -6,6 +6,8 @@ import { HomeStackParamList } from '../../navigations/HomeStackParamList';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { loadMonthlyProgress } from '../../utils/monthlyProgressUtils'; 
+import { useSelector } from 'react-redux';
+import { RootState } from '../../store/store';
 
 type NavigationProp = DrawerNavigationProp<HomeStackParamList, 'MoreDetail'>;
 
@@ -23,6 +25,7 @@ const monthNames = [
 
 export default function MoreDetail() {
   const navigation = useNavigation<NavigationProp>();
+  const { userData } = useSelector((state: RootState) => state.user);
   const [selectedMetric, setSelectedMetric] = useState<'steps' | 'calories' | 'water'>('calories');
   const [monthlyData, setMonthlyData] = useState<DailyProgress[]>([]);
 
@@ -103,7 +106,7 @@ export default function MoreDetail() {
         <Text style={styles.title}>Monthly Progress</Text>
       </View>
 
-      <ScrollView style={styles.scrollContainer}>
+      <View style={styles.scrollContainer}>
         <View style={styles.summaryContainer}>
           <View style={styles.summaryCard}>
             <Ionicons name='walk' size={30} color='#7A5FFF' />
@@ -148,9 +151,9 @@ export default function MoreDetail() {
         </View>
 
         <View style={styles.trendContainer}>
-            <Text style={styles.trendTitle}>
+          <Text style={styles.trendTitle}>
             {trendTitle} Stats
-            </Text>
+          </Text>
 
           {formattedData.length > 0 ? (
             <ScrollView
@@ -162,11 +165,21 @@ export default function MoreDetail() {
               {formattedData.map((entry, index) => {
                 let barHeight = 0;
                 if (selectedMetric === 'steps') {
-                  barHeight = ((entry.steps || 0) / 15000) * 100;
+                  barHeight = Math.min(
+                    ((entry.steps || 0) / (userData?.stepGoal ?? 10000)) * 100,
+                    100
+                  );
                 } else if (selectedMetric === 'calories') {
-                  barHeight = ((entry.calories || 0) / 3000) * 100;
+                  barHeight = Math.min(
+                    ((entry.calories || 0) / (userData?.calorieGoal ?? 2000)) * 100,
+                    100
+                  );
                 } else {
-                  barHeight = ((entry.water || 0) / 2) * 100;
+                  const waterGoalLiters = userData?.glassGoal ? userData.glassGoal * 0.25 : 2;
+                  barHeight = Math.min(
+                    ((entry.water || 0) / waterGoalLiters) * 100,
+                    100
+                  );
                 }
 
                 return (
@@ -202,7 +215,7 @@ export default function MoreDetail() {
             <Text style={styles.noDataText}>No data available for this month</Text>
           )}
         </View>
-      </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
@@ -348,6 +361,27 @@ const styles = StyleSheet.create({
     fontSize: RFValue(14, height),
     color: '#666',
     textAlign: 'center',
+  },
+  chartWrapper: {
+    flexDirection: 'row',
+    height: 120, 
+  },
+  yAxis: {
+    width: 40,
+    justifyContent: 'space-between',
+    position: 'relative',
+  },
+  yAxisLabel: {
+    position: 'absolute',
+    fontSize: 12,
+    color: '#666',
+    left: 0,
+  },
+  xAxisLabel: {
+    position: 'absolute',
+    bottom: -20,
+    fontSize: 10,
+    color: '#666',
   },
   breakdownContainer: {
     backgroundColor: '#FFF',

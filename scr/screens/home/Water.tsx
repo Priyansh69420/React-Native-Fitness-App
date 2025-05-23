@@ -18,6 +18,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { auth } from '../../../firebaseConfig';
 import { saveDailyProgress } from '../../utils/monthlyProgressUtils';
 import PerformanceContainer from '../../components/PerformanceContainer';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../store/store';
 
 type NavigationProp = DrawerNavigationProp<HomeStackParamList, 'Water'>;
 
@@ -63,7 +65,8 @@ export const loadData = async (setGlassDrunk: React.Dispatch<React.SetStateActio
 };
 
 export default function Water() {
-  const totalGlasses = 8;
+  const { userData } = useSelector((state: RootState) => state.user);
+  const totalGlasses = userData?.glassGoal ?? 8;
   const [glassDrunk, setGlassDrunk] = useState<number>(0);
   const [weeklyPerformance, setWeeklyPerformance] = useState<{ day: string; count: number }[]>([]);
   const [bestPerformance, setBestPerformance] = useState<{ day: string; count: number } | null>(null);
@@ -167,8 +170,8 @@ export default function Water() {
     const newCount = index + 1;
 
     if (index < glassDrunk) {
-      setGlassDrunk(index);
-      saveGlassDrunk(index);
+      setGlassDrunk(newCount);
+      saveGlassDrunk(newCount);
     } else if (index >= glassDrunk) {
       setGlassDrunk(newCount);
       saveGlassDrunk(newCount);
@@ -258,6 +261,7 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#F5F7FA',
+    height: height,
   },
   header: {
     flexDirection: 'row',
@@ -287,8 +291,8 @@ const styles = StyleSheet.create({
     color: '#333',
     fontWeight: '700',
     textAlign: 'center',
-    width: '70%',
-    marginLeft: width * 0.15,
+    width: '75%',
+    marginLeft: width * 0.12,
     marginBottom: height * 0.03,
   },
   highlight: {
@@ -304,10 +308,10 @@ const styles = StyleSheet.create({
   },
   glassWrapper: {
     width: (width - RFValue(30, width) * 3) / 4,
-    height: (width - RFValue(30, width) * 3) / 4,
+    height: (width - RFValue(30, width) * 3) / 5.5,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: height * 0.05,
+    marginBottom: height * 0.055,
     position: 'relative',
     marginHorizontal: RFValue(10, width),
   },

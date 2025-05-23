@@ -32,6 +32,9 @@ export default function ReadyToGo() {
         calories: 0,
         userHeight: onboardingData.userHeight ?? 0,
         userWeight: onboardingData.userWeight ?? 0,
+        calorieGoal: 2000,
+        glassGoal: 8,
+        stepGoal: 10000,
         onboardingComplete: true,
       });
 

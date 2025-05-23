@@ -36,6 +36,7 @@ export default function DailySteps() {
   const [modalVisible, setModalVisible] = useState(false);
   const [bestPerformance, setBestPerformance] = useState<DailyStepsPerformance | null>(null);
   const [worstPerformance, setWorstPerformance] = useState<DailyStepsPerformance | null>(null);
+  const stepGoal = userData?.stepGoal ?? 10000;
 
   useEffect(() => {
     const initializeData = async () => {
@@ -53,7 +54,7 @@ export default function DailySteps() {
     }
   }, [steps, loading, error]);
 
-  const progress = Math.min(steps / 10000, 1);
+  const progress = Math.min(steps / stepGoal, 1);
   const strokeDashoffset = CIRCLE_CIRCUMFERENCE * (1 - progress);
 
   const caloriesBurned = Math.round(steps * 0.03);
@@ -96,13 +97,11 @@ export default function DailySteps() {
 
       if (storedWeeklySteps) {
         const parsedData = JSON.parse(storedWeeklySteps);
-        console.log('Loaded Weekly Steps Performance:', parsedData); // Debug log
         updateBestAndWorstPerformance(parsedData);
       } else if (storedDate === currentDate && steps > 0) {
         const currentDay = getDayOfWeek(currentDate);
         const initialData = [{ day: currentDay, count: steps }];
         await AsyncStorage.setItem('weeklyStepsPerformance', JSON.stringify(initialData));
-        console.log('Initialized Weekly Steps Performance:', initialData); // Debug log
         updateBestAndWorstPerformance(initialData);
       }
     } catch (error) {
@@ -130,7 +129,6 @@ export default function DailySteps() {
         );
 
         await AsyncStorage.setItem('weeklyStepsPerformance', JSON.stringify(updatedPerformance));
-        console.log('Saved Weekly Steps Performance:', updatedPerformance); // Debug log
         updateBestAndWorstPerformance(updatedPerformance);
 
         await saveDailyProgress({ steps });
@@ -169,7 +167,6 @@ export default function DailySteps() {
 
     setBestPerformance(best);
     setWorstPerformance(worst);
-    console.log('Best Performance:', best, 'Worst Performance:', worst); // Debug log
   };
 
   const getDayOfWeek = (dateString: string): string => {
@@ -289,7 +286,7 @@ export default function DailySteps() {
           </View>
           <View style={styles.divider} />
           <View style={styles.stat}>
-            <Text style={styles.statValue}>10000</Text>
+            <Text style={styles.statValue}>{stepGoal}</Text>
             <Text style={styles.statLabel}>Daily goal</Text>
           </View>
         </View>
@@ -327,8 +324,8 @@ export default function DailySteps() {
             </TouchableOpacity>
 
             <View style={styles.modalHeaderArea}>
-              <Text style={styles.modalHeaderTitle}>{steps >= 10000 ? 'Goal Achieved!' : 'Goal Incomplete!'}</Text>
-              <Text style={styles.modalHeaderSubtitle}>{steps >= 10000 ? 'Share with friends!' : `Just ${10000 - steps} steps left`}</Text>
+              <Text style={styles.modalHeaderTitle}>{steps >= stepGoal ? 'Goal Achieved!' : 'Goal Incomplete!'}</Text>
+              <Text style={styles.modalHeaderSubtitle}>{steps >= stepGoal ? 'Share with friends!' : `Just ${stepGoal - steps} steps left`}</Text>
             </View>
 
             <View style={styles.floatingCardScrollView}>
@@ -368,7 +365,7 @@ export default function DailySteps() {
                   </View>
                   <View style={styles.divider} />
                   <View style={styles.stat}>
-                    <Text style={styles.statValueGray}>10000</Text>
+                    <Text style={styles.statValueGray}>{stepGoal}</Text>
                     <Text style={styles.statLabel}>Daily goal</Text>
                   </View>
                 </View>

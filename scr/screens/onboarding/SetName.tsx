@@ -35,21 +35,22 @@ export default function SetNameScreen() {
       onContinue={handleContinuePress}
       nextScreen="SetDetails"
     >
-      <View style={onboardingStyles.inputContainer}>
+      <View style={onboardingStyles.onboardingInputContainer}>
         <TextInput
-          style={onboardingStyles.input}
+          style={onboardingStyles.onboardingInput}
           value={firstName}
           onChangeText={(input) => setFirstName(input.replace(/\d/g, ''))}
           placeholder="First Name"
           autoCapitalize="words"
+          autoFocus
         />
       </View>
       {errors.firstName ? (
-        <Text style={onboardingStyles.errorText}>{errors.firstName}</Text>
+        <Text style={onboardingStyles.onboardingErrorText}>{errors.firstName}</Text>
       ) : null}
-      <View style={onboardingStyles.inputContainer}>
+      <View style={onboardingStyles.onboardingInputContainer}>
         <TextInput
-          style={onboardingStyles.input}
+          style={onboardingStyles.onboardingInput}
           value={lastName}
           onChangeText={(input) => setLastName(input.replace(/\d/g, ''))}
           placeholder="Last Name"

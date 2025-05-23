@@ -88,6 +88,7 @@ export default function SetPassword() {
                 placeholder="Enter your password"
                 secureTextEntry
                 autoCapitalize="none"
+                autoFocus
               />
             </View>
 

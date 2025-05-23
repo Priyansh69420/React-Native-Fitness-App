@@ -101,9 +101,9 @@ export default function Home() {
       marginRight: RFPercentage(1),
     };
 
-  const nutritionProgress = Math.min((userData?.calories || 0) / 2000, 1);
-  const waterProgress = glassDrunk / totalGlasses;
-  const stepsProgress = Math.min(steps / 10000, 1);
+  const nutritionProgress = Math.min((userData?.calories || 0) / userData?.calorieGoal, 1);
+  const waterProgress = glassDrunk / userData?.glassGoal;
+  const stepsProgress = Math.min(steps / userData?.stepGoal, 1);
 
   return (
     <ScrollView>
@@ -138,7 +138,7 @@ export default function Home() {
               />
 
                 <View style={styles.editIcon}>
-                  <Image source={require('../../assets/editIcon.png')} style={{height: 12, width: 12, alignContent: 'center', tintColor: '#F5F7FA'}} />
+                  <Image source={require('../../assets/editIon.png')} style={{height: 12, width: 12, alignContent: 'center', tintColor: '#F5F7FA'}} />
                 </View>
               </TouchableOpacity>
             ) : (
@@ -177,7 +177,7 @@ export default function Home() {
                     <Text style={styles.toggleText}>On</Text>
                   </TouchableOpacity>
                 </View>
-                <Text style={styles.sectionProgress}>{userData?.calories ?? 0} cal / 2000 cal</Text>
+                <Text style={styles.sectionProgress}>{userData?.calories ?? 0} cal / {userData?.calorieGoal ?? 2000} cal</Text>
                 <View style={styles.progressBarContainer}>
                   <LinearGradient
                     colors={['#66D3C8', '#66D3C8', '#9D6DEB', '#9D6DEB', '#FFA500', '#FFA500']}
@@ -209,10 +209,10 @@ export default function Home() {
                 <View style={styles.sectionHeader}>
                   <Text style={styles.sectionTitle}>Water</Text>
                   <TouchableOpacity style={styles.warningButton}>
-                    <Text style={[styles.toggleText, styles.warningText]}>{ glassDrunk === totalGlasses ? 'Complete' : 'Warning'}</Text>
+                    <Text style={[styles.toggleText, styles.warningText]}>{ glassDrunk === userData?.calorieGoal ? 'Complete' : 'Warning'}</Text>
                   </TouchableOpacity>
                 </View>
-                <Text style={styles.sectionProgress}>{glassDrunk} / {totalGlasses} glasses</Text>
+                <Text style={styles.sectionProgress}>{glassDrunk} / {userData?.glassGoal ?? 8} glasses</Text>
                 <View style={styles.progressBarContainer}>
                   <LinearGradient
                     colors={['#66D3C8', '#66D3C8', '#9D6DEB', '#9D6DEB', '#FFA500', '#FFA500']}
@@ -250,7 +250,7 @@ export default function Home() {
                     <Text style={styles.toggleText}>On</Text>
                   </TouchableOpacity>
                 </View>
-                <Text style={styles.sectionProgress}>{steps} steps / 10000 steps</Text>
+                <Text style={styles.sectionProgress}>{steps} steps / {userData?.stepGoal ?? 10000} steps</Text>
                 <View style={styles.progressBarContainer}>
                   <LinearGradient
                     colors={['#66D3C8', '#66D3C8', '#9D6DEB', '#9D6DEB', '#FFA500', '#FFA500']}
@@ -365,7 +365,8 @@ const styles = StyleSheet.create({
   },
   detailsOption: {
     marginBottom: height * 0.043, 
-    marginLeft: width * 0.05
+    marginLeft: width * 0.05,
+    maxWidth: '30%'
   },
   detailsText: {
     fontSize: RFPercentage(2.2), 

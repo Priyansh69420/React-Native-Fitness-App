@@ -16,6 +16,9 @@ export interface UserData {
     onboardingComplete: boolean;
     userHeight: number;
     userWeight: number;
+    calorieGoal: number;
+    glassGoal: number;
+    stepGoal: number;
 }
 
 interface UserState {

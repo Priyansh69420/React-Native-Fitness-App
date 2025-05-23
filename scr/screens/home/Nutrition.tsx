@@ -1,5 +1,5 @@
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Image, Dimensions, ScrollView, Modal, FlatList, KeyboardAvoidingView, Platform } from 'react-native'
-import React, { useEffect, useState } from 'react'
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Image, Dimensions, ScrollView, Modal, FlatList, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native'
+import React, { useCallback, useEffect, useState } from 'react'
 import { RFPercentage, RFValue } from 'react-native-responsive-fontsize';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { HomeStackParamList } from '../../navigations/HomeStackParamList';
@@ -9,7 +9,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { auth, firestore } from '../../../firebaseConfig';
 import { useDispatch } from 'react-redux';
 import { setCalories } from '../../store/slices/userSlice';
-import { doc, updateDoc } from '@firebase/firestore';
+import { doc, updateDoc, collection, getDocs, addDoc } from '@firebase/firestore';
 import { TextInput } from 'react-native-gesture-handler';
 import { saveDailyProgress } from '../../utils/monthlyProgressUtils';
 
@@ -28,6 +28,39 @@ interface FoodItem {
 
 type MealType = 'Breakfast' | 'Lunch' | 'Dinner' | 'Snack';
 
+const debounce = (func: (...args: any[]) => void, delay: number) => {
+  let timeoutId: NodeJS.Timeout;
+
+  return (...args: any[]) => {
+    clearTimeout(timeoutId)
+    timeoutId = setTimeout(() => func(...args), delay );
+  }
+}
+
+async function getNutritionInfoFromApi(query: string) {
+  try {
+    const res = await fetch('https://trackapi.nutritionix.com/v2/natural/nutrients', {
+      method: 'POST',
+      headers: {
+        'x-app-id': '2e6c66f5',
+        'x-app-key': '5574feb8fa38679a6ba1d6034bb950f1',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ query })
+    });
+
+    if(!res.ok) {
+      throw new Error(`HTTP error! status: ${res.status}`);
+    }
+
+    const data = await res.json();
+    return data.foods;
+  } catch (error: any) {
+    console.error('Error fetching from Nutritionix API:', error);
+    return null;
+  }
+}
+
 export default function Nutrition() {
   const dispatch = useDispatch();
   const [modalVisible, setModalVisible] = useState(false);
@@ -39,6 +72,8 @@ export default function Nutrition() {
 	const [selectedMeal, setSelectedMeal] = useState<string | null>('');
 	const [selectedFoods, setSelectedFoods] = useState<FoodItem[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [nutritionInfo, setNutritionInfo] = useState<FoodItem[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 	const [nutritionData, setNutritionData] = useState([
     { name: 'Fat', percentage: 0, color: '#66D3C8' },
     { name: 'Carb', percentage: 0, color: '#9D6DEB' },
@@ -63,67 +98,37 @@ export default function Nutrition() {
   const separation = 10;
   const backgroundColor = '#E6E6FA';
 
-	const nutritionInfo = [
-    { name: 'Eggs', quantity: 200, calories: 300, fat: 15, carb: 2, protein: 26 },
-    { name: 'Rice', quantity: 200, calories: 260, fat: 0.5, carb: 57, protein: 5 },
-    { name: 'Chapati', quantity: 100, calories: 240, fat: 3.5, carb: 49, protein: 8 },
-    { name: 'Dal', quantity: 150, calories: 180, fat: 1, carb: 30, protein: 12 },
-    { name: 'Paneer', quantity: 100, calories: 265, fat: 20, carb: 2, protein: 18 },
-    { name: 'Chicken Curry', quantity: 200, calories: 300, fat: 15, carb: 5, protein: 30 },
-    { name: 'Fish Curry', quantity: 200, calories: 250, fat: 10, carb: 4, protein: 28 },
-    { name: 'Vegetable Pulao', quantity: 200, calories: 280, fat: 8, carb: 50, protein: 6 },
-    { name: 'Samosa', quantity: 100, calories: 260, fat: 17, carb: 25, protein: 4 },
-    { name: 'Idli', quantity: 150, calories: 150, fat: 0.5, carb: 33, protein: 3 },
-    { name: 'Dosa', quantity: 150, calories: 170, fat: 4, carb: 30, protein: 4 },
-    { name: 'Upma', quantity: 150, calories: 200, fat: 6, carb: 35, protein: 5 },
-    { name: 'Poha', quantity: 150, calories: 180, fat: 4, carb: 30, protein: 4 },
-    { name: 'Chole', quantity: 200, calories: 280, fat: 8, carb: 40, protein: 12 },
-    { name: 'Rajma', quantity: 200, calories: 290, fat: 6, carb: 45, protein: 13 },
-    { name: 'Aloo Paratha', quantity: 150, calories: 290, fat: 12, carb: 40, protein: 6 },
-    { name: 'Pav Bhaji', quantity: 200, calories: 300, fat: 10, carb: 45, protein: 7 },
-    { name: 'Biryani', quantity: 200, calories: 320, fat: 12, carb: 45, protein: 18 },
-    { name: 'Curd', quantity: 100, calories: 60, fat: 3, carb: 4, protein: 3 },
-    { name: 'Raita', quantity: 100, calories: 80, fat: 4, carb: 5, protein: 3 },
-    { name: 'Butter Chicken', quantity: 200, calories: 400, fat: 25, carb: 8, protein: 30 },
-    { name: 'Palak Paneer', quantity: 200, calories: 280, fat: 18, carb: 10, protein: 12 },
-    { name: 'Bhindi Masala', quantity: 150, calories: 120, fat: 6, carb: 12, protein: 3 },
-    { name: 'Aloo Gobi', quantity: 150, calories: 150, fat: 7, carb: 18, protein: 3 },
-    { name: 'Kheer', quantity: 150, calories: 200, fat: 6, carb: 35, protein: 5 },
-    { name: 'Gulab Jamun', quantity: 100, calories: 300, fat: 15, carb: 40, protein: 4 },
-    { name: 'Lassi', quantity: 200, calories: 260, fat: 8, carb: 40, protein: 6 },
-    { name: 'Pani Puri', quantity: 100, calories: 150, fat: 5, carb: 25, protein: 2 },
-    { name: 'Halwa', quantity: 150, calories: 300, fat: 12, carb: 45, protein: 5 },
-    { name: 'Thepla', quantity: 100, calories: 200, fat: 8, carb: 30, protein: 5 },
-    { name: 'Pizza', quantity: 200, calories: 500, fat: 20, carb: 60, protein: 15 },
-    { name: 'Burger', quantity: 200, calories: 450, fat: 18, carb: 40, protein: 25 },
-    { name: 'Pasta', quantity: 200, calories: 400, fat: 15, carb: 50, protein: 10 },
-    { name: 'French Fries', quantity: 150, calories: 300, fat: 15, carb: 40, protein: 3 },
-    { name: 'Fried Chicken', quantity: 200, calories: 480, fat: 25, carb: 15, protein: 35 },
-    { name: 'Sushi', quantity: 150, calories: 200, fat: 2, carb: 40, protein: 5 },
-    { name: 'Tacos', quantity: 150, calories: 250, fat: 10, carb: 30, protein: 15 },
-    { name: 'Spring Rolls', quantity: 150, calories: 220, fat: 10, carb: 30, protein: 5 },
-    { name: 'Chocolate Cake', quantity: 100, calories: 400, fat: 20, carb: 50, protein: 5 },
-    { name: 'Ice Cream', quantity: 100, calories: 200, fat: 10, carb: 25, protein: 3 },
-    { name: 'Donuts', quantity: 100, calories: 250, fat: 12, carb: 35, protein: 4 },
-    { name: 'Hot Dog', quantity: 150, calories: 300, fat: 15, carb: 30, protein: 12 },
-    { name: 'Pancakes', quantity: 150, calories: 350, fat: 10, carb: 60, protein: 6 },
-    { name: 'Falafel', quantity: 150, calories: 300, fat: 15, carb: 30, protein: 10 },
-    { name: 'Hummus with Pita Bread', quantity: 150, calories: 250, fat: 10, carb: 30, protein: 8 },
-    { name: 'Nachos with Cheese', quantity: 150, calories: 350, fat: 20, carb: 40, protein: 8 },
-    { name: 'Dim Sum', quantity: 150, calories: 200, fat: 5, carb: 30, protein: 8 },
-    { name: 'Croissant', quantity: 100, calories: 300, fat: 15, carb: 35, protein: 5 },
-    { name: 'Waffles', quantity: 150, calories: 400, fat: 20, carb: 50, protein: 6 },
-    { name: 'Shawarma', quantity: 200, calories: 450, fat: 20, carb: 40, protein: 25 },
-  ];
+  // const seedNutritionInfo = async () => {
+  //   try {
+  //     const batchUploads = nutritionInfo.map((item) => 
+  //       addDoc(collection(firestore, 'nutritionInfo'), item)
+  //     );
+  //     await Promise.all(batchUploads);
+  //     console.log('success');
+  //   } catch (error: any) {
+  //     console.log(error);
+  //   }
+  // }
 
   useEffect(() => {
     loadAndResetData();
+    fetchNutritionInfo();
   }, []);
 
   useEffect(() => {
     calculateTotal();
     saveData();
   }, [consumedFoods, totalCalories]);
+
+  const fetchNutritionInfo = async () => {
+    try {
+      const snapshot = await getDocs(collection(firestore, 'nutritionInfo'));
+      const fetchedData: FoodItem[] = snapshot.docs.map(doc => doc.data() as FoodItem);
+      setNutritionInfo(fetchedData);
+    } catch (error: any) {
+      console.error('Error fetching nutrition info:', error);
+    }
+  }
 
 	const handleMealTypeSelect = (meal: string) => {
     setSelectedMeal(meal === selectedMeal ? null : meal); 
@@ -287,10 +292,59 @@ export default function Nutrition() {
       ]);
     }
   }
-
+  
   const filteredNutritionInfo = nutritionInfo.filter((item) =>
     item.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );  
+  );
+
+  const handleSearch = useCallback(
+    debounce(async (query: string) => {
+      if(!query.trim()) return;
+      setIsLoading(true);
+
+      const filtered = nutritionInfo.filter((item) => 
+        item.name.toLowerCase().includes(query.toLowerCase())
+      );
+
+      if(filtered.length === 0) {
+        const apiFoods = await getNutritionInfoFromApi(query)
+        if(apiFoods && apiFoods.length > 0) {
+          const newFoodItem: FoodItem[] = apiFoods.map((food: any) => ({
+            name: food.food_name.charAt(0).toUpperCase() + food.food_name.slice(1),
+            quantity: Math.round(food.serving_weight_grams) ?? 100,
+            calories: Math.round(food.nf_calories ?? 0),
+            fat: Math.round(food.nf_total_fat ?? 0),
+            carb: Math.round(food.nf_total_carbohydrate ?? 0),
+            protein: Math.round(food.nf_protein ?? 0),
+          }));
+
+          const existingNames = new Set(nutritionInfo.map(item => item.name.toLowerCase()));
+          const uniqueNewFoodItems = newFoodItem.filter(item => !existingNames.has(item.name.toLowerCase()));
+
+          if(uniqueNewFoodItems.length > 0) {
+            try {
+              const batchUploads = newFoodItem.map((item) => 
+                addDoc(collection(firestore, 'nutritionInfo'), item)
+              );
+  
+              await Promise.all(batchUploads);
+              console.log('New food items added to Firestore')
+              setNutritionInfo(prev => [...prev, ...newFoodItem]);
+            } catch (error: any) {
+                console.error('Error saving new food items to Firestore:', error);
+                setIsLoading(false);
+                return;
+            }
+          }
+        } 
+      }
+      setIsLoading(false);
+    }, 500), [nutritionInfo]
+  );
+
+  useEffect(() => {
+    handleSearch(searchQuery);
+  }, [searchQuery, handleSearch]);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -479,7 +533,11 @@ export default function Nutrition() {
 
                 {searchQuery && filteredNutritionInfo.length === 0 ? (
                   <View style={styles.noResultsContainer}>
-                    <Text style={styles.noResultsText}>No record found, try something else</Text>
+                    {isLoading ? (
+                      <ActivityIndicator size="large" color="#7A5FFF" />
+                    ) : (
+                      <Text style={styles.noResultsText}>No record found for "{searchQuery}".</Text>
+                    )}
                   </View>
                 ) : (
                   <FlatList
@@ -499,6 +557,7 @@ export default function Nutrition() {
                 <TouchableOpacity style={styles.closeButton} onPress={() => {
                   setModalVisible(false)
                   setSearchQuery('')
+                  setIsLoading(false);
                 }}>
                   <Text style={{fontSize: RFValue(20), marginTop: -5}}>✕</Text>
                 </TouchableOpacity>

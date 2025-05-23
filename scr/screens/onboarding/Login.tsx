@@ -185,6 +185,7 @@ export default function LoginScreen() {
               placeholder="Email Address"
               keyboardType="email-address"
               autoCapitalize='none'
+              autoFocus
             />
           </View>
 

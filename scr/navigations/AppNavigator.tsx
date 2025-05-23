@@ -3,7 +3,7 @@ import { NavigationContainer } from "@react-navigation/native";
 import OnboardingStack from "./OnboardingStack";
 import DrawerNavigator from "./DrawerNavigator";
 import notifee, { AndroidImportance, EventType, RepeatFrequency, TimestampTrigger, TriggerType } from "@notifee/react-native";
-import { ActivityIndicator, View, StyleSheet, Alert } from "react-native";
+import { ActivityIndicator, View, StyleSheet, Alert, Image, LogBox, Dimensions } from "react-native";
 import ReactNativeBiometrics from "react-native-biometrics";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNotifications } from "../contexts/NotificationsContext";
@@ -82,10 +82,13 @@ const AppNavigator = () => {
   const [isPushEnabled, setIsPushEnabled] = useState<boolean>(true);
   const [isBiometricChecked, setIsBiometricChecked] = useState<boolean>(false);
   const [initialNotificationHandled, setInitialNotificationHandled] = useState<boolean>(false);
+  const [bioLoading, setBioLoading] = useState<boolean>(false);
 
   const { addNotification } = useNotifications();
 
   const performBiometricCheck = async (uid: string) => {
+    setBioLoading(true);
+
     try {
       const userDoc = await getDoc(doc(firestore, "users", uid));
       if (!userDoc.exists()) {
@@ -93,23 +96,37 @@ const AppNavigator = () => {
       }
 
       const userData = userDoc.data();
-      const faceIdEnabled = userData?.faceId === true;
+      if (!userData?.faceId) return true;
 
-      if (!faceIdEnabled) {
-        return;
+      let attempts = parseInt(await AsyncStorage.getItem('biometric_attempts') || '0', 10);
+
+      while(attempts < 5) {
+        const result = await rnBiometrics.simplePrompt({
+          promptMessage: "Authenticate to continue",
+        });
+  
+        if (result.success) {
+          await AsyncStorage.removeItem('biometric_attempts');
+          return true;
+        } 
+  
+        if(result.error === 'userCancel' || result.error === 'systemCancel') {
+          continue;
+        }  
+
+        attempts += 1;
+        await AsyncStorage.setItem('biometric_attempts', attempts.toString());
       }
 
-      const { success } = await rnBiometrics.simplePrompt({
-        promptMessage: "Authenticate to continue",
-      });
-
-      if (!success) {
-        await clearAuthUser();
-      } 
+      await AsyncStorage.removeItem('biometric_attempts')
+      await clearAuthUser;
+      return false;
     } catch (e) {
       console.error("Biometric check error:", e);
+      await AsyncStorage.removeItem('biometric_attempts');
       await clearAuthUser();
-      Alert.alert("Error", "An error occurred during biometric authentication. You have been signed out.");
+    } finally {
+      setBioLoading(false);
     }
   };
 
@@ -529,10 +546,14 @@ const AppNavigator = () => {
     return unsubscribe;
   };
 
-  if (loading) {
+  if (loading || bioLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#7A5FFF" />
+        {!bioLoading ? (
+          <ActivityIndicator size="large" color="#7A5FFF" />
+        ) : (
+          <Image source={require('../assets/logo.png')} style={styles.logo} />
+        )}
       </View>
     );
   }
@@ -546,6 +567,8 @@ const AppNavigator = () => {
 
 export default AppNavigator;
 
+const {width, height} = Dimensions.get('window');
+
 const styles = StyleSheet.create({
   loadingContainer: {
     flex: 1,
@@ -553,4 +576,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#F5F7FA",
   },
+  logo: {
+    width: width * 0.16,
+    height: width * 0.16,
+    backgroundColor: '#F5F7FA',
+    borderRadius: width * 0.065,
+    marginBottom: height * 0.075,
+  }
 });
