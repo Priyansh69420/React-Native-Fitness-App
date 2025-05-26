@@ -7,6 +7,7 @@ import { PersistGate } from "redux-persist/integration/react";
 import notifee, { AndroidImportance } from "@notifee/react-native";
 import { NotificationsProvider } from "./contexts/NotificationsContext";
 import { AuthProvider } from "./contexts/AuthContext";
+import { RealmProvider } from "../realmConfig";
 
 const App = () => {
   useEffect(() => {
@@ -22,17 +23,19 @@ const App = () => {
   }, []);
 
   return (
-    <Provider store={store}>
-      <PersistGate loading={null} persistor={persistor}>
-        <GestureHandlerRootView style={{ flex: 1 }}>
-          <NotificationsProvider>
-            <AuthProvider>
-              <AppNavigator />
-            </AuthProvider>
-          </NotificationsProvider>
-        </GestureHandlerRootView>
-      </PersistGate>
-    </Provider>
+    <RealmProvider>
+      <Provider store={store}>
+        <PersistGate loading={null} persistor={persistor}>
+          <GestureHandlerRootView style={{ flex: 1 }}>
+            <NotificationsProvider>
+              <AuthProvider>
+                <AppNavigator />
+              </AuthProvider>
+            </NotificationsProvider>
+          </GestureHandlerRootView>
+        </PersistGate>
+      </Provider>
+    </RealmProvider>
   );
 };
 

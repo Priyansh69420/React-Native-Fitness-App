@@ -3,6 +3,8 @@ import { auth, firestore } from '../../firebaseConfig';
 import { doc, getDoc } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { UserData } from '../store/slices/userSlice';
+import { useRealm } from '../../realmConfig'; // Import useRealm
+import { UpdateMode } from 'realm';
 
 interface AuthContextType {
   user: { uid: string } | null;
@@ -28,6 +30,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState<boolean>(true);
   const [onboardingComplete, setOnboardingComplete] = useState<boolean>(false);
   const [onboardingInProgress, setOnboardingInProgress] = useState<boolean>(false);
+
+  const realm = useRealm(); // Use the useRealm hook
 
   const setOnboardingInProgressFlag = async (inProgress: boolean) => {
     try {
@@ -69,6 +73,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               setOnboardingComplete(isOnboardingComplete);
               setUser({ uid });
 
+              // Store user data in Realm
+              try {
+                const email = auth.currentUser?.email || '';
+                realm.write(() => {
+                  realm.create('User', { ...userData, email }, UpdateMode.Modified);
+                });
+              } catch (realmError) {
+                console.error('Error writing to Realm:', realmError);
+              }
+
               if (isOnboardingComplete) {
                 await setOnboardingInProgressFlag(false);
               }
@@ -109,6 +123,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setOnboardingComplete(isOnboardingComplete);
         setUser({ uid });
 
+        // Store user data in Realm
+        try {
+          const email = auth.currentUser?.email || '';
+          realm.write(() => {
+            realm.create('User', { ...userData, email }, UpdateMode.Modified);
+          });
+        } catch (realmError) {
+          console.error('Error writing to Realm:', realmError);
+        }
+
         if (isOnboardingComplete) {
           await setOnboardingInProgressFlag(false);
         }
@@ -132,6 +156,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setOnboardingComplete(false);
       setOnboardingInProgress(false);
       await setOnboardingInProgressFlag(false);
+
+      // Clear Realm data on logout
+      try {
+        realm.write(() => {
+          realm.delete(realm.objects('User'));
+        });
+      } catch (realmError) {
+        console.error('Error clearing Realm data:', realmError);
+      }
     } catch (error) {
       console.error('Error clearing auth user:', error);
     } finally {
