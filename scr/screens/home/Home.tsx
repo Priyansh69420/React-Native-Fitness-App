@@ -35,7 +35,6 @@ export default function Home() {
   const [rehydrated, setRehydrated] = useState<boolean>(false);
   const [imageLoading, setImageLoading] = useState<boolean>(true);
   const navigation = useNavigation<NavigationProp>();
-  const totalGlasses = 8;
 
   useEffect(() => {
     const unsubscribe = setTimeout(() => {
@@ -69,10 +68,6 @@ export default function Home() {
         <ActivityIndicator size="large" color="#7A5FFF" />
       </View>
     );
-  }
-
-  if(userData?.profilePicture === '' || userData?.profilePicture === null) {
-    userData.profilePicture = 'https://dojvycwbetqfeutcvsqe.supabase.co/storage/v1/object/public/profileimages/profile_pictures/default-Icon.jpeg'
   }
 
   if (!userData) {
@@ -339,7 +334,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 2, 
     right: 3, 
-    backgroundColor: '#000', 
+    backgroundColor: '#7A5FFF', 
     borderRadius: 10, 
     width: 20,
     height: 20,

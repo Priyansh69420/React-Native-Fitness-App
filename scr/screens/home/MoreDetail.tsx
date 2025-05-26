@@ -28,7 +28,8 @@ export default function MoreDetail() {
   const { userData } = useSelector((state: RootState) => state.user);
   const [selectedMetric, setSelectedMetric] = useState<'steps' | 'calories' | 'water'>('calories');
   const [monthlyData, setMonthlyData] = useState<DailyProgress[]>([]);
-
+  const [selectedInfo, setSelectedInfo] = useState<string | null>(null);
+  
   useEffect(() => {
     const fetchData = async () => {
       const data = await loadMonthlyProgress();
@@ -51,6 +52,7 @@ export default function MoreDetail() {
       displayDate: `${month} ${date.getDate()}`,
     };
   });
+  
 
   const renderDailyEntry = ({ item }: { item: typeof formattedData[0] }) => (
     <View style={styles.dailyEntry}>
@@ -130,21 +132,36 @@ export default function MoreDetail() {
         <View style={styles.toggleContainer}>
           <TouchableOpacity 
             style={[styles.toggleButton, selectedMetric === 'steps' && styles.toggleButtonSelected]}
-            onPress={() => setSelectedMetric('steps')}
+            onPress={() => {
+              if(selectedMetric !== 'steps') {
+                setSelectedMetric('steps')
+                setSelectedInfo('');
+              }
+            }}
           >
             <Text style={[styles.toggleText, selectedMetric === 'steps' && styles.toggleTextSelected]}>Steps</Text>
           </TouchableOpacity>
 
           <TouchableOpacity 
             style={[styles.toggleButton, selectedMetric === 'calories' && styles.toggleButtonSelected]}
-            onPress={() => setSelectedMetric('calories')}
+            onPress={() => {
+              if(selectedMetric !== 'calories') {
+                setSelectedMetric('calories')
+                setSelectedInfo('');
+              }
+            }}
           >
             <Text style={[styles.toggleText, selectedMetric === 'calories' && styles.toggleTextSelected]}>Nutrition</Text>
           </TouchableOpacity>
 
           <TouchableOpacity 
             style={[styles.toggleButton, selectedMetric === 'water' && styles.toggleButtonSelected]}
-            onPress={() => setSelectedMetric('water')}
+            onPress={() => {
+              if(selectedMetric !== 'water') {
+                setSelectedMetric('water')
+                setSelectedInfo('');
+              }
+            }}
           >
             <Text style={[styles.toggleText, selectedMetric === 'water' && styles.toggleTextSelected]}>Water</Text>
           </TouchableOpacity>
@@ -155,6 +172,15 @@ export default function MoreDetail() {
             {trendTitle} Stats
           </Text>
 
+
+            <View style={styles.selectedInfoContainer}>
+              {selectedInfo ? 
+                <Text style={styles.selectedInfoText}>{selectedInfo}</Text> : 
+                <Text style={[styles.selectedInfoText, {color: '#999'}]}>Tap a bar to see details </Text>
+              }
+            </View>
+          
+
           {formattedData.length > 0 ? (
             <ScrollView
               horizontal
@@ -162,28 +188,32 @@ export default function MoreDetail() {
               contentContainerStyle={styles.trendGraphContent}
               style={styles.trendGraph}
             >
-              {formattedData.map((entry, index) => {
+              {formattedData.map((entry) => {
                 let barHeight = 0;
+                let displayData = '';
                 if (selectedMetric === 'steps') {
                   barHeight = Math.min(
                     ((entry.steps || 0) / (userData?.stepGoal ?? 10000)) * 100,
                     100
                   );
+                  displayData = entry.displayDate + ', ' + entry.steps + ' steps / ' + userData?.stepGoal + ' steps';
                 } else if (selectedMetric === 'calories') {
                   barHeight = Math.min(
                     ((entry.calories || 0) / (userData?.calorieGoal ?? 2000)) * 100,
                     100
                   );
+                  displayData = entry.displayDate + ', ' + entry.calories + ' cal / ' + userData?.calorieGoal + ' cal';
                 } else {
                   const waterGoalLiters = userData?.glassGoal ? userData.glassGoal * 0.25 : 2;
                   barHeight = Math.min(
                     ((entry.water || 0) / waterGoalLiters) * 100,
                     100
                   );
+                  displayData = entry.displayDate + ', ' + entry.water.toFixed(1) + ' L / ' + ((userData?.glassGoal ?? 8) * 0.25) + ' L';
                 }
 
                 return (
-                  <View style={styles.trendPoint} key={entry.date}>
+                  <TouchableOpacity style={styles.trendPoint} key={entry.date} onPress={() => setSelectedInfo(displayData)}>
                     <View
                       style={[
                         styles.trendBar,
@@ -193,7 +223,7 @@ export default function MoreDetail() {
                         },
                       ]}
                     ></View>
-                  </View>
+                  </TouchableOpacity>
                 );
               })}
             </ScrollView>
@@ -392,6 +422,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
+    marginBottom: height * 0.02,
   },
   breakdownTitle: {
     fontSize: RFValue(18, height),
@@ -422,4 +453,17 @@ const styles = StyleSheet.create({
     fontSize: RFValue(14, height),
     color: '#333',
   },
+  selectedInfoContainer: {
+    paddingVertical: height * 0.01,
+    paddingHorizontal: width * 0.03,
+    marginBottom: height * 0.01,
+    backgroundColor: '#EFEFFF',
+    borderRadius: 8,
+    alignItems: 'center'    
+  }, 
+  selectedInfoText: {
+    fontSize: RFValue(14, height),
+    fontWeight: 300,
+    color: '#333'
+  }
 });

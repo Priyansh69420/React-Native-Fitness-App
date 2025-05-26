@@ -3,7 +3,7 @@ import { NavigationContainer } from "@react-navigation/native";
 import OnboardingStack from "./OnboardingStack";
 import DrawerNavigator from "./DrawerNavigator";
 import notifee, { AndroidImportance, EventType, RepeatFrequency, TimestampTrigger, TriggerType } from "@notifee/react-native";
-import { ActivityIndicator, View, StyleSheet, Alert, Image, LogBox, Dimensions } from "react-native";
+import { ActivityIndicator, View, StyleSheet, Image, Dimensions } from "react-native";
 import ReactNativeBiometrics from "react-native-biometrics";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNotifications } from "../contexts/NotificationsContext";
@@ -98,7 +98,7 @@ const AppNavigator = () => {
       const userData = userDoc.data();
       if (!userData?.faceId) return true;
 
-      let attempts = parseInt(await AsyncStorage.getItem('biometric_attempts') || '0', 10);
+      let attempts = parseInt(await AsyncStorage.getItem('biometric_attempts') ?? '0', 10);
 
       while(attempts < 5) {
         const result = await rnBiometrics.simplePrompt({
@@ -119,12 +119,12 @@ const AppNavigator = () => {
       }
 
       await AsyncStorage.removeItem('biometric_attempts')
-      await clearAuthUser;
+      clearAuthUser();
       return false;
     } catch (e) {
       console.error("Biometric check error:", e);
       await AsyncStorage.removeItem('biometric_attempts');
-      await clearAuthUser();
+      clearAuthUser();
     } finally {
       setBioLoading(false);
     }

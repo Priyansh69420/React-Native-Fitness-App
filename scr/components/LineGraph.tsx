@@ -18,8 +18,22 @@ const LineGraphSVG = () => {
   }, []);
 
   const loadData = async () => {
+    const today = new Date();
+    const dayName = today.toLocaleDateString('en-US', { weekday: 'long' });
+  
     try {
       const storedWeeklySteps = await AsyncStorage.getItem('weeklyStepsPerformance');
+      const lastClearedDate = await AsyncStorage.getItem('lastWeeklyReset');
+  
+      const todayStr = today.toDateString();
+  
+      if (dayName === 'Monday' && lastClearedDate !== todayStr) {
+        await AsyncStorage.removeItem('weeklyStepsPerformance');
+        await AsyncStorage.setItem('lastWeeklyReset', todayStr);
+        setWeeklySteps([]);
+        return;
+      }
+  
       if (storedWeeklySteps) {
         const parsedData: DailyStepsPerformance[] = JSON.parse(storedWeeklySteps);
         setWeeklySteps(parsedData);
@@ -28,6 +42,7 @@ const LineGraphSVG = () => {
       console.error('Error loading weekly steps from AsyncStorage:', error);
     }
   };
+  
 
   const convertStepstoCalories = () => {
     return weeklySteps.map((item) => ({

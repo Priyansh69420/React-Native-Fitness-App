@@ -88,41 +88,45 @@ export default function GetPremium() {
       confirmText = `Upgrade to Yearly for ${planDetails.price}?`;
     }
   
+    const handlePurchaseConfirmation = async () => {
+      try {
+        await setDoc(doc(firestore, 'users', user.uid), {
+          isPremium: true,
+          planType: selectedPlan,
+        }, { merge: true });
+
+        dispatch(updateUser({
+          isPremium: true,
+          planType: selectedPlan,
+        }));
+
+        const successMessage =
+          selectedPlan === 'yearly' && userPlanType === 'monthly'
+            ? 'You have successfully upgraded to the Yearly Premium plan!'
+            : 'You are now a premium member!';
+
+        const alertTitle =
+          selectedPlan === 'yearly' && userPlanType === 'monthly'
+            ? 'Upgraded!'
+            : 'Purchase Successful';
+
+        Alert.alert(alertTitle, successMessage, [
+          {
+            text: 'OK',
+            onPress: () => navigation.navigate('HomeStack'),
+          },
+        ]);
+      } catch {
+        Alert.alert('Error', 'Something went wrong while processing your purchase.');
+      }
+    };
+
     Alert.alert('Confirm Purchase', confirmText, [
       { text: 'Cancel' },
       {
         text: 'Yes',
         onPress: () => {
-          (async () => {
-            try {
-              await setDoc(doc(firestore, 'users', user.uid), {
-                isPremium: true,
-                planType: selectedPlan,
-              }, { merge: true });
-    
-              dispatch(updateUser({
-                isPremium: true,
-                planType: selectedPlan,
-              }));
-    
-              Alert.alert(
-                selectedPlan === 'yearly' && userPlanType === 'monthly'
-                  ? 'Upgraded!'
-                  : 'Purchase Successful',
-                selectedPlan === 'yearly' && userPlanType === 'monthly'
-                  ? 'You have successfully upgraded to the Yearly Premium plan!'
-                  : 'You are now a premium member!',
-                [
-                  {
-                    text: 'OK',
-                    onPress: () => navigation.navigate('HomeStack')
-                  }
-                ]
-              );
-            } catch {
-              Alert.alert('Error', 'Something went wrong while processing your purchase.');
-            }
-          })();
+          handlePurchaseConfirmation();
         },
       },
     ]);

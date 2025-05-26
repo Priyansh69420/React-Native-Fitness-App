@@ -170,8 +170,8 @@ export default function Water() {
     const newCount = index + 1;
 
     if (index < glassDrunk) {
-      setGlassDrunk(newCount);
-      saveGlassDrunk(newCount);
+      setGlassDrunk(index + 1);
+      saveGlassDrunk(index + 1);
     } else if (index >= glassDrunk) {
       setGlassDrunk(newCount);
       saveGlassDrunk(newCount);

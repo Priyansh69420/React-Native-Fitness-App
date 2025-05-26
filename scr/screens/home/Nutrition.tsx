@@ -98,18 +98,6 @@ export default function Nutrition() {
   const separation = 10;
   const backgroundColor = '#E6E6FA';
 
-  // const seedNutritionInfo = async () => {
-  //   try {
-  //     const batchUploads = nutritionInfo.map((item) => 
-  //       addDoc(collection(firestore, 'nutritionInfo'), item)
-  //     );
-  //     await Promise.all(batchUploads);
-  //     console.log('success');
-  //   } catch (error: any) {
-  //     console.log(error);
-  //   }
-  // }
-
   useEffect(() => {
     loadAndResetData();
     fetchNutritionInfo();

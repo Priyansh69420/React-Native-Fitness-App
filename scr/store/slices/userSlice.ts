@@ -49,6 +49,12 @@ export const fetchUserData = createAsyncThunk("user/fetchUserData", async (_, { 
     }
 });
 
+const setDefaultProfilePicture = (userData: UserData) => {
+    if (userData.profilePicture === '' || userData.profilePicture === null) {
+        userData.profilePicture = 'https://dojvycwbetqfeutcvsqe.supabase.co/storage/v1/object/public/profileimages/profile_pictures/default-Icon.jpeg';
+    }
+};
+
 const userSlice = createSlice({
     name: "user",
     initialState,
@@ -80,6 +86,8 @@ const userSlice = createSlice({
             })
             .addCase(fetchUserData.fulfilled, (state, action) => {
                 state.loading = false;
+                state.userData = action.payload;
+                setDefaultProfilePicture(action.payload); 
                 state.userData = action.payload;
             })
             .addCase(fetchUserData.rejected, (state, action) => {

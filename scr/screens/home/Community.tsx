@@ -812,7 +812,7 @@ const Community = () => {
               <TouchableOpacity
                 style={[styles.modalButton, styles.modalPostButton]}
                 onPress={handleCreateNewPost}
-                disabled={uploadingImage}
+                disabled={uploadingImage || postLoading}
               >
                 {postLoading ? <ActivityIndicator size='small' color='#d3d3d3' /> : <Text style={styles.modalButtonText}>{uploadingImage ? 'Posting...' : 'Post'}</Text>}
               </TouchableOpacity>

@@ -131,7 +131,7 @@ export default function Signup() {
             setVerificationError('Email verification timed out. Please try again.');
           }
         }
-      }, 5 * 60 * 1000);
+      }, 1 * 30 * 1000);
     } catch (error: any) {
       console.error("Email verification error:", error.message);
       setVerifying(false);
