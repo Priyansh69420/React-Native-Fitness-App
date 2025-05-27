@@ -491,6 +491,16 @@ export default function Nutrition() {
               const totalCarbs = foodList.reduce((sum, food) => sum + food.carb, 0);
               const totalCalories = foodList.reduce((sum, food) => sum + food.calories, 0);
 
+              function handleDeleteItem(mealType: MealType, foodName: string): void {
+                setConsumedFoods((prevConsumedFoods) => {
+                  const updatedFoods = prevConsumedFoods[mealType].filter((food) => food.name !== foodName);
+                  return {
+                    ...prevConsumedFoods,
+                    [mealType]: updatedFoods,
+                  };
+                });
+              }
+
               return (
                 <View key={mealType} style={styles.mealCard}>
                   <TouchableOpacity
@@ -499,17 +509,7 @@ export default function Nutrition() {
                   >
                     <Text style={styles.deleteCardText}>X</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.mealCardHeader}
-                    onPress={() => toggleMealCard(mealType as MealType)}
-                  >
                     <Text style={styles.mealCardTitle}>{mealType}</Text>
-                    <Ionicons
-                      name={expandedMealCards[mealType as MealType] ? 'chevron-up' : 'chevron-down'}
-                      size={22}
-                      color="#666"
-                    />
-                  </TouchableOpacity>
                   <View style={styles.macroSummaryContainer}>
                     <View style={styles.macroRow}>
                       <View style={styles.macroItem}>
@@ -532,6 +532,16 @@ export default function Nutrition() {
                       </View>
                     </View>
                   </View>
+                  <TouchableOpacity 
+                    style={{alignItems: 'center'}}
+                    onPress={() => toggleMealCard(mealType as MealType)}
+                  >
+                    <Ionicons
+                        name={expandedMealCards[mealType as MealType] ? 'chevron-up' : 'chevron-down'}
+                        size={22}
+                        color="#666"
+                      />
+                  </TouchableOpacity>
                   {expandedMealCards[mealType as MealType] && (
                     <View>
                       {foodList.map((food, index) => (
@@ -542,8 +552,13 @@ export default function Nutrition() {
                             index < foodList.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#d6d6d6' },
                           ]}
                         >
-                          <View style={{ flexDirection: 'column' }}>
-                            <Text style={styles.foodCardName}>{food.name}</Text>
+                          <View style={{ flexDirection: 'column', position: 'relative' }}>
+                            <View style={styles.nameContainer}>
+                              <TouchableOpacity onPress={() => handleDeleteItem(mealType as MealType, food.name)}>
+                                <Image source={require('../../assets/cross-Icon.png')} style={styles.crossIcon} /> 
+                              </TouchableOpacity>
+                              <Text style={styles.foodCardName}>{food.name}</Text>
+                            </View>
                             <Text style={styles.foodQuantity}>{food.quantity * food.portion} grams</Text>
                           </View>
                           <View style={{ flexDirection: 'column', alignItems: 'center' }}>
@@ -554,7 +569,7 @@ export default function Nutrition() {
                               <TouchableOpacity onPress={() => updateFoodPortion(mealType as MealType, food.name, false)} style={{flexDirection: 'row', alignItems: 'center'}}>
                                 <Image source={require('../../assets/minus-Icon.png')} style={{height: 15, width: 15}} />                              
                               </TouchableOpacity>
-                              <Text style={{ fontSize: 14, marginVertical: 7, marginHorizontal: 5 }}>{food.portion}</Text>
+                              <Text style={{ fontSize: 14, marginVertical: 7, marginHorizontal: 7 }}>{food.portion}</Text>
                               <TouchableOpacity onPress={() => updateFoodPortion(mealType as MealType, food.name, true)}>
                                 <Image source={require('../../assets/plus-Icon.png')} style={{height: 15, width: 15}} />
                               </TouchableOpacity>
@@ -753,8 +768,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: RFPercentage(1.5),
-    paddingLeft: RFPercentage(2),
-    paddingRight: RFPercentage(1.5)
+    paddingLeft: RFPercentage(2.5),
+    paddingRight: RFPercentage(1)
   },
   foodCardName: {
     fontSize: RFValue(18),
@@ -942,16 +957,18 @@ const styles = StyleSheet.create({
     marginVertical: 10,
     paddingVertical: 10,
     alignItems: 'center', 
+    flexDirection: 'row',
+    paddingHorizontal: 50
   },
   macroRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-evenly',
-    width: '90%', 
-    marginBottom: 10, 
+    flexDirection: 'column',
+    justifyContent: 'space-between',
+    width: '60%', 
   },
   macroItem: {
     flexDirection: 'row',
     alignItems: 'center',
+    margin: 5
   },
   macroColorBox: {
     height: 10,
@@ -978,5 +995,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginVertical: 10,
+  },
+  nameContainer: {
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    marginLeft: -27,
+  },
+  crossIcon: {
+    marginRight: RFPercentage(1), 
+    height: 18, 
+    width: 18, 
   },
 });
