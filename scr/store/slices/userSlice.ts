@@ -2,7 +2,7 @@ import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, firestore } from "../../../firebaseConfig";
 import Realm from "realm";
-import { User } from "../../../realmConfig"; // update the path based on your structure
+import { User } from "../../../realmConfig"; 
 
 // ------------------- Types -------------------
 export interface UserData {
@@ -56,40 +56,38 @@ export const fetchUserData = createAsyncThunk("user/fetchUserData", async (_, { 
 
 // ------------------- Realm Thunk -------------------
 export const loadUserDataFromRealm = createAsyncThunk(
-    "user/loadUserDataFromRealm",
-    async (_, { rejectWithValue }) => {
-        try {
-            const realm = await Realm.open({ schema: [User] });
-            const users = realm.objects<UserData>("User");
-            if (!users.length) throw new Error("No local user data found.");
-
-            const user = users[0];
-            const userData: UserData = {
-                email: user.email,
-                name: user.name,
-                faceId: user.faceId,
-                profilePicture: user.profilePicture,
-                goals: user.goals,
-                interests: user.interests,
-                gender: user.gender,
-                calories: user.calories,
-                isPremium: user.isPremium,
-                planType: user.planType,
-                onboardingComplete: user.onboardingComplete,
-                userHeight: user.userHeight,
-                userWeight: user.userWeight,
-                calorieGoal: user.calorieGoal,
-                glassGoal: user.glassGoal,
-                stepGoal: user.stepGoal,
-            };
-
-            realm.close();
-            return userData;
-        } catch (error: any) {
-            return rejectWithValue(error.message);
-        }
+    'user/loadUserDataFromRealm',
+    async (realm: Realm, { rejectWithValue }) => {
+      try {
+        const users = realm.objects('User');
+        if (!users.length) throw new Error('No local user data found.');
+  
+        const user = users[0];
+        const userData: UserData = {
+          email: user.email,
+          name: user.name,
+          faceId: user.faceId,
+          profilePicture: user.profilePicture,
+          goals: user.goals,
+          interests: user.interests,
+          gender: user.gender,
+          calories: user.calories,
+          isPremium: user.isPremium,
+          planType: user.planType,
+          onboardingComplete: user.onboardingComplete,
+          userHeight: user.userHeight,
+          userWeight: user.userWeight,
+          calorieGoal: user.calorieGoal,
+          glassGoal: user.glassGoal,
+          stepGoal: user.stepGoal,
+        };
+  
+        return userData;
+      } catch (error: any) {
+        return rejectWithValue(error.message);
+      }
     }
-);
+  );
 
 // ------------------- Helpers -------------------
 const setDefaultProfilePicture = (userData: UserData) => {

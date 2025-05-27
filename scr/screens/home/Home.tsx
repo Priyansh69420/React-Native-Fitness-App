@@ -10,6 +10,7 @@ import {
   SafeAreaView,
   ScrollView,
 } from 'react-native';
+import NetInfo from '@react-native-community/netinfo';
 import { auth } from '../../../firebaseConfig';
 import { HomeStackParamList } from '../../navigations/HomeStackParamList';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
@@ -18,9 +19,10 @@ import { RFPercentage, RFValue } from 'react-native-responsive-fontsize';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../store/store';
-import { fetchUserData } from '../../store/slices/userSlice';
+import { fetchUserData, loadUserDataFromRealm } from '../../store/slices/userSlice';
 import { loadData } from './Water';
 import { fetchSteps } from '../../store/slices/footstepSlice';
+import { useRealm } from '../../../realmConfig';
 
 type NavigationProp = DrawerNavigationProp<HomeStackParamList, 'Home'>;
 
@@ -30,37 +32,61 @@ export default function Home() {
   const { userData, loading } = useSelector((state: RootState) => state.user);
   const { steps } = useSelector((state: RootState) => state.footsteps);
   const dispatch = useDispatch<AppDispatch>();
-
+  const realm = useRealm();
   const [glassDrunk, setGlassDrunk] = useState<number>(0);
   const [rehydrated, setRehydrated] = useState<boolean>(false);
   const [imageLoading, setImageLoading] = useState<boolean>(true);
+  const [isOffline, setIsOffline] = useState<boolean>(false);
   const navigation = useNavigation<NavigationProp>();
+  console.log(realm.objects('User')[0]);
 
   useEffect(() => {
-    const unsubscribe = setTimeout(() => {
-        setRehydrated(true);
-    }, 1000);
-
-    return () => clearTimeout(unsubscribe);
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      setIsOffline(state.isConnected ?? false);
+    });
+    setRehydrated(true);
+    return () => unsubscribe();
   }, []);
 
   useEffect(() => {
-      if (rehydrated && !userData) {
-          dispatch(fetchUserData());
+    if (rehydrated && !userData) {
+      if (!isOffline) {
+        dispatch(loadUserDataFromRealm(realm));
+      } else {
+        dispatch(fetchUserData()).then((result) => {
+          if (result.meta.requestStatus === 'rejected') {
+            dispatch(loadUserDataFromRealm(realm));
+          }
+        });
       }
-  }, [rehydrated, dispatch, userData]);
+    }
+  }, [rehydrated, dispatch, userData, isOffline, realm]);
 
   useEffect(() => {
     loadData(setGlassDrunk);
-    dispatch(fetchSteps());
+    dispatch(fetchSteps()).then((result) => {
+      if (result.meta.requestStatus === 'rejected') {
+        const user = realm.objects('User')[0];
+        if (user) {
+          dispatch(setSteps(user.steps || 0)); 
+        }
+      }
+    });
 
-  const unsubscribe = navigation.addListener('focus', () => {
-    loadData(setGlassDrunk);
-    dispatch(fetchSteps());
-  });
+    const unsubscribe = navigation.addListener('focus', () => {
+      loadData(setGlassDrunk);
+      dispatch(fetchSteps()).then((result) => {
+        if (result.meta.requestStatus === 'rejected') {
+          const user = realm.objects('User')[0];
+          if (user) {
+            dispatch(setSteps(user.steps || 0));
+          }
+        }
+      });
+    });
 
     return unsubscribe;
-  }, [navigation, dispatch]);
+  }, [navigation, dispatch, realm]);
 
   if (loading || !rehydrated || (!userData && !loading)) {
     return (
@@ -83,18 +109,18 @@ export default function Home() {
   }
 
   const profileImageSource = typeof userData?.profilePicture === 'string'
-  ? { uri: userData.profilePicture }
-  : undefined;
+    ? { uri: userData.profilePicture }
+    : undefined;
 
-  const isCustomImg = typeof userData?.profilePicture === 'string'
-    && !userData.profilePicture.includes('avatar');
+  const isCustomImg = typeof userData?.profilePicture === 'string' &&
+    !userData.profilePicture.includes('avatar');
 
-    const profilePictureStyle = {
-      width: isCustomImg ? RFValue(65, height) : RFValue(70, height),
-      height: isCustomImg ? RFValue(65, height) : RFValue(70, height),
-      borderRadius: RFValue(50, height),
-      marginRight: RFPercentage(1),
-    };
+  const profilePictureStyle = {
+    width: isCustomImg ? RFValue(65, height) : RFValue(70, height),
+    height: isCustomImg ? RFValue(65, height) : RFValue(70, height),
+    borderRadius: RFValue(50, height),
+    marginRight: RFPercentage(1),
+  };
 
   const nutritionProgress = Math.min((userData?.calories || 0) / userData?.calorieGoal, 1);
   const waterProgress = glassDrunk / userData?.glassGoal;
@@ -103,171 +129,178 @@ export default function Home() {
   return (
     <ScrollView>
       <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.drawerContainer}
-          onPress={() => navigation.openDrawer()}
-        >
-          <Image
-            source={require('../../assets/drawerIcon.png')}
-            style={styles.drawerIcon}
-          />
-        </TouchableOpacity>
-        <View style={styles.profileContainer}>
-          <View style={styles.imageWrapper}>
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.drawerContainer}
+            onPress={() => navigation.openDrawer()}
+          >
+            <Image
+              source={require('../../assets/drawerIcon.png')}
+              style={styles.drawerIcon}
+            />
+          </TouchableOpacity>
+          <View style={styles.profileContainer}>
+            <View style={styles.imageWrapper}>
               {imageLoading && (
-                <ActivityIndicator 
-                  size="small" 
-                  color="#b3b3b3" 
-                  style={styles.activityIndicator} 
-                /> 
+                <ActivityIndicator
+                  size="small"
+                  color="#b3b3b3"
+                  style={styles.activityIndicator}
+                />
               )}
-            
-            {profileImageSource ? (
-              <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
-                <Image 
-                source={profileImageSource} 
-                style={profilePictureStyle} 
-                onLoad={() => setImageLoading(false)} 
-                onError={() => setImageLoading(false)} 
-              />
-
-                <View style={styles.editIcon}>
-                  <Image source={require('../../assets/editIon.png')} style={{height: 12, width: 12, alignContent: 'center', tintColor: '#F5F7FA'}} />
-                </View>
-              </TouchableOpacity>
-            ) : (
-              <View style={styles.placeholderProfile} />
-            )}
+              {profileImageSource ? (
+                <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
+                  <Image
+                    source={profileImageSource}
+                    style={profilePictureStyle}
+                    onLoad={() => setImageLoading(false)}
+                    onError={() => setImageLoading(false)}
+                  />
+                  <View style={styles.editIcon}>
+                    <Image
+                      source={require('../../assets/editIon.png')}
+                      style={{ height: 12, width: 12, alignContent: 'center', tintColor: '#F5F7FA' }}
+                    />
+                  </View>
+                </TouchableOpacity>
+              ) : (
+                <View style={styles.placeholderProfile} />
+              )}
+            </View>
           </View>
         </View>
-      </View>
 
-      <Text style={styles.greeting}>Greetings, {userData.name || 'User'}</Text>
-      <Text style={styles.subtitle}>
-        Eat the right amount of food and stay hydrated through the day
-      </Text>
+        <Text style={styles.greeting}>Greetings, {userData.name || 'User'}</Text>
+        <Text style={styles.subtitle}>
+          Eat the right amount of food and stay hydrated through the day
+        </Text>
 
-      <TouchableOpacity style={styles.detailsOption} onPress={() => navigation.navigate('MoreDetail')}>
-        <Text style={styles.detailsText}>More Details</Text>
-      </TouchableOpacity>
+        <TouchableOpacity style={styles.detailsOption} onPress={() => navigation.navigate('MoreDetail')}>
+          <Text style={styles.detailsText}>More Details</Text>
+        </TouchableOpacity>
 
-      <View>
-        <TouchableOpacity
-          style={styles.section}
-          onPress={() => navigation.navigate('Nutrition')}
-        >
-          <View style={styles.sectionContent}>
-            <View style={styles.sectionRow}>
-              <View style={styles.iconContainer}>
-                <Image
-                  source={require('../../assets/nutritionIcon.png')}
-                  style={styles.sectionIcon}
-                />
-              </View>
-              <View style={styles.sectionDetails}>
-                <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionTitle}>Nutrition</Text>
-                  <TouchableOpacity style={styles.toggleButton}>
-                    <Text style={styles.toggleText}>On</Text>
-                  </TouchableOpacity>
-                </View>
-                <Text style={styles.sectionProgress}>{userData?.calories ?? 0} cal / {userData?.calorieGoal ?? 2000} cal</Text>
-                <View style={styles.progressBarContainer}>
-                  <LinearGradient
-                    colors={['#66D3C8', '#66D3C8', '#9D6DEB', '#9D6DEB', '#FFA500', '#FFA500']}
-                    locations={[0, 0.33, 0.33, 0.66, 0.66, 1]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={[styles.progressBar, { width: `${nutritionProgress * 100}%` }]}
+        <View>
+          <TouchableOpacity
+            style={styles.section}
+            onPress={() => navigation.navigate('Nutrition')}
+          >
+            <View style={styles.sectionContent}>
+              <View style={styles.sectionRow}>
+                <View style={styles.iconContainer}>
+                  <Image
+                    source={require('../../assets/nutritionIcon.png')}
+                    style={styles.sectionIcon}
                   />
-                  <View
-                    style={[styles.progressMarker, { left: `${nutritionProgress * 100}%` }]}
-                  >
+                </View>
+                <View style={styles.sectionDetails}>
+                  <View style={styles.sectionHeader}>
+                    <Text style={styles.sectionTitle}>Nutrition</Text>
+                    <TouchableOpacity style={styles.toggleButton}>
+                      <Text style={styles.toggleText}>On</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <Text style={styles.sectionProgress}>
+                    {userData?.calories ?? 0} cal / {userData?.calorieGoal ?? 2000} cal
+                  </Text>
+                  <View style={styles.progressBarContainer}>
+                    <LinearGradient
+                      colors={['#66D3C8', '#66D3C8', '#9D6DEB', '#9D6DEB', '#FFA500', '#FFA500']}
+                      locations={[0, 0.33, 0.33, 0.66, 0.66, 1]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 0 }}
+                      style={[styles.progressBar, { width: `${nutritionProgress * 100}%` }]}
+                    />
+                    <View
+                      style={[styles.progressMarker, { left: `${nutritionProgress * 100}%` }]}
+                    />
                   </View>
                 </View>
               </View>
             </View>
-          </View>
-        </TouchableOpacity>
+          </TouchableOpacity>
 
-        <TouchableOpacity style={styles.section} onPress={() => navigation.navigate('Water')}>
-          <View style={styles.sectionContent}>
-            <View style={styles.sectionRow}>
-              <View style={styles.iconContainer}>
-                <Image
-                  source={require('../../assets/waterIcon.png')}
-                  style={styles.sectionIcon}
-                />
-              </View>
-              <View style={styles.sectionDetails}>
-                <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionTitle}>Water</Text>
-                  <TouchableOpacity style={styles.warningButton}>
-                    <Text style={[styles.toggleText, styles.warningText]}>{ glassDrunk === userData?.calorieGoal ? 'Complete' : 'Warning'}</Text>
-                  </TouchableOpacity>
-                </View>
-                <Text style={styles.sectionProgress}>{glassDrunk} / {userData?.glassGoal ?? 8} glasses</Text>
-                <View style={styles.progressBarContainer}>
-                  <LinearGradient
-                    colors={['#66D3C8', '#66D3C8', '#9D6DEB', '#9D6DEB', '#FFA500', '#FFA500']}
-                    locations={[0, 0.33, 0.33, 0.66, 0.66, 1]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={[styles.progressBar, { width: `${waterProgress * 100}%` }]}
+          <TouchableOpacity style={styles.section} onPress={() => navigation.navigate('Water')}>
+            <View style={styles.sectionContent}>
+              <View style={styles.sectionRow}>
+                <View style={styles.iconContainer}>
+                  <Image
+                    source={require('../../assets/waterIcon.png')}
+                    style={styles.sectionIcon}
                   />
-                  <View
-                    style={[styles.progressMarker, { left: `${waterProgress * 100}%` }]}
-                  >
+                </View>
+                <View style={styles.sectionDetails}>
+                  <View style={styles.sectionHeader}>
+                    <Text style={styles.sectionTitle}>Water</Text>
+                    <TouchableOpacity style={styles.warningButton}>
+                      <Text style={[styles.toggleText, styles.warningText]}>
+                        {glassDrunk >= userData?.glassGoal ? 'Complete' : 'Warning'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                  <Text style={styles.sectionProgress}>
+                    {glassDrunk} / {userData?.glassGoal ?? 8} glasses
+                  </Text>
+                  <View style={styles.progressBarContainer}>
+                    <LinearGradient
+                      colors={['#66D3C8', '#66D3C8', '#9D6DEB', '#9D6DEB', '#FFA500', '#FFA500']}
+                      locations={[0, 0.33, 0.33, 0.66, 0.66, 1]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 0 }}
+                      style={[styles.progressBar, { width: `${waterProgress * 100}%` }]}
+                    />
+                    <View
+                      style={[styles.progressMarker, { left: `${waterProgress * 100}%` }]}
+                    />
                   </View>
                 </View>
               </View>
             </View>
-          </View>
-        </TouchableOpacity>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.section}
-          onPress={() => navigation.navigate('DailySteps')}
-        >
-          <View style={styles.sectionContent}>
-            <View style={styles.sectionRow}>
-              <View style={styles.iconContainer}>
-                <Image
-                  source={require('../../assets/stepsIcon.png')}
-                  style={styles.sectionIcon}
-                />
-              </View>
-              <View style={styles.sectionDetails}>
-                <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionTitle}>Daily Steps</Text>
-                  <TouchableOpacity style={styles.toggleButton}>
-                    <Text style={styles.toggleText}>On</Text>
-                  </TouchableOpacity>
-                </View>
-                <Text style={styles.sectionProgress}>{steps} steps / {userData?.stepGoal ?? 10000} steps</Text>
-                <View style={styles.progressBarContainer}>
-                  <LinearGradient
-                    colors={['#66D3C8', '#66D3C8', '#9D6DEB', '#9D6DEB', '#FFA500', '#FFA500']}
-                    locations={[0, 0.33, 0.33, 0.66, 0.66, 1]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={[styles.progressBar, { width: `${stepsProgress * 100}%` }]}
+          <TouchableOpacity
+            style={styles.section}
+            onPress={() => navigation.navigate('DailySteps')}
+          >
+            <View style={styles.sectionContent}>
+              <View style={styles.sectionRow}>
+                <View style={styles.iconContainer}>
+                  <Image
+                    source={require('../../assets/stepsIcon.png')}
+                    style={styles.sectionIcon}
                   />
-                  <View
-                    style={[styles.progressMarker, { left: `${stepsProgress * 100}%` }]}
-                  >
+                </View>
+                <View style={styles.sectionDetails}>
+                  <View style={styles.sectionHeader}>
+                    <Text style={styles.sectionTitle}>Daily Steps</Text>
+                    <TouchableOpacity style={styles.toggleButton}>
+                      <Text style={styles.toggleText}>On</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <Text style={styles.sectionProgress}>
+                    {steps} steps / {userData?.stepGoal ?? 10000} steps
+                  </Text>
+                  <View style={styles.progressBarContainer}>
+                    <LinearGradient
+                      colors={['#66D3C8', '#66D3C8', '#9D6DEB', '#9D6DEB', '#FFA500', '#FFA500']}
+                      locations={[0, 0.33, 0.33, 0.66, 0.66, 1]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 0 }}
+                      style={[styles.progressBar, { width: `${stepsProgress * 100}%` }]}
+                    />
+                    <View
+                      style={[styles.progressMarker, { left: `${stepsProgress * 100}%` }]}
+                    />
                   </View>
                 </View>
               </View>
             </View>
-          </View>
-        </TouchableOpacity>
-      </View>
+          </TouchableOpacity>
+        </View>
       </SafeAreaView>
     </ScrollView>
   );
 }
+
 
 const styles = StyleSheet.create({
   safeArea: {
@@ -463,3 +496,7 @@ const styles = StyleSheet.create({
     marginTop: height * 0.02,
   },
 });
+
+function setSteps(arg0: {}): any {
+  throw new Error('Function not implemented.');
+}

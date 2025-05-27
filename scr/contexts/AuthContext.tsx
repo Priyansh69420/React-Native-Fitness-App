@@ -3,8 +3,9 @@ import { auth, firestore } from '../../firebaseConfig';
 import { doc, getDoc } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { UserData } from '../store/slices/userSlice';
-import { useRealm } from '../../realmConfig'; // Import useRealm
+import { useRealm } from '../../realmConfig'; 
 import { UpdateMode } from 'realm';
+import NetInfo from '@react-native-community/netinfo';
 
 interface AuthContextType {
   user: { uid: string } | null;
@@ -56,45 +57,68 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const loadInitialState = async () => {
       try {
         setLoading(true);
-
+  
         const inProgress = await getOnboardingInProgressFlag();
         setOnboardingInProgress(inProgress);
-
+  
         const authData = await AsyncStorage.getItem('authUser');
-        if (authData) {
-          const { uid } = JSON.parse(authData);
-          if (uid) {
-            const userDocRef = doc(firestore, 'users', uid);
-            const userDoc = await getDoc(userDocRef);
-
-            if (userDoc.exists()) {
-              const userData = userDoc.data() as UserData;
-              const isOnboardingComplete = userData.onboardingComplete === true;
-              setOnboardingComplete(isOnboardingComplete);
-              setUser({ uid });
-
-              // Store user data in Realm
-              try {
-                const email = auth.currentUser?.email || '';
-                realm.write(() => {
-                  realm.create('User', { ...userData, email }, UpdateMode.Modified);
-                });
-              } catch (realmError) {
-                console.error('Error writing to Realm:', realmError);
-              }
-
-              if (isOnboardingComplete) {
-                await setOnboardingInProgressFlag(false);
-              }
-            } else {
-              await AsyncStorage.removeItem('authUser');
-              setUser(null);
-              setOnboardingComplete(false);
-            }
-          }
-        } else {
+        if (!authData) {
           setUser(null);
           setOnboardingComplete(false);
+          return;
+        }
+  
+        const { uid } = JSON.parse(authData);
+        if (!uid) {
+          setUser(null);
+          setOnboardingComplete(false);
+          return;
+        }
+  
+        const netInfo = await NetInfo.fetch();
+  
+        if (netInfo.isConnected) {
+          // Online: fetch from Firebase
+          const userDocRef = doc(firestore, 'users', uid);
+          const userDoc = await getDoc(userDocRef);
+  
+          if (userDoc.exists()) {
+            const userData = userDoc.data() as UserData;
+            const isOnboardingComplete = userData.onboardingComplete === true;
+  
+            setOnboardingComplete(isOnboardingComplete);
+            setUser({ uid });
+  
+            // Save to Realm
+            try {
+              const email = auth.currentUser?.email || '';
+              realm.write(() => {
+                realm.create('User', { ...userData, email }, UpdateMode.Modified);
+              });
+            } catch (realmError) {
+              console.error('Error writing to Realm:', realmError);
+            }
+  
+            if (isOnboardingComplete) {
+              await setOnboardingInProgressFlag(false);
+            }
+          } else {
+            await AsyncStorage.removeItem('authUser');
+            setUser(null);
+            setOnboardingComplete(false);
+          }
+        } else {
+          // Offline: try loading from Realm
+          const realmUsers = realm.objects('User');
+          if (realmUsers.length > 0) {
+            const localUser = realmUsers[0];
+            setUser({ uid: localUser.email as string }); // fallback: no UID stored in Realm
+            setOnboardingComplete(Boolean(localUser.onboardingComplete));
+          } else {
+            console.warn('No local user data found in Realm.');
+            setUser(null);
+            setOnboardingComplete(false);
+          }
         }
       } catch (error) {
         console.error('Error loading initial state:', error);
@@ -106,7 +130,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setLoading(false);
       }
     };
-
+  
     loadInitialState();
   }, []);
 

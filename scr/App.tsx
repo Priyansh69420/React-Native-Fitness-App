@@ -21,7 +21,7 @@ const App = () => {
     
     setupNotifications();
   }, []);
-
+  
   return (
     <RealmProvider>
       <Provider store={store}>
