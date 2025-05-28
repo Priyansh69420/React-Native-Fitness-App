@@ -9,13 +9,14 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNotifications } from "../contexts/NotificationsContext";
 import { navigationRef } from "./DrawerParamList";
 import { useAuth } from '../contexts/AuthContext';
-import { Timestamp, collection, collectionGroup, doc, getDoc, query, where, orderBy, limit, onSnapshot } from "firebase/firestore";
+import { Timestamp, collection, collectionGroup, doc, getDoc, query, where, orderBy, limit, onSnapshot, setDoc } from "firebase/firestore";
 import { firestore } from "../../firebaseConfig";
 import { fetchUserData, loadUserDataFromRealm, UserData } from "../store/slices/userSlice";
-import { useDispatch } from "react-redux";
-import { AppDispatch } from "../store/store";
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatch, RootState } from "../store/store";
 import { useRealm } from "../../realmConfig";
-import NetInfo from '@react-native-community/netinfo';
+import NetInfo, { useNetInfo } from '@react-native-community/netinfo';
+import { UpdateMode } from "realm";
 
 const waitForNavigationReady = async () => {
   let retries = 3;
@@ -82,73 +83,89 @@ const isWithinLast24Hours = (createdAt: any) => {
 const rnBiometrics = new ReactNativeBiometrics();
 
 const AppNavigator = () => {
+  const { userData } = useSelector((state: RootState) => state.user)
+  const userLoading = useSelector((state: RootState) => state.user.loading);;
   const { user, loading, onboardingComplete, onboardingInProgress, clearAuthUser } = useAuth();
   const [isPushEnabled, setIsPushEnabled] = useState<boolean>(true);
   const [isBiometricChecked, setIsBiometricChecked] = useState<boolean>(false);
   const [initialNotificationHandled, setInitialNotificationHandled] = useState<boolean>(false);
   const [bioLoading, setBioLoading] = useState<boolean>(false);
   const realm = useRealm();
+  const dispatch = useDispatch<AppDispatch>();
 
   const { addNotification } = useNotifications();
-
-  
 
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener((state) => {
       const netinfo = state.isConnected;
 
       if(!netinfo) {
-        loadUserDataFromRealm(realm);
+        dispatch(loadUserDataFromRealm(realm));
       }
     });
     unsubscribe()
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    const fetchIfOnline = async () => {
+      const netState = await NetInfo.fetch();
+      const isConnected = netState.isConnected; 
+
+      if(isConnected && user?.uid) {
+        dispatch(fetchUserData());
+      }
+    }
+
+    fetchIfOnline()
+  }, [user?.uid]);
+
+  useEffect(() => {
+    if(!userData || !realm || !user?.uid) return;
+
+    realm.write(() => {
+      realm.create('User', userData, UpdateMode.Modified);
+    })
+  }, [userData]);
   
 
-  // const performBiometricCheck = async (uid: string) => {
-  //   setBioLoading(true);
+  const performBiometricCheck = async (uid: string) => {
+    setBioLoading(true);
 
-  //   try {
-  //     const userDoc = await getDoc(doc(firestore, "users", uid));
-  //     if (!userDoc.exists()) {
-  //       return;
-  //     }
+    try {
+      if (!userData?.faceId) return true;
 
-  //     const userData = userDoc.data();
-  //     if (!userData?.faceId) return true;
+      let attempts = parseInt(await AsyncStorage.getItem('biometric_attempts') ?? '0', 10);
 
-  //     let attempts = parseInt(await AsyncStorage.getItem('biometric_attempts') ?? '0', 10);
-
-  //     while(attempts < 5) {
-  //       const result = await rnBiometrics.simplePrompt({
-  //         promptMessage: "Authenticate to continue",
-  //       });
+      while(attempts < 5) {
+        const result = await rnBiometrics.simplePrompt({
+          promptMessage: "Authenticate to continue",
+        });
   
-  //       if (result.success) {
-  //         await AsyncStorage.removeItem('biometric_attempts');
-  //         return true;
-  //       } 
+        if (result.success) {
+          await AsyncStorage.removeItem('biometric_attempts');
+          return true;
+        } 
   
-  //       if(result.error === 'userCancel' || result.error === 'systemCancel') {
-  //         continue;
-  //       }  
+        if(result.error === 'userCancel' || result.error === 'systemCancel') {
+          continue;
+        }  
 
-  //       attempts += 1;
-  //       await AsyncStorage.setItem('biometric_attempts', attempts.toString());
-  //     }
+        attempts += 1;
+        await AsyncStorage.setItem('biometric_attempts', attempts.toString());
+      }
 
-  //     await AsyncStorage.removeItem('biometric_attempts')
-  //     clearAuthUser();
-  //     return false;
-  //   } catch (e) {
-  //     console.error("Biometric check error:", e);
-  //     await AsyncStorage.removeItem('biometric_attempts');
-  //     clearAuthUser();
-  //   } finally {
-  //     setBioLoading(false);
-  //   }
-  // };
+      await AsyncStorage.removeItem('biometric_attempts')
+      clearAuthUser();
+      return false;
+    } catch (e) {
+      console.error("Biometric check error:", e);
+      await AsyncStorage.removeItem('biometric_attempts');
+      clearAuthUser();
+    } finally {
+      setBioLoading(false);
+    }
+  };
 
   const handleInitialNotification = async () => {
     const initialNotification = await notifee.getInitialNotification();
@@ -170,11 +187,11 @@ const AppNavigator = () => {
   };
 
   useEffect(() => {
-    if (user && !loading && !isBiometricChecked) {
-      //performBiometricCheck(user.uid);
+    if (user && !loading && !isBiometricChecked && userData && !userLoading) {
+      performBiometricCheck(user.uid);
       setIsBiometricChecked(true);
     }
-  }, [user, loading, isBiometricChecked, clearAuthUser]);
+  }, [user, loading, isBiometricChecked, userData, userLoading]);  
 
   useEffect(() => {
     if (!user) {

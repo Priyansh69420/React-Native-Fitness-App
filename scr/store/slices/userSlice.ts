@@ -1,10 +1,8 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import { auth, firestore } from "../../../firebaseConfig";
 import Realm from "realm";
-import { User } from "../../../realmConfig"; 
 
-// ------------------- Types -------------------
 export interface UserData {
     email: string;
     name: string;
@@ -30,14 +28,47 @@ interface UserState {
     error: string | null;
 }
 
-// ------------------- Initial State -------------------
 const initialState: UserState = {
     userData: null,
     loading: false,
     error: null,
 };
 
-// ------------------- Firebase Thunk -------------------
+const setDefaultProfilePicture = (userData: UserData) => {
+    if (userData.profilePicture === '' || userData.profilePicture === null) {
+        userData.profilePicture = 'https://dojvycwbetqfeutcvsqe.supabase.co/storage/v1/object/public/profileimages/profile_pictures/default-Icon.jpeg';
+    }
+};
+
+export const syncRealmUserToFirestore = async (realm: Realm, email: string) => {
+    try {
+        const user = realm.objectForPrimaryKey('User', email);
+        if(!user) return;
+  
+        const userDoc = doc(firestore, 'users', email);
+        await setDoc(userDoc, {
+            email: user.email,
+            name: user.name,
+            faceId: user.faceId,
+            profilePicture: user.profilePicture,
+            goals: user.goals,
+            interests: user.interests,
+            gender: user.gender,
+            calories: user.calories,
+            isPremium: user.isPremium,
+            planType: user.planType,
+            onboardingComplete: user.onboardingComplete,
+            userHeight: user.userHeight,
+            userWeight: user.userWeight,
+            calorieGoal: user.calorieGoal,
+            glassGoal: user.glassGoal,
+            stepGoal: user.stepGoal,
+        }, {merge: true});
+    } catch(error: any) {
+        console.error('Failed to sync Realm to Firestore:', error);
+    }
+  };
+
 export const fetchUserData = createAsyncThunk("user/fetchUserData", async (_, { rejectWithValue }) => {
     try {
         const user = auth.currentUser;
@@ -54,7 +85,6 @@ export const fetchUserData = createAsyncThunk("user/fetchUserData", async (_, { 
     }
 });
 
-// ------------------- Realm Thunk -------------------
 export const loadUserDataFromRealm = createAsyncThunk(
     'user/loadUserDataFromRealm',
     async (realm: Realm, { rejectWithValue }) => {
@@ -62,7 +92,7 @@ export const loadUserDataFromRealm = createAsyncThunk(
         const users = realm.objects('User');
         if (!users.length) throw new Error('No local user data found.');
   
-        const user = users[0];
+        const user = users[0] as unknown as UserData;
         const userData: UserData = {
           email: user.email,
           name: user.name,
@@ -89,14 +119,6 @@ export const loadUserDataFromRealm = createAsyncThunk(
     }
   );
 
-// ------------------- Helpers -------------------
-const setDefaultProfilePicture = (userData: UserData) => {
-    if (userData.profilePicture === '' || userData.profilePicture === null) {
-        userData.profilePicture = 'https://dojvycwbetqfeutcvsqe.supabase.co/storage/v1/object/public/profileimages/profile_pictures/default-Icon.jpeg';
-    }
-};
-
-// ------------------- Slice -------------------
 const userSlice = createSlice({
     name: "user",
     initialState,
@@ -121,7 +143,6 @@ const userSlice = createSlice({
         }
     },
     extraReducers: (builder) => {
-        // Firebase
         builder.addCase(fetchUserData.pending, (state) => {
             state.loading = true;
             state.error = null;
@@ -136,7 +157,6 @@ const userSlice = createSlice({
             state.error = action.payload as string;
         });
 
-        // Realm
         builder.addCase(loadUserDataFromRealm.pending, (state) => {
             state.loading = true;
             state.error = null;

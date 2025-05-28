@@ -32,7 +32,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [onboardingComplete, setOnboardingComplete] = useState<boolean>(false);
   const [onboardingInProgress, setOnboardingInProgress] = useState<boolean>(false);
 
-  const realm = useRealm(); // Use the useRealm hook
+  const realm = useRealm();
 
   const setOnboardingInProgressFlag = async (inProgress: boolean) => {
     try {
@@ -78,7 +78,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const netInfo = await NetInfo.fetch();
   
         if (netInfo.isConnected) {
-          // Online: fetch from Firebase
           const userDocRef = doc(firestore, 'users', uid);
           const userDoc = await getDoc(userDocRef);
   
@@ -89,7 +88,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setOnboardingComplete(isOnboardingComplete);
             setUser({ uid });
   
-            // Save to Realm
             try {
               const email = auth.currentUser?.email || '';
               realm.write(() => {
@@ -108,11 +106,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setOnboardingComplete(false);
           }
         } else {
-          // Offline: try loading from Realm
           const realmUsers = realm.objects('User');
           if (realmUsers.length > 0) {
             const localUser = realmUsers[0];
-            setUser({ uid: localUser.email as string }); // fallback: no UID stored in Realm
+            setUser({ uid: localUser.email as string });
             setOnboardingComplete(Boolean(localUser.onboardingComplete));
           } else {
             console.warn('No local user data found in Realm.');
@@ -147,7 +144,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setOnboardingComplete(isOnboardingComplete);
         setUser({ uid });
 
-        // Store user data in Realm
         try {
           const email = auth.currentUser?.email || '';
           realm.write(() => {
@@ -181,7 +177,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setOnboardingInProgress(false);
       await setOnboardingInProgressFlag(false);
 
-      // Clear Realm data on logout
       try {
         realm.write(() => {
           realm.delete(realm.objects('User'));

@@ -15,6 +15,7 @@ import { supabase } from '../../../supabaseConfig';
 import * as ImagePicker from 'expo-image-picker';
 import RNFS from 'react-native-fs';
 import { Ionicons } from '@expo/vector-icons';
+import NetInfo from '@react-native-community/netinfo';
 
 type NavigationProp = StackNavigationProp<SettingStackParamList, 'Profile'>;
 

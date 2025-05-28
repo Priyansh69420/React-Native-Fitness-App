@@ -28,7 +28,7 @@ export class User extends Realm.Object {
 
 const realmConfig = {
   schema: [User],
-  schemaVersion: 2,
+  schemaVersion: 4,
 }
 
 export const { RealmProvider, useRealm, useObject, useQuery } = createRealmContext(realmConfig);

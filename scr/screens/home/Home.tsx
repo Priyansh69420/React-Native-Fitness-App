@@ -31,18 +31,18 @@ const { width, height } = Dimensions.get('window');
 export default function Home() {
   const { userData, loading } = useSelector((state: RootState) => state.user);
   const { steps } = useSelector((state: RootState) => state.footsteps);
-  const dispatch = useDispatch<AppDispatch>();
-  const realm = useRealm();
   const [glassDrunk, setGlassDrunk] = useState<number>(0);
   const [rehydrated, setRehydrated] = useState<boolean>(false);
   const [imageLoading, setImageLoading] = useState<boolean>(true);
   const [isOffline, setIsOffline] = useState<boolean>(false);
   const navigation = useNavigation<NavigationProp>();
-  console.log(realm.objects('User')[0]);
+  const dispatch = useDispatch<AppDispatch>();
+  const realm = useRealm();
+  console.log(realm.objects('User')[0])
 
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener((state) => {
-      setIsOffline(state.isConnected ?? false);
+      setIsOffline(!(state.isConnected && state.isInternetReachable));
     });
     setRehydrated(true);
     return () => unsubscribe();

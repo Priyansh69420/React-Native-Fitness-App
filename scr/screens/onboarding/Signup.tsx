@@ -8,6 +8,7 @@ import { fetchSignInMethodsForEmail, createUserWithEmailAndPassword, sendEmailVe
 import { auth } from '../../../firebaseConfig';
 import { RFValue } from 'react-native-responsive-fontsize';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { useNetInfo } from '@react-native-community/netinfo';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, "Signup">;
 const logo = require('../../assets/logo.png');
@@ -21,6 +22,7 @@ export default function Signup() {
   const [verifying, setVerifying] = useState<boolean>(false);
   const [verificationMessage, setVerificationMessage] = useState<string>('');
   const [verificationError, setVerificationError] = useState<string>('');
+  const isConnected = useNetInfo();
 
   const { updateOnboardingData, onboardingData } = useOnboarding();
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -50,6 +52,11 @@ export default function Signup() {
   }, []);
 
   async function handleContinue() {
+    if(!isConnected) {
+      setError('Not internet, Please connect to internet to continue');
+      return;
+    }
+    
     setShouldValidate(true);
     setVerificationError('');
 
