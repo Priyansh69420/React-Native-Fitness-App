@@ -12,6 +12,7 @@ import { setCalories } from '../../store/slices/userSlice';
 import { doc, updateDoc, collection, getDocs, addDoc } from '@firebase/firestore';
 import { TextInput } from 'react-native-gesture-handler';
 import { saveDailyProgress } from '../../utils/monthlyProgressUtils';
+import { Ionicons } from '@expo/vector-icons';
 
 type NavigationProp = DrawerNavigationProp<HomeStackParamList, 'Nutrition'>;
 
@@ -24,6 +25,7 @@ interface FoodItem {
   fat: number;
   carb: number;
   protein: number;
+  portion: number;
 }
 
 type MealType = 'Breakfast' | 'Lunch' | 'Dinner' | 'Snack';
@@ -73,6 +75,7 @@ export default function Nutrition() {
 	const [selectedFoods, setSelectedFoods] = useState<FoodItem[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [nutritionInfo, setNutritionInfo] = useState<FoodItem[]>([]);
+  const [expandedMealCards, setExpandedMealCards] = useState<{ [key in MealType]?: boolean }>({});
   const [isLoading, setIsLoading] = useState(false);
 	const [nutritionData, setNutritionData] = useState([
     { name: 'Fat', percentage: 0, color: '#66D3C8' },
@@ -124,12 +127,24 @@ export default function Nutrition() {
 
 	const handleAddButtonPress = () => {
     if (selectedFoods.length > 0 && selectedMeal) {
-      setConsumedFoods(prevConsumedFoods => ({
-        ...prevConsumedFoods,
-        [selectedMeal]: [...(prevConsumedFoods[selectedMeal as MealType] || []), ...selectedFoods],
-      }));
-      setSelectedFoods([]); 
-			setSelectedMeal('');
+      setConsumedFoods((prevConsumedFoods) => {
+        const existingFoods = prevConsumedFoods[selectedMeal as MealType] || [];
+        const uniqueFoods = selectedFoods.filter(
+          (food) => !existingFoods.some((existingFood) => existingFood.name === food.name)
+        );
+  
+        const foodsWithPortion = uniqueFoods.map((food) => ({
+          ...food,
+          portion: 1,
+        }));
+  
+        return {
+          ...prevConsumedFoods,
+          [selectedMeal]: [...existingFoods, ...foodsWithPortion],
+        };
+      });
+      setSelectedFoods([]);
+      setSelectedMeal('');
       setModalVisible(false);
     }
   };
@@ -334,6 +349,37 @@ export default function Nutrition() {
     handleSearch(searchQuery);
   }, [searchQuery, handleSearch]);
 
+  const toggleMealCard = (mealType: MealType) => {
+    setExpandedMealCards((prev) => ({
+      ...prev,
+      [mealType]: !prev[mealType],
+    }));
+  };
+
+  const updateFoodPortion = (mealType: MealType, foodName: string, increment: boolean) => {
+    setConsumedFoods((prevConsumedFoods) => {
+      const updatedFoods = prevConsumedFoods[mealType].map((food) => {
+        if (food.name === foodName) {
+          const newPortion = increment ? food.portion + 1 : Math.max(food.portion - 1, 1); 
+          return {
+            ...food,
+            portion: newPortion,
+            calories: (food.calories / food.portion) * newPortion, 
+            fat: (food.fat / food.portion) * newPortion,
+            carb: (food.carb / food.portion) * newPortion,
+            protein: (food.protein / food.portion) * newPortion,
+          };
+        }
+        return food;
+      });
+  
+      return {
+        ...prevConsumedFoods,
+        [mealType]: updatedFoods,
+      };
+    });
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
@@ -440,6 +486,21 @@ export default function Nutrition() {
           {Object.keys(consumedFoods).map((mealType) => {
             if (consumedFoods[mealType as MealType].length > 0) {
               const foodList = consumedFoods[mealType as MealType];
+              const totalFat = foodList.reduce((sum, food) => sum + food.fat, 0);
+              const totalProtein = foodList.reduce((sum, food) => sum + food.protein, 0);
+              const totalCarbs = foodList.reduce((sum, food) => sum + food.carb, 0);
+              const totalCalories = foodList.reduce((sum, food) => sum + food.calories, 0);
+
+              function handleDeleteItem(mealType: MealType, foodName: string): void {
+                setConsumedFoods((prevConsumedFoods) => {
+                  const updatedFoods = prevConsumedFoods[mealType].filter((food) => food.name !== foodName);
+                  return {
+                    ...prevConsumedFoods,
+                    [mealType]: updatedFoods,
+                  };
+                });
+              }
+
               return (
                 <View key={mealType} style={styles.mealCard}>
                   <TouchableOpacity
@@ -448,22 +509,76 @@ export default function Nutrition() {
                   >
                     <Text style={styles.deleteCardText}>X</Text>
                   </TouchableOpacity>
-                  <Text style={styles.mealCardTitle}>{mealType}</Text>
-                  {foodList.map((food, index) => (
-                    <View
-                      key={food.name}
-                      style={[
-                        styles.foodCardItem,
-                        index < foodList.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#d6d6d6' },
-                      ]}
-                    >
-                      <View style={{ flexDirection: 'column' }}>
-                        <Text style={styles.foodCardName}>{food.name}</Text>
-                        <Text style={styles.foodQuantity}>{food.quantity} grams</Text>
+                    <Text style={styles.mealCardTitle}>{mealType}</Text>
+                  <View style={styles.macroSummaryContainer}>
+                    <View style={styles.macroRow}>
+                      <View style={styles.macroItem}>
+                        <View style={[styles.macroColorBox, { backgroundColor: 'red' }]} />
+                        <Text style={styles.macroText}>Calories: {totalCalories} cal</Text>
                       </View>
-                      <Text style={styles.foodCalories}>{food.calories} <Text style={{fontSize: 15, color: 'gray'}}>Cal</Text></Text>
+                      <View style={styles.macroItem}>
+                        <View style={[styles.macroColorBox, styles.proteinColor]} />
+                        <Text style={styles.macroText}>Protein: {totalProtein}g</Text>
+                      </View>
                     </View>
-                  ))}
+                    <View style={styles.macroRow}>
+                      <View style={styles.macroItem}>
+                        <View style={[styles.macroColorBox, styles.carbsColor]} />
+                        <Text style={styles.macroText}>Carbs: {totalCarbs}g</Text>
+                      </View>
+                      <View style={styles.macroItem}>
+                        <View style={[styles.macroColorBox, styles.fatColor]} />
+                        <Text style={styles.macroText}>Fats: {totalFat}g</Text>
+                      </View>
+                    </View>
+                  </View>
+                  <TouchableOpacity 
+                    style={{alignItems: 'center'}}
+                    onPress={() => toggleMealCard(mealType as MealType)}
+                  >
+                    <Ionicons
+                        name={expandedMealCards[mealType as MealType] ? 'chevron-up' : 'chevron-down'}
+                        size={22}
+                        color="#666"
+                      />
+                  </TouchableOpacity>
+                  {expandedMealCards[mealType as MealType] && (
+                    <View>
+                      {foodList.map((food, index) => (
+                        <View
+                          key={food.name}
+                          style={[
+                            styles.foodCardItem,
+                            index < foodList.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#d6d6d6' },
+                          ]}
+                        >
+                          <View style={{ flexDirection: 'column', position: 'relative' }}>
+                            <View style={styles.nameContainer}>
+                              <TouchableOpacity onPress={() => handleDeleteItem(mealType as MealType, food.name)}>
+                                <Image source={require('../../assets/cross-Icon.png')} style={styles.crossIcon} /> 
+                              </TouchableOpacity>
+                              <Text style={styles.foodCardName}>{food.name}</Text>
+                            </View>
+                            <Text style={styles.foodQuantity}>{food.quantity * food.portion} grams</Text>
+                          </View>
+                          <View style={{ flexDirection: 'column', alignItems: 'center' }}>
+                            <Text style={styles.foodCalories}>
+                              {food.calories} <Text style={{ fontSize: 15, color: 'gray' }}>Cal</Text>
+                            </Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                              <TouchableOpacity onPress={() => updateFoodPortion(mealType as MealType, food.name, false)} style={{flexDirection: 'row', alignItems: 'center'}}>
+                                <Image source={require('../../assets/minus-Icon.png')} style={{height: 15, width: 15}} />                              
+                              </TouchableOpacity>
+                              <Text style={{ fontSize: 14, marginVertical: 7, marginHorizontal: 7 }}>{food.portion}</Text>
+                              <TouchableOpacity onPress={() => updateFoodPortion(mealType as MealType, food.name, true)}>
+                                <Image source={require('../../assets/plus-Icon.png')} style={{height: 15, width: 15}} />
+                              </TouchableOpacity>
+                            </View>
+                          </View>
+                        </View>
+                      ))}
+                    </View>
+                  )}
                 </View>
               );
             }
@@ -653,8 +768,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: RFPercentage(1.5),
-    paddingLeft: RFPercentage(2),
-    paddingRight: RFPercentage(1.5)
+    paddingLeft: RFPercentage(2.5),
+    paddingRight: RFPercentage(1)
   },
   foodCardName: {
     fontSize: RFValue(18),
@@ -670,7 +785,7 @@ const styles = StyleSheet.create({
   foodCalories: {
     fontSize: RFValue(18),
     fontWeight: '400',
-    marginRight: RFValue(0.04 * width)
+    marginHorizontal: RFValue(0.03 * width)
   },
   deleteCardButton: {
     position: 'absolute',
@@ -835,5 +950,60 @@ const styles = StyleSheet.create({
     justifyContent: 'center', 
     borderWidth: 1,
     borderColor: '#E0E0E0', 
+  },
+  macroSummaryContainer: {
+    backgroundColor: '#f9f9f9',
+    borderRadius: 8,
+    marginVertical: 10,
+    paddingVertical: 10,
+    alignItems: 'center', 
+    flexDirection: 'row',
+    paddingHorizontal: 50
+  },
+  macroRow: {
+    flexDirection: 'column',
+    justifyContent: 'space-between',
+    width: '60%', 
+  },
+  macroItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    margin: 5
+  },
+  macroColorBox: {
+    height: 10,
+    width: 10,
+    borderRadius: 2,
+    marginRight: 6,
+  },
+  fatColor: {
+    backgroundColor: '#66D3C8',
+  },
+  proteinColor: {
+    backgroundColor: 'orange',
+  },
+  carbsColor: {
+    backgroundColor: '#9D6DEB',
+  },
+  macroText: {
+    fontSize: 14,
+    color: '#333',
+    fontWeight: '500',
+  },
+  mealCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginVertical: 10,
+  },
+  nameContainer: {
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    marginLeft: -27,
+  },
+  crossIcon: {
+    marginRight: RFPercentage(1), 
+    height: 18, 
+    width: 18, 
   },
 });
