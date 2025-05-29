@@ -38,7 +38,7 @@ export default function Home() {
   const navigation = useNavigation<NavigationProp>();
   const dispatch = useDispatch<AppDispatch>();
   const realm = useRealm();
-  console.log(realm.objects('User')[0])
+  //console.log(realm.objects('NutritionInfo'))
 
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener((state) => {

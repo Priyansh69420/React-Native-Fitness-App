@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Image, Dimensions, ScrollView, Modal, FlatList, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native'
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Image, Dimensions, ScrollView, Modal, FlatList, KeyboardAvoidingView, Platform, ActivityIndicator, Animated, Easing } from 'react-native'
 import React, { useCallback, useEffect, useState } from 'react'
 import { RFPercentage, RFValue } from 'react-native-responsive-fontsize';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
@@ -13,6 +13,9 @@ import { doc, updateDoc, collection, getDocs, addDoc } from '@firebase/firestore
 import { TextInput } from 'react-native-gesture-handler';
 import { saveDailyProgress } from '../../utils/monthlyProgressUtils';
 import { Ionicons } from '@expo/vector-icons';
+import { NutritionInfo, useRealm } from '../../../realmConfig';
+import { useNetInfo } from '@react-native-community/netinfo';
+import { UpdateMode } from 'realm';
 
 type NavigationProp = DrawerNavigationProp<HomeStackParamList, 'Nutrition'>;
 
@@ -77,6 +80,8 @@ export default function Nutrition() {
   const [nutritionInfo, setNutritionInfo] = useState<FoodItem[]>([]);
   const [expandedMealCards, setExpandedMealCards] = useState<{ [key in MealType]?: boolean }>({});
   const [isLoading, setIsLoading] = useState(false);
+  const realm = useRealm()
+  const isConnected = useNetInfo()
 	const [nutritionData, setNutritionData] = useState([
     { name: 'Fat', percentage: 0, color: '#66D3C8' },
     { name: 'Carb', percentage: 0, color: '#9D6DEB' },
@@ -94,6 +99,13 @@ export default function Nutrition() {
     Dinner: [],
     Snack: [],
   });
+  const [cardAnimations] = useState<{ [key in MealType]: Animated.Value }>(() => {
+    const animations: { [key in MealType]?: Animated.Value } = {};
+    Object.keys(consumedFoods).forEach((mealType) => {
+        animations[mealType as MealType] = new Animated.Value(0);
+    });
+    return animations as { [key in MealType]: Animated.Value };
+});
 
   const baseRadius = width * 0.22; 
   const strokeWidth = 18;
@@ -103,7 +115,7 @@ export default function Nutrition() {
 
   useEffect(() => {
     loadAndResetData();
-    fetchNutritionInfo();
+    fetchNutritionInfo(realm);
   }, []);
 
   useEffect(() => {
@@ -111,15 +123,73 @@ export default function Nutrition() {
     saveData();
   }, [consumedFoods, totalCalories]);
 
-  const fetchNutritionInfo = async () => {
+  const fetchNutritionInfo = async (realm: Realm) => {
     try {
-      const snapshot = await getDocs(collection(firestore, 'nutritionInfo'));
-      const fetchedData: FoodItem[] = snapshot.docs.map(doc => doc.data() as FoodItem);
-      setNutritionInfo(fetchedData);
-    } catch (error: any) {
-      console.error('Error fetching nutrition info:', error);
+      // STEP 1: Load local data from Realm
+      const localData = realm.objects('NutritionInfo');
+      const nutritionArray = Array.from(localData).map(item => ({
+        id: item.id,
+        name: item.name,
+        calories: item.calories,
+        carb: item.carb,
+        fat: item.fat,
+        protein: item.protein,
+        quantity: item.quantity,
+        portion: typeof item.portion === 'number' ? item.portion : 1,
+      })) as FoodItem[];
+  
+      // Use this local data for rendering
+      setNutritionInfo(nutritionArray);
+  
+      // STEP 2: Check if device is online before syncing
+      if (isConnected.isConnected) {
+        const snapshot = await getDocs(collection(firestore, 'nutritionInfo'));
+        realm.write(() => {
+          snapshot.docs.forEach(doc => {
+            const data = doc.data();
+            realm.create('NutritionInfo', {
+              id: doc.id,
+              calories: data.calories,
+              carb: data.carb,
+              fat: data.fat,
+              name: data.name,
+              protein: data.protein,
+              quantity: data.quantity,
+            }, UpdateMode.Modified);
+          });
+        });
+  
+        // Optional: Refresh local state again after sync
+        const updatedLocal = realm.objects('NutritionInfo');
+        const updatedArray = Array.from(updatedLocal).map(item => ({
+          id: item.id,
+          name: item.name,
+          calories: item.calories,
+          carb: item.carb,
+          fat: item.fat,
+          protein: item.protein,
+          quantity: item.quantity,
+          portion: typeof item.portion === 'number' ? item.portion : 1,
+        })) as FoodItem[];
+        
+        setNutritionInfo(updatedArray);
+      }
+    } catch (error) {
+      console.error('Failed to fetch nutrition info:', error);
     }
-  }
+  };
+  
+  useEffect(() => {
+    Object.keys(expandedMealCards).forEach((mealType) => {
+        const isExpanded = expandedMealCards[mealType as MealType];
+        Animated.timing(cardAnimations[mealType as MealType], {
+            toValue: isExpanded ? -15 : 0, // Move up 10px when expanded
+            duration: 200,
+            easing: Easing.linear,
+            useNativeDriver: true,
+        }).start();
+    });
+}, [expandedMealCards, cardAnimations]);
 
 	const handleMealTypeSelect = (meal: string) => {
     setSelectedMeal(meal === selectedMeal ? null : meal); 
@@ -502,7 +572,14 @@ export default function Nutrition() {
               }
 
               return (
-                <View key={mealType} style={styles.mealCard}>
+                <Animated.View key={mealType} 
+                  style={[
+                    styles.mealCard,
+                    {
+                        transform: [{ translateY: cardAnimations[mealType as MealType] }],
+                    },
+              ]}
+                >
                   <TouchableOpacity
                     style={styles.deleteCardButton}
                     onPress={() => handleDeleteCard(mealType as MealType)}
@@ -579,7 +656,7 @@ export default function Nutrition() {
                       ))}
                     </View>
                   )}
-                </View>
+                </Animated.View>
               );
             }
             return null;

@@ -26,9 +26,26 @@ export class User extends Realm.Object {
   }
 }
 
+export class NutritionInfo extends Realm.Object {
+  static schema: ObjectSchema = {
+    name: 'NutritionInfo',
+    properties: {
+      id: 'string',
+      calories: 'float',
+      carb: 'float',
+      fat: 'float',
+      name: 'string',
+      protein: 'float',
+      quantity: 'float',
+      portion: 'int',
+    },
+    primaryKey: 'id',
+  }
+}
+
 const realmConfig = {
-  schema: [User],
-  schemaVersion: 4,
+  schema: [User, NutritionInfo],
+  schemaVersion: 7,
 }
 
 export const { RealmProvider, useRealm, useObject, useQuery } = createRealmContext(realmConfig);
