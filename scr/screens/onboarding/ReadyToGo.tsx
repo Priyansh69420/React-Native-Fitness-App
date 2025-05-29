@@ -36,6 +36,8 @@ export default function ReadyToGo() {
         glassGoal: 8,
         stepGoal: 10000,
         onboardingComplete: true,
+        isPremium: false,
+        planType: '',
       });
 
       await setAuthUser(user.uid);

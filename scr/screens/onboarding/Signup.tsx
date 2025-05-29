@@ -52,7 +52,7 @@ export default function Signup() {
   }, []);
 
   async function handleContinue() {
-    if(!isConnected) {
+    if(!isConnected.isConnected) {
       setError('Not internet, Please connect to internet to continue');
       return;
     }

@@ -13,7 +13,7 @@ import { doc, updateDoc, collection, getDocs, addDoc } from '@firebase/firestore
 import { TextInput } from 'react-native-gesture-handler';
 import { saveDailyProgress } from '../../utils/monthlyProgressUtils';
 import { Ionicons } from '@expo/vector-icons';
-import { NutritionInfo, useRealm } from '../../../realmConfig';
+import { useRealm } from '../../../realmConfig';
 import { useNetInfo } from '@react-native-community/netinfo';
 import { UpdateMode } from 'realm';
 
@@ -81,7 +81,7 @@ export default function Nutrition() {
   const [expandedMealCards, setExpandedMealCards] = useState<{ [key in MealType]?: boolean }>({});
   const [isLoading, setIsLoading] = useState(false);
   const realm = useRealm()
-  const isConnected = useNetInfo()
+  const isConnected = useNetInfo();
 	const [nutritionData, setNutritionData] = useState([
     { name: 'Fat', percentage: 0, color: '#66D3C8' },
     { name: 'Carb', percentage: 0, color: '#9D6DEB' },
@@ -115,8 +115,13 @@ export default function Nutrition() {
 
   useEffect(() => {
     loadAndResetData();
-    fetchNutritionInfo(realm);
   }, []);
+
+  useEffect(() => {
+    if (isConnected?.isConnected !== null) {
+      fetchNutritionInfo(realm);
+    }
+  }, [isConnected?.isConnected]);
 
   useEffect(() => {
     calculateTotal();
@@ -124,9 +129,11 @@ export default function Nutrition() {
   }, [consumedFoods, totalCalories]);
 
   const fetchNutritionInfo = async (realm: Realm) => {
+  
     try {
       // STEP 1: Load local data from Realm
       const localData = realm.objects('NutritionInfo');
+  
       const nutritionArray = Array.from(localData).map(item => ({
         id: item.id,
         name: item.name,
@@ -138,15 +145,17 @@ export default function Nutrition() {
         portion: typeof item.portion === 'number' ? item.portion : 1,
       })) as FoodItem[];
   
-      // Use this local data for rendering
       setNutritionInfo(nutritionArray);
   
       // STEP 2: Check if device is online before syncing
-      if (isConnected.isConnected) {
+      if (isConnected?.isConnected) {
         const snapshot = await getDocs(collection(firestore, 'nutritionInfo'));
+  
+        // STEP 3: Write to Realm
         realm.write(() => {
           snapshot.docs.forEach(doc => {
             const data = doc.data();
+  
             realm.create('NutritionInfo', {
               id: doc.id,
               calories: data.calories,
@@ -159,7 +168,7 @@ export default function Nutrition() {
           });
         });
   
-        // Optional: Refresh local state again after sync
+        // STEP 4: Reload and update local state
         const updatedLocal = realm.objects('NutritionInfo');
         const updatedArray = Array.from(updatedLocal).map(item => ({
           id: item.id,
@@ -171,13 +180,14 @@ export default function Nutrition() {
           quantity: item.quantity,
           portion: typeof item.portion === 'number' ? item.portion : 1,
         })) as FoodItem[];
-        
+  
         setNutritionInfo(updatedArray);
       }
     } catch (error) {
-      console.error('Failed to fetch nutrition info:', error);
+      console.error('[ERROR] Failed to fetch nutrition info:', error);
     }
   };
+  
   
   useEffect(() => {
     Object.keys(expandedMealCards).forEach((mealType) => {
