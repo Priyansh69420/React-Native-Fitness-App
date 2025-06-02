@@ -38,7 +38,9 @@ export default function Home() {
   const navigation = useNavigation<NavigationProp>();
   const dispatch = useDispatch<AppDispatch>();
   const realm = useRealm();
-  //console.log(realm.objects('NutritionInfo'))
+  console.log(realm.objects('User')[0])
+  console.log('Realm:')
+  console.log(userData)
 
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener((state) => {
@@ -231,9 +233,14 @@ export default function Home() {
                 <View style={styles.sectionDetails}>
                   <View style={styles.sectionHeader}>
                     <Text style={styles.sectionTitle}>Water</Text>
-                    <TouchableOpacity style={styles.warningButton}>
-                      <Text style={[styles.toggleText, styles.warningText]}>
-                        {glassDrunk >= userData?.glassGoal ? 'Complete' : 'Warning'}
+                    <TouchableOpacity 
+                      style={[
+                        styles.warningButton, 
+                        glassDrunk >= userData?.glassGoal ? { backgroundColor: '#C8F2C8' } : null
+                      ]}
+                    >
+                      <Text style={[styles.toggleText, styles.warningText, glassDrunk >= userData?.glassGoal ? { color: 'green' } : null]}>
+                        {glassDrunk >= userData?.glassGoal ? 'Completed' : 'Warning'}
                       </Text>
                     </TouchableOpacity>
                   </View>

@@ -6,6 +6,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useOnboarding } from '../../contexts/OnboardingContext';
 import { RFValue } from 'react-native-responsive-fontsize';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { Ionicons } from '@expo/vector-icons';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, "SetPassword">;
 const logo = require('../../assets/logo.png'); 
@@ -16,6 +17,7 @@ export default function SetPassword() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string>('');
   const [shouldValidate, setShouldValidate] = useState<boolean>(false);
+  const [isVisible, setIsVisible] = useState<boolean>(false);
   const {updateOnboardingData, onboardingData} = useOnboarding();
 
   useEffect(() => {
@@ -86,10 +88,21 @@ export default function SetPassword() {
                 value={password}
                 onChangeText={setPassword}
                 placeholder="Enter your password"
-                secureTextEntry
+                secureTextEntry={!isVisible}
                 autoCapitalize="none"
                 autoFocus
               />
+              <TouchableOpacity
+              onPress={() => setIsVisible(v => !v)}
+              style={styles.eyeButton}
+              accessibilityLabel={isVisible ? "Hide password" : "Show password"}
+            >
+              <Ionicons
+                name={isVisible ? "eye-off-outline" : "eye-outline"}
+                size={24}
+                color="#666"
+              />
+            </TouchableOpacity>
             </View>
 
             {error ? <Text style={{color: 'red', width: '85%', marginBottom: 20, textAlign: 'center', marginTop: -10}}>{error}</Text>: <></>}
@@ -179,7 +192,7 @@ const styles = StyleSheet.create({
   inputContainer2: {
     backgroundColor: '#FFF',
     borderRadius: width * 0.025, 
-    paddingHorizontal: width * 0.0375, 
+    paddingHorizontal: width * 0.0375,
     marginBottom: height * 0.025, 
     marginTop: height * 0.0125, 
     width: '90%',
@@ -189,13 +202,15 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
-    justifyContent: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   input2: {
-    fontSize: RFValue(16, height), 
+    fontSize: RFValue(16, height),
     color: '#666',
-    width: '100%',
-    textAlign: 'center',
+    flex: 1,
+    textAlign: 'center'
   },
   requirementsContainer2: {
     marginBottom: height * 0.1, 
@@ -239,5 +254,9 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: RFValue(18, height), 
     fontWeight: 'bold',
+  },
+  eyeButton: {
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
