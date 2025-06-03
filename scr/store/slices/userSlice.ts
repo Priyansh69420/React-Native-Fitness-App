@@ -2,6 +2,8 @@ import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { auth, firestore } from "../../../firebaseConfig";
 import Realm from "realm";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import NetInfo from '@react-native-community/netinfo';
 
 export interface UserData {
     email: string;
@@ -10,6 +12,25 @@ export interface UserData {
     profilePicture: string | number;
     goals: string[];
     interests: string[];
+    gender: string;
+    calories: number;
+    isPremium: boolean;
+    planType: string;
+    onboardingComplete: boolean;
+    userHeight: number;
+    userWeight: number;
+    calorieGoal: number;
+    glassGoal: number;
+    stepGoal: number;
+}
+
+interface RealmUser {
+    email: string;
+    name: string;
+    faceId: boolean;
+    profilePicture: string | number;
+    goals: Realm.List<string>;
+    interests: Realm.List<string>;
     gender: string;
     calories: number;
     isPremium: boolean;
@@ -40,19 +61,70 @@ const setDefaultProfilePicture = (userData: UserData) => {
     }
 };
 
+export const saveUserDataToRealm = (realm: Realm, userData: UserData) => {
+    realm.write(() => {
+        realm.create('User', userData, Realm.UpdateMode.Modified);
+    });
+};
+
+export const updateUserProfile = createAsyncThunk(
+    'user/updateUserProfile',
+    async (
+      { updatedData, realm }: { updatedData: Partial<UserData>; realm: Realm },
+      { getState, dispatch }
+    ) => {
+      const state = getState() as { user: UserState };
+      const currentUser = state.user.userData;
+  
+      if (!currentUser) {
+        throw new Error('No user data available');
+      }
+  
+      const newUserData = { ...currentUser, ...updatedData };
+  
+      // Step 1: Update Redux store
+      dispatch(updateUser(updatedData));
+  
+      // Step 2: Update Realm immediately
+      try {
+        saveUserDataToRealm(realm, newUserData);
+      } catch (err) {
+        console.error('[updateUserProfile] Failed to save to Realm:', err);
+      }
+  
+      // Step 3: Sync logic based on network status
+      try {
+        const netState = await NetInfo.fetch();
+        if (netState.isConnected) {
+          await syncRealmUserToFirestore(realm, newUserData.email);
+          await AsyncStorage.removeItem('pendingUserSync');
+          await AsyncStorage.removeItem('pendingUserData');
+        } else {
+          await AsyncStorage.setItem('pendingUserSync', 'true');
+          await AsyncStorage.setItem('pendingUserData', JSON.stringify(newUserData));
+        }
+      } catch (netErr) {
+        await AsyncStorage.setItem('pendingUserSync', 'true');
+        await AsyncStorage.setItem('pendingUserData', JSON.stringify(newUserData));
+      }
+  
+      return updatedData;
+    }
+);
+  
+
 export const syncRealmUserToFirestore = async (realm: Realm, email: string) => {
     try {
-        const user = realm.objectForPrimaryKey('User', email);
-        if(!user) return;
-  
-        const userDoc = doc(firestore, 'users', email);
-        await setDoc(userDoc, {
+        const user = realm.objectForPrimaryKey<RealmUser>('User', email);
+        if (!user) throw new Error('User not found in Realm for syncing');
+
+        const userData: UserData = {
             email: user.email,
-            name: user.name,
+            name: user.name, 
             faceId: user.faceId,
             profilePicture: user.profilePicture,
-            goals: user.goals,
-            interests: user.interests,
+            goals: Array.from(user.goals),
+            interests: Array.from(user.interests),
             gender: user.gender,
             calories: user.calories,
             isPremium: user.isPremium ?? false,
@@ -63,11 +135,19 @@ export const syncRealmUserToFirestore = async (realm: Realm, email: string) => {
             calorieGoal: user.calorieGoal,
             glassGoal: user.glassGoal,
             stepGoal: user.stepGoal,
-        }, {merge: true});
-    } catch(error: any) {
+        };
+
+        const firestoreUser = auth.currentUser;
+        if (!firestoreUser) throw new Error("No authenticated user found.");
+
+        const userDoc = doc(firestore, 'users', firestoreUser.uid);
+        await setDoc(userDoc, userData, { merge: true });
+
+    } catch (error: any) {
         console.error('Failed to sync Realm to Firestore:', error);
+        throw error;
     }
-  };
+};
 
 export const fetchUserData = createAsyncThunk("user/fetchUserData", async (_, { rejectWithValue }) => {
     try {
@@ -92,24 +172,25 @@ export const loadUserDataFromRealm = createAsyncThunk(
         const users = realm.objects('User');
         if (!users.length) throw new Error('No local user data found.');
   
-        const user = users[0] as unknown as UserData;
+        const user = users[0] as unknown as RealmUser;
+
         const userData: UserData = {
-          email: user.email,
-          name: user.name,
-          faceId: user.faceId,
-          profilePicture: user.profilePicture,
-          goals: user.goals,
-          interests: user.interests,
-          gender: user.gender,
-          calories: user.calories,
-          isPremium: user.isPremium,
-          planType: user.planType,
-          onboardingComplete: user.onboardingComplete,
-          userHeight: user.userHeight,
-          userWeight: user.userWeight,
-          calorieGoal: user.calorieGoal,
-          glassGoal: user.glassGoal,
-          stepGoal: user.stepGoal,
+        email: user.email,
+        name: user.name,
+        faceId: user.faceId,
+        profilePicture: user.profilePicture,
+        goals: Array.from(user.goals),        
+        interests: Array.from(user.interests), 
+        gender: user.gender,
+        calories: user.calories,
+        isPremium: user.isPremium,
+        planType: user.planType,
+        onboardingComplete: user.onboardingComplete,
+        userHeight: user.userHeight,
+        userWeight: user.userWeight,
+        calorieGoal: user.calorieGoal,
+        glassGoal: user.glassGoal,
+        stepGoal: user.stepGoal,
         };
   
         return userData;

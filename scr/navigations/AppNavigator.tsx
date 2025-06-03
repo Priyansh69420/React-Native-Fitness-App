@@ -10,12 +10,12 @@ import { useNotifications } from "../contexts/NotificationsContext";
 import { navigationRef } from "./DrawerParamList";
 import { useAuth } from '../contexts/AuthContext';
 import { Timestamp, collection, collectionGroup, doc, getDoc, query, where, orderBy, limit, onSnapshot, setDoc } from "firebase/firestore";
-import { firestore } from "../../firebaseConfig";
-import { fetchUserData, loadUserDataFromRealm, UserData } from "../store/slices/userSlice";
+import { auth, firestore } from "../../firebaseConfig";
+import { fetchUserData, loadUserDataFromRealm, syncRealmUserToFirestore, updateUserProfile, UserData } from "../store/slices/userSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "../store/store";
 import { useRealm } from "../../realmConfig";
-import NetInfo, { useNetInfo } from '@react-native-community/netinfo';
+import NetInfo from '@react-native-community/netinfo';
 import { UpdateMode } from "realm";
 
 const waitForNavigationReady = async () => {
@@ -96,29 +96,98 @@ const AppNavigator = () => {
   const { addNotification } = useNotifications();
 
   useEffect(() => {
-    const unsubscribe = NetInfo.addEventListener((state) => {
-      const netinfo = state.isConnected;
-
-      if(!netinfo) {
-        dispatch(loadUserDataFromRealm(realm));
+    const initializeUserData = async () => {
+      if (!user?.uid) {
+        return;
       }
-    });
-    unsubscribe()
-    return () => unsubscribe();
-  }, []);
+  
+      try {
+        const netState = await NetInfo.fetch();
+        const isConnected = netState.isConnected;
+  
+        // Step 1: Check for pending sync
+        const pendingSync = await AsyncStorage.getItem('pendingUserSync');
+  
+        if (pendingSync === 'true' && isConnected) {
+          const pendingData = await AsyncStorage.getItem('pendingUserData');
+          if (pendingData) {
+            const parsedData = JSON.parse(pendingData) as UserData;
+            realm.write(() => {
+              realm.create('User', parsedData, UpdateMode.Modified);
+            });
+            await syncRealmUserToFirestore(realm, parsedData.email);
+            await AsyncStorage.removeItem('pendingUserSync');
+            await AsyncStorage.removeItem('pendingUserData');
+          } else {
+            await AsyncStorage.removeItem('pendingUserSync');
+          }
+        }
+  
+        // Step 2: Load data
+        if (!isConnected) {
+          try {
+            await dispatch(loadUserDataFromRealm(realm)).unwrap();
+          } catch (realmError) {
+          }
+        } else {
+          try {
+            await dispatch(fetchUserData()).unwrap();
+          } catch (fetchError) {
+            console.error('[initializeUserData] Failed to fetch from Firestore:', fetchError);
+            try {
+              await dispatch(loadUserDataFromRealm(realm)).unwrap();
+            } catch (realmError) {
+              console.error('[initializeUserData] Failed to load from Realm:', realmError);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('[initializeUserData] Error during initialization:', error);
+      }
+    };
+  
+    initializeUserData();
+  }, [user?.uid, dispatch, realm]);
 
   useEffect(() => {
-    const fetchIfOnline = async () => {
-      const netState = await NetInfo.fetch();
-      const isConnected = netState.isConnected; 
-
-      if(isConnected && user?.uid) {
-        dispatch(fetchUserData());
+    const unsubscribe = NetInfo.addEventListener(async (state) => {
+      if (!user?.uid || !userData?.email) {
+        return;
       }
-    }
-
-    fetchIfOnline()
-  }, [user?.uid]);
+  
+      if (state.isConnected) {
+        const pendingSync = await AsyncStorage.getItem('pendingUserSync');
+        console.log(`[NetInfo] Pending sync flag: ${pendingSync}`);
+        if (pendingSync === 'true') {
+          try {
+            const pendingData = await AsyncStorage.getItem('pendingUserData');
+            if (pendingData) {
+              const parsedData = JSON.parse(pendingData) as UserData;
+              realm.write(() => {
+                realm.create('User', parsedData, UpdateMode.Modified);
+              });
+              console.log('[NetInfo] Saved pending user data to Realm');
+              await syncRealmUserToFirestore(realm, parsedData.email);
+              await AsyncStorage.removeItem('pendingUserSync');
+              await AsyncStorage.removeItem('pendingUserData');
+            } else {
+              await AsyncStorage.removeItem('pendingUserSync');
+            }
+            await dispatch(fetchUserData()).unwrap();
+          } catch (error) {
+            console.error('[NetInfo] Sync failed after reconnect:', error);
+          }
+        }
+      } else {
+        try {
+          await dispatch(loadUserDataFromRealm(realm)).unwrap();
+        } catch (error) {
+          console.error('[NetInfo] Failed to load from Realm:', error);
+        }
+      }
+    });
+    return () => unsubscribe();
+  }, [user?.uid, userData?.email, realm, dispatch]);
 
   useEffect(() => {
     if(!userData || !realm || !user?.uid) return;

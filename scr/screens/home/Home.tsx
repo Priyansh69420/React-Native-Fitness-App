@@ -10,7 +10,7 @@ import {
   SafeAreaView,
   ScrollView,
 } from 'react-native';
-import NetInfo from '@react-native-community/netinfo';
+import NetInfo, {useNetInfo} from '@react-native-community/netinfo';
 import { auth } from '../../../firebaseConfig';
 import { HomeStackParamList } from '../../navigations/HomeStackParamList';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
@@ -23,6 +23,7 @@ import { fetchUserData, loadUserDataFromRealm } from '../../store/slices/userSli
 import { loadData } from './Water';
 import { fetchSteps } from '../../store/slices/footstepSlice';
 import { useRealm } from '../../../realmConfig';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type NavigationProp = DrawerNavigationProp<HomeStackParamList, 'Home'>;
 
@@ -38,9 +39,25 @@ export default function Home() {
   const navigation = useNavigation<NavigationProp>();
   const dispatch = useDispatch<AppDispatch>();
   const realm = useRealm();
-  console.log(realm.objects('User')[0])
+  const isConnected = useNetInfo().isConnected;
+
+  console.log('Is internet connected: ', isConnected);;
   console.log('Realm:')
+  console.log(realm.objects('User')[0])
   console.log(userData)
+  
+
+async function retrievePendingUserSync() {
+  try {
+    const pending = await AsyncStorage.getItem('pendingUserSync');
+    console.log("Value from AsyncStorage:", pending);
+
+  } catch (error) {
+    console.error("Error retrieving data from AsyncStorage:", error);
+  }
+}
+
+retrievePendingUserSync();
 
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener((state) => {

@@ -5,7 +5,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { doc, setDoc } from 'firebase/firestore';
 import { auth, firestore } from '../../../firebaseConfig';
 import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth';
-import { updateUser } from '../../store/slices/userSlice';
+import { syncRealmUserToFirestore, updateUser, updateUserProfile } from '../../store/slices/userSlice';
 import { AppDispatch, RootState } from '../../store/store';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SettingStackParamList } from '../../navigations/SettingStackParamList';
@@ -15,7 +15,10 @@ import { supabase } from '../../../supabaseConfig';
 import * as ImagePicker from 'expo-image-picker';
 import RNFS from 'react-native-fs';
 import { Ionicons } from '@expo/vector-icons';
-import NetInfo from '@react-native-community/netinfo';
+import { useNetInfo } from '@react-native-community/netinfo';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useRealm } from '../../../realmConfig';
+import { UpdateMode } from 'realm';
 
 type NavigationProp = StackNavigationProp<SettingStackParamList, 'Profile'>;
 
@@ -46,11 +49,6 @@ const avatars: Avatar[] = [
   { id: 3, source: { uri: 'https://dojvycwbetqfeutcvsqe.supabase.co/storage/v1/object/public/profileimages/profile_pictures/avatar4-Photoroom-Photoroom%20(1).jpg' } },
 ];
 
-const getAvatarSource = (id: number): any => {
-  const avatar = avatars.find((item) => item.id === id);
-  return avatar ? avatar.source : null;
-};
-
 const goalsOptions = ['Weight Loss', 'Better sleeping habit', 'Track my nutrition', 'Improve overall fitness'];
 const interestsOptions = ['Fashion', 'Organic', 'Meditation', 'Fitness', 'Smoke Free', 'Sleep', 'Health', 'Running', 'Vegan'];
 const genderOptions = ['Male', 'Female'];
@@ -64,6 +62,7 @@ export default function Profile() {
   const dispatch = useDispatch<AppDispatch>();
   const userData = useSelector((state: RootState) => state.user.userData);
   const [imageLoading, setImageLoading] = useState<boolean>(true);
+  const realm = useRealm();
 
   const [name, setName] = useState(userData?.name ?? '');
   const [height, setHeight] = useState(userData?.userHeight?.toString() ?? '');
@@ -242,11 +241,15 @@ export default function Profile() {
     return `${urlData.publicUrl}?t=${Date.now()}`;
   };
 
-  const handleSave = async () => {
+  const handleSave = async (partialData?: Partial<UserData>) => {
+    if (!validateDailyMilestones()) {
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const updatedUserData: Partial<UserData> = {
+      const updatedUserData: Partial<UserData> = partialData || {
         name,
         userHeight: parseFloat(height) || 0,
         userWeight: parseFloat(weight) || 0,
@@ -259,13 +262,7 @@ export default function Profile() {
         stepGoal: parseFloat(stepGoal) || 10000,
       };
 
-      dispatch(updateUser(updatedUserData));
-
-      const user = auth.currentUser;
-      if (user) {
-        const userRefDoc = doc(firestore, 'users', user.uid);
-        await setDoc(userRefDoc, updatedUserData, { merge: true });
-      }
+      await dispatch(updateUserProfile({ updatedData: updatedUserData, realm })).unwrap();
       navigation.goBack();
     } catch (error: any) {
       alert('Failed to update profile: ' + error.message);
@@ -683,7 +680,7 @@ export default function Profile() {
         </View>
 
         <View style={{ paddingHorizontal: 60 }}>
-          <TouchableOpacity onPress={handleSave} style={styles.saveButton} disabled={disableSave()}>
+          <TouchableOpacity onPress={() => handleSave()} style={styles.saveButton} disabled={disableSave()}>
             {loading ? <ActivityIndicator size='small' color='#d0d0d0'/> : <Text style={styles.buttonText}>Save Changes</Text>}
           </TouchableOpacity>
 

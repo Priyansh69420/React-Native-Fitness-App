@@ -48,4 +48,19 @@ const realmConfig = {
   schemaVersion: 8,
 }
 
+let realmInstance: Realm | null = null;
+
+export const getRealmInstance = async (): Promise<Realm> => {
+  if (realmInstance) {
+    return realmInstance;
+  }
+
+  realmInstance = await Realm.open({
+    schema: [User, NutritionInfo],
+    schemaVersion: 8,
+  });
+
+  return realmInstance;
+};
+
 export const { RealmProvider, useRealm, useObject, useQuery } = createRealmContext(realmConfig);
