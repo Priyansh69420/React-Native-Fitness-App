@@ -2,10 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, Image, ScrollView, StyleSheet, Dimensions, Platform, ActivityIndicator, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useSelector, useDispatch } from 'react-redux';
-import { doc, setDoc } from 'firebase/firestore';
-import { auth, firestore } from '../../../firebaseConfig';
+import { auth } from '../../../firebaseConfig';
 import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth';
-import { syncRealmUserToFirestore, updateUser, updateUserProfile } from '../../store/slices/userSlice';
+import { updateUserProfile } from '../../store/slices/userSlice';
 import { AppDispatch, RootState } from '../../store/store';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SettingStackParamList } from '../../navigations/SettingStackParamList';
@@ -15,10 +14,7 @@ import { supabase } from '../../../supabaseConfig';
 import * as ImagePicker from 'expo-image-picker';
 import RNFS from 'react-native-fs';
 import { Ionicons } from '@expo/vector-icons';
-import { useNetInfo } from '@react-native-community/netinfo';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRealm } from '../../../realmConfig';
-import { UpdateMode } from 'realm';
 
 type NavigationProp = StackNavigationProp<SettingStackParamList, 'Profile'>;
 
