@@ -9,9 +9,9 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNotifications } from "../contexts/NotificationsContext";
 import { navigationRef } from "./DrawerParamList";
 import { useAuth } from '../contexts/AuthContext';
-import { Timestamp, collection, collectionGroup, doc, getDoc, query, where, orderBy, limit, onSnapshot, setDoc } from "firebase/firestore";
-import { auth, firestore } from "../../firebaseConfig";
-import { fetchUserData, loadUserDataFromRealm, syncRealmUserToFirestore, updateUserProfile, UserData } from "../store/slices/userSlice";
+import { Timestamp, collection, collectionGroup, doc, getDoc, query, where, orderBy, limit, onSnapshot } from "firebase/firestore";
+import { firestore } from "../../firebaseConfig";
+import { fetchUserData, loadUserDataFromRealm, syncRealmUserToFirestore, UserData } from "../store/slices/userSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "../store/store";
 import { useRealm } from "../../realmConfig";
@@ -157,7 +157,6 @@ const AppNavigator = () => {
   
       if (state.isConnected) {
         const pendingSync = await AsyncStorage.getItem('pendingUserSync');
-        console.log(`[NetInfo] Pending sync flag: ${pendingSync}`);
         if (pendingSync === 'true') {
           try {
             const pendingData = await AsyncStorage.getItem('pendingUserData');

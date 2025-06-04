@@ -39,25 +39,6 @@ export default function Home() {
   const navigation = useNavigation<NavigationProp>();
   const dispatch = useDispatch<AppDispatch>();
   const realm = useRealm();
-  const isConnected = useNetInfo().isConnected;
-
-  console.log('Is internet connected: ', isConnected);;
-  console.log('Realm:')
-  console.log(realm.objects('User')[0])
-  console.log(userData)
-  
-
-async function retrievePendingUserSync() {
-  try {
-    const pending = await AsyncStorage.getItem('pendingUserSync');
-    console.log("Value from AsyncStorage:", pending);
-
-  } catch (error) {
-    console.error("Error retrieving data from AsyncStorage:", error);
-  }
-}
-
-retrievePendingUserSync();
 
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener((state) => {

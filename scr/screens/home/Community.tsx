@@ -16,6 +16,9 @@ import { Menu, MenuItem } from 'react-native-material-menu';
 import { ResizeMode, Video } from 'expo-av';
 import InstaStory from 'react-native-insta-story';
 import { Post } from './Post';
+import { getRealmInstance, useRealm } from '../../../realmConfig';
+import NetInfo, { useNetInfo } from '@react-native-community/netinfo';
+import { UpdateMode } from 'realm';
 
 type NavigationProp = DrawerNavigationProp<CommunityStackParamList, 'Community'>;
 
@@ -46,7 +49,14 @@ interface IUserStory {
 export const getTimeAgo = (timestamp: any) => {
   if (!timestamp) return 'Just now';
 
-  const date = timestamp.toDate();
+  // Convert Firestore timestamp to Date, or use Date directly if already Date
+  const date =
+    timestamp instanceof Date
+      ? timestamp
+      : typeof timestamp.toDate === 'function'
+      ? timestamp.toDate()
+      : new Date(timestamp);
+
   const now = new Date();
   const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
@@ -63,6 +73,7 @@ export const getTimeAgo = (timestamp: any) => {
     return `${days} day${days > 1 ? 's' : ''} ago`;
   }
 };
+
 
 const Community = () => {
   const [posts, setPosts] = useState<Post[]>([]);
@@ -82,52 +93,139 @@ const Community = () => {
   const [editingPost, setEditingPost] = useState<Post | null>(null);
   const [editedContent, setEditedContent] = useState<string>('');
   const [likingPostId, setLikingPostId] = useState<string | null>(null);
-
+  const isConnected = useNetInfo().isConnected;
+  const realm = useRealm()
   const navigation = useNavigation<NavigationProp>();
 
   useEffect(() => {
-    const postsCollection = collection(firestore, 'posts');
-    const postsQuery = query(postsCollection, orderBy('timestamp', 'desc'));
+    let unsubscribePosts: (() => void) | null = null;
+    let latestFirestorePostTimestamp: Date | null = null;
+  
+    const loadPosts = async () => {
+      const netInfo = await NetInfo.fetch();
+  
+      if (!netInfo.isConnected) {
+        // OFFLINE: Load from Realm
+        try {
+          const realm = await getRealmInstance();
+          const offlinePosts = realm.objects<Post>('Post').sorted('timestamp', true);
+          const deepCopiedPosts = offlinePosts.map(p => ({
+            id: p.id,
+            userId: p.userId,
+            content: p.content,
+            imageUrl: p.imageUrl,
+            timestamp: new Date(p.timestamp),
+            likes: [...(p.likes || [])], // Deep copy Realm List
+          }));
 
-    const unsubscribePosts = onSnapshot(
-      postsQuery,
-      async (snapshot) => {
-        const allPosts = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as Post[];
-
-        const userIds = [...new Set(allPosts.map(post => post.userId))];
-        const fetchUserData = async (userId: string): Promise<UserData> => {
-          const userDoc = await getDoc(doc(firestore, 'users', userId));
-          return userDoc.exists()
-            ? (userDoc.data() as UserData)
-            : { name: 'User', profilePicture: undefined };
-        };
-
-        const userDataPromises = userIds.map(fetchUserData);
-
-        const userDataResults = await Promise.all(userDataPromises);
-        const newUserDataMap = userIds.reduce((acc, id, index) => {
-          acc[id] = userDataResults[index];
-          return acc;
-        }, {} as Record<string, UserData>);
-
-        setUserDataMap(newUserDataMap);
-        setPosts(allPosts);
-        setLoading(false);
-      },
-      (error) => {
-        console.error('Error fetching posts:', error);
-        setError(error.message);
+          setPosts(deepCopiedPosts);
+          setLoading(false);
+        } catch (err) {
+          console.error('❌ Error loading posts from Realm:', err);
+          setError('Failed to load offline posts');
+          setLoading(false);
+        }
+        return;
+      }
+  
+      // ONLINE: Subscribe to Firestore
+      try {
+        const postsCollection = collection(firestore, 'posts');
+        const postsQuery = query(postsCollection, orderBy('timestamp', 'desc'));
+  
+        unsubscribePosts = onSnapshot(
+          postsQuery,
+          async (snapshot) => {
+            try {
+              const allPosts = snapshot.docs.map((doc) => ({
+                id: doc.id,
+                ...doc.data(),
+              })) as Post[];
+    
+              if (allPosts.length === 0) {
+                setPosts([]);
+                setLoading(false);
+                return;
+              }
+  
+              // Check if there's a new post compared to last saved timestamp
+              const newestPostTimestamp = allPosts[0].timestamp instanceof Date
+                ? allPosts[0].timestamp
+                : allPosts[0].timestamp?.toDate?.() ?? new Date();
+  
+              const realm = await getRealmInstance();
+  
+              const shouldClearRealm = !latestFirestorePostTimestamp
+                || newestPostTimestamp > latestFirestorePostTimestamp;
+  
+              latestFirestorePostTimestamp = newestPostTimestamp;
+  
+              if (shouldClearRealm) {
+                realm.write(() => {
+                  const oldPosts = realm.objects<Post>('Post');
+                  realm.delete(oldPosts);
+                });
+              }
+  
+              // Save/update top 5 posts to Realm
+              const top5 = allPosts.slice(0, 5);
+  
+              realm.write(() => {
+                top5.forEach((post) => {
+                  const timestamp = post.timestamp instanceof Date
+                    ? post.timestamp
+                    : post.timestamp?.toDate?.() ?? new Date();
+  
+                  realm.create('Post', {
+                    ...post,
+                    timestamp,
+                  }, UpdateMode.Modified);
+                });
+              });
+  
+              // Fetch user data for all posts
+              const userIds = [...new Set(allPosts.map(post => post.userId))];
+              const userDataResults = await Promise.all(userIds.map(async userId => {
+                const userDoc = await getDoc(doc(firestore, 'users', userId));
+                return userDoc.exists()
+                  ? [userId, userDoc.data() as UserData]
+                  : [userId, { name: 'User', profilePicture: undefined }];
+              }));
+  
+              const newUserDataMap = Object.fromEntries(userDataResults);
+              setUserDataMap(newUserDataMap);
+  
+              setPosts(allPosts);
+              setLoading(false);
+  
+            } catch (e) {
+              console.error("❌ Error processing snapshot data:", e);
+              setError("Failed to process posts data");
+              setLoading(false);
+            }
+          },
+          (error) => {
+            console.error('❌ Error fetching posts:', error);
+            setError(error.message);
+            setLoading(false);
+          }
+        );
+      } catch (err) {
+        console.error('❌ Error setting up Firestore listener:', err);
+        setError('Failed to fetch posts');
         setLoading(false);
       }
-    );
-
-    return () => {
-      unsubscribePosts();
     };
-  }, []);
+  
+    loadPosts();
+  
+    return () => {
+      if (unsubscribePosts) {
+        unsubscribePosts();
+      }
+    };
+  }, [isConnected, realm]);
+
 
   useEffect(() => {
     const fetchRecentStories = () => {
@@ -761,6 +859,9 @@ const Community = () => {
           keyExtractor={(item) => item.id}
           renderItem={renderPostItem}
           contentContainerStyle={styles.postsListContainer}
+          ListFooterComponent={() => (
+            !isConnected ? (<ActivityIndicator size='large' />) : (<></>)
+          )}
         />
       </ScrollView>
 

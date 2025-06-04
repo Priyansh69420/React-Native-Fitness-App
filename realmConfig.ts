@@ -1,6 +1,23 @@
 import Realm, {ObjectSchema} from 'realm';
 import {createRealmContext} from '@realm/react'
 
+export class Post extends Realm.Object {
+  static schema: ObjectSchema = {
+    name: 'Post',
+    primaryKey: 'id',
+    properties: {
+      id: 'string',
+      userId: 'string',
+      content: 'string',
+      timestamp: 'date',
+      imageUrl: 'string?', 
+      videoUrl: 'string?',
+      likes: 'string[]',
+      comments: 'string[]',
+    },
+  };
+}
+
 export class User extends Realm.Object {
   static schema: ObjectSchema = {
     name: 'User',
@@ -44,8 +61,8 @@ export class NutritionInfo extends Realm.Object {
 }
 
 const realmConfig = {
-  schema: [User, NutritionInfo],
-  schemaVersion: 8,
+  schema: [User, NutritionInfo, Post],
+  schemaVersion: 9,
 }
 
 let realmInstance: Realm | null = null;
@@ -56,8 +73,8 @@ export const getRealmInstance = async (): Promise<Realm> => {
   }
 
   realmInstance = await Realm.open({
-    schema: [User, NutritionInfo],
-    schemaVersion: 8,
+    schema: [User, NutritionInfo, Post],
+    schemaVersion: 9,
   });
 
   return realmInstance;
