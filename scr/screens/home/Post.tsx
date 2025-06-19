@@ -158,7 +158,10 @@ export default function Post() {
 
   const handleAddComment = async () => {
     setLoading(true);
-    if (!commentText.trim()) return;
+    if (!commentText.trim()) {
+      setLoading(false);
+      return;
+    }
   
     if (!user) {
       Alert.alert('Authentication Required', 'You need to be logged in to comment.');

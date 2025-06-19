@@ -35,7 +35,7 @@ export default function Signup() {
     if (!shouldValidate) return;
 
     if (email.length === 0) {
-      setError('');
+      setError('Please enter your email address');
     } else if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email.trim())) {
       setError('Please enter a valid email address');
     } else {
@@ -53,7 +53,7 @@ export default function Signup() {
 
   async function handleContinue() {
     if(!isConnected.isConnected) {
-      setError('Not internet, Please connect to internet to continue');
+      setError('Network error. Please check your internet connection and try again.');
       return;
     }
     
@@ -70,6 +70,11 @@ export default function Signup() {
 
     if (!emailRegex.test(trimmedEmail)) {
       setError('That doesn’t look like a valid email address');
+      return;
+    }
+
+    if(auth.currentUser && onboardingData.isEmailVerified && onboardingData.email === email) {
+      navigation.navigate('SetName');
       return;
     }
 
@@ -122,6 +127,7 @@ export default function Signup() {
             intervalRef.current = null;
             setVerifying(false);
             setVerificationMessage('');
+            updateOnboardingData({ isEmailVerified: true });
             navigation.navigate('SetName');
           }
         }
@@ -129,21 +135,36 @@ export default function Signup() {
 
       intervalRef.current = intervalId;
 
-      setTimeout(() => {
+      setTimeout(async () => {
         if (intervalRef.current) {
           clearInterval(intervalRef.current);
           intervalRef.current = null;
+
+          await user.reload();
           if (!user?.emailVerified) {
+            try {
+              await user.delete();
+            } catch(error: any) {
+              console.error('Error checking or deleting user:', error);
+            }
+
             setVerifying(false);
             setVerificationError('Email verification timed out. Please try again.');
           }
         }
-      }, 1 * 120 * 1000);
+      }, 2 * 60 * 1000);
     } catch (error: any) {
       console.error("Email verification error:", error.message);
       setVerifying(false);
+
+      const user = auth.currentUser;
+      if(user && !user.emailVerified) {
+        await user.delete();
+      }
+
       if (error.code === 'auth/email-already-in-use') {
         setVerificationError('An account with this email already exists.');
+        updateOnboardingData({isEmailVerified: true});
       } else if (error.code === 'auth/weak-password') {
         setVerificationError('Password is too weak. Please set a stronger password.');
       } else {

@@ -179,22 +179,18 @@ export default function DailySteps() {
     try {
       const message = `We have completed a total of ${steps} steps today.`;
       const encodedMessage = encodeURIComponent(message);
-
-      const url =
-        Platform.OS === 'ios'
-          ? `sms:&body=${encodedMessage}`
-          : `sms:?body=${encodedMessage}`;
-
-      const supported = await Linking.canOpenURL(url);
-      if (supported) {
+      const url = Platform.OS === 'ios' ? `sms:&body=${encodedMessage}` : `sms:?body=${encodedMessage}`;
+  
+      if (Platform.OS === 'android' || (await Linking.canOpenURL(url))) {
         await Linking.openURL(url);
       } else {
-        console.error('Error', 'SMS app is not available.');
+        console.error('SMS app is not available.');
       }
     } catch (error: any) {
-      console.error('Error', `Could not open SMS app: ${error.message}`);
+      console.error('Error launching SMS app:', error.message);
     }
   };
+  
 
   return (
     <SafeAreaView style={styles.container}>

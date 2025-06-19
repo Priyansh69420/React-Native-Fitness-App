@@ -74,6 +74,7 @@ export default function LoginScreen() {
         'auth/invalid-email': 'Email address is invalid.',
         'auth/user-disabled': 'This account has been disabled.',
         'auth/too-many-requests': 'Too many failed attempts. Try again later.',
+        'auth/network-request-failed': 'Network error. Please check your internet connection and try again.',
       };
 
       const friendlyMessage = errorMessages[errorCode] || 'Login failed. Please try again.';
@@ -108,8 +109,14 @@ export default function LoginScreen() {
           faceId: false,
           userHeight: 0,
           userWeight: 0,
-          onboardingComplete: true, 
+          onboardingComplete: true,
+          isPremium: false,
+          planType: '',
+          calorieGoal: 2000,
+          glassGoal: 8,
+          stepGoal: 10000,
         });
+        
         console.log("LoginScreen: Created initial user document for Google Sign-in");
       } else {
         console.log("LoginScreen: User document already exists for Google Sign-in");
@@ -128,34 +135,6 @@ export default function LoginScreen() {
         errorMessage = "Network error. Please check your internet connection.";
       }
       Alert.alert("Error", errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handlePasswordReset = async () => {
-    if (!email.trim()) {
-      Alert.alert('Error', 'Please enter your email address.');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      await sendPasswordResetEmail(auth, email);
-      Alert.alert(
-        'Success',
-        'A password reset link has been sent to your email address.',
-        [{ text: 'OK', onPress: () => navigation.goBack() }]
-      );
-    } catch (error: any) {
-      console.error('Error sending password reset email:', error);
-      let errorMessage = 'An error occurred. Please try again.';
-      if (error.code === 'auth/invalid-email') {
-        errorMessage = 'Invalid email address.';
-      } else if (error.code === 'auth/user-not-found') {
-        errorMessage = 'No user found with this email address.';
-      }
-      Alert.alert('Error', errorMessage);
     } finally {
       setLoading(false);
     }
@@ -212,7 +191,7 @@ export default function LoginScreen() {
           </View>
 
           <View style={styles.forgotPasswordContainer}>
-            <TouchableOpacity onPress={handlePasswordReset}>
+            <TouchableOpacity onPress={() => navigation.navigate('ForgetPassword')}>
               <Text style={styles.forgotPassword}>Forgot Password?</Text>
             </TouchableOpacity>
           </View>

@@ -1,18 +1,28 @@
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useOnboarding } from '../../contexts/OnboardingContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { auth, firestore } from '../../../firebaseConfig';
 import { doc, setDoc, deleteDoc } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useNetInfo } from '@react-native-community/netinfo';
 
 const logo = require('../../assets/logo.png');
 const continueIcon = require('../../assets/continueIcon.png');
 
 export default function ReadyToGo() {
   const [loading, setLoading] = useState(false);
+  const [ error, setError ] = useState<string>('');
   const { onboardingData } = useOnboarding();
   const { setAuthUser } = useAuth();
+  const isConnected = useNetInfo().isConnected;
+
+  useEffect(() => {
+    if(!isConnected) {
+      setError('Network error. Please check your internet connection and try again.');
+      return;
+    }
+  }, [isConnected]);
 
   const handleFinish = async () => {
     setLoading(true);
@@ -47,7 +57,7 @@ export default function ReadyToGo() {
         await deleteDoc(verificationDocRef); 
       }
       await AsyncStorage.setItem('onboardingInProgress', JSON.stringify(false)); 
-      await AsyncStorage.setItem('justLoggedIn', 'true');
+      await AsyncStorage.removeItem('onboardingData');
     } catch (error: any) {
       alert(error.message);
     } finally {
@@ -67,10 +77,14 @@ export default function ReadyToGo() {
           Thanks for taking your time to create account with us. Now this is the fun part, let’s explore the app.
         </Text>
 
+        {error ? (
+          <Text style={{ color: 'red', width: '100%', textAlign: 'center' }}>{error}</Text>
+        ) : (
         <TouchableOpacity style={styles.button} onPress={handleFinish} disabled={loading}>
           {loading ? <ActivityIndicator size='large' color="#FFF" /> : 
             <Image source={continueIcon} style={styles.continueIcon} resizeMode="contain" />}
         </TouchableOpacity>
+      )}
       </View>
     </SafeAreaView>
   );

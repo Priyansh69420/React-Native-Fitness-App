@@ -30,7 +30,7 @@ export default function SetProfile() {
   const [customImg, setCustomImg] = useState<string | null>(null);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
   const [buttonLoading, setButtonLoading] = useState<boolean>(false);
-  const [imageLoading, setImageLoading] = useState<boolean>(true);
+  const [imageLoading, setImageLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
   const {updateOnboardingData} = useOnboarding();
 
@@ -197,6 +197,7 @@ export default function SetProfile() {
                   setError('')
                   setSelectedAvatar(item.source.uri)
                 }}
+                disabled={buttonLoading}
               >
                 <View
                   style={[

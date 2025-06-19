@@ -62,74 +62,82 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setOnboardingInProgress(inProgress);
   
         const authData = await AsyncStorage.getItem('authUser');
-        if (!authData) {
-          setUser(null);
-          setOnboardingComplete(false);
-          return;
-        }
+        if (!authData) return handleNoAuthUser();
   
         const { uid } = JSON.parse(authData);
-        if (!uid) {
-          setUser(null);
-          setOnboardingComplete(false);
-          return;
-        }
+        if (!uid) return handleNoAuthUser();
   
         const netInfo = await NetInfo.fetch();
-  
         if (netInfo.isConnected) {
-          const userDocRef = doc(firestore, 'users', uid);
-          const userDoc = await getDoc(userDocRef);
-  
-          if (userDoc.exists()) {
-            const userData = userDoc.data() as UserData;
-            const isOnboardingComplete = userData.onboardingComplete === true;
-  
-            setOnboardingComplete(isOnboardingComplete);
-            setUser({ uid });
-  
-            try {
-              const email = auth.currentUser?.email || '';
-              realm.write(() => {
-                realm.create('User', { ...userData, email }, UpdateMode.Modified);
-              });
-            } catch (realmError) {
-              console.error('Error writing to Realm:', realmError);
-            }
-  
-            if (isOnboardingComplete) {
-              await setOnboardingInProgressFlag(false);
-            }
-          } else {
-            await AsyncStorage.removeItem('authUser');
-            setUser(null);
-            setOnboardingComplete(false);
-          }
+          await handleOnlineFlow(uid);
         } else {
-          const realmUsers = realm.objects('User');
-          if (realmUsers.length > 0) {
-            const localUser = realmUsers[0];
-            setUser({ uid: localUser.email as string });
-            setOnboardingComplete(Boolean(localUser.onboardingComplete));
-          } else {
-            console.warn('No local user data found in Realm.');
-            setUser(null);
-            setOnboardingComplete(false);
-          }
+          handleOfflineFlow();
         }
       } catch (error) {
         console.error('Error loading initial state:', error);
-        setUser(null);
-        setOnboardingComplete(false);
-        setOnboardingInProgress(false);
-        await setOnboardingInProgressFlag(false);
+        await handleErrorFallback();
       } finally {
         setLoading(false);
       }
     };
   
+    const handleNoAuthUser = () => {
+      setUser(null);
+      setOnboardingComplete(false);
+    };
+  
+    const handleErrorFallback = async () => {
+      setUser(null);
+      setOnboardingComplete(false);
+      setOnboardingInProgress(false);
+      await setOnboardingInProgressFlag(false);
+    };
+  
+    const handleOnlineFlow = async (uid: string) => {
+      const userDocRef = doc(firestore, 'users', uid);
+      const userDoc = await getDoc(userDocRef);
+  
+      if (!userDoc.exists()) {
+        await AsyncStorage.removeItem('authUser');
+        handleNoAuthUser();
+        return;
+      }
+  
+      const userData = userDoc.data() as UserData;
+      const isOnboardingComplete = userData.onboardingComplete === true;
+  
+      setUser({ uid });
+      setOnboardingComplete(isOnboardingComplete);
+  
+      try {
+        const email = auth.currentUser?.email ?? '';
+        realm.write(() => {
+          realm.create('User', { ...userData, email }, UpdateMode.Modified);
+        });
+      } catch (realmError) {
+        console.error('Error writing to Realm:', realmError);
+      }
+  
+      if (isOnboardingComplete) {
+        await setOnboardingInProgressFlag(false);
+      }
+    };
+  
+    const handleOfflineFlow = () => {
+      const realmUsers = realm.objects('User');
+      if (realmUsers.length > 0) {
+        const localUser = realmUsers[0];
+        setUser({ uid: localUser.email as string });
+        setOnboardingComplete(Boolean(localUser.onboardingComplete));
+      } else {
+        console.warn('No local user data found in Realm.');
+        setUser(null);
+        setOnboardingComplete(false);
+      }
+    };
+  
     loadInitialState();
-  }, []);
+  }, []);  
 
   const setAuthUser = async (uid: string) => {
     try {
@@ -145,7 +153,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser({ uid });
 
         try {
-          const email = auth.currentUser?.email || '';
+          const email = auth.currentUser?.email ?? '';
           realm.write(() => {
             realm.create('User', { ...userData, email }, UpdateMode.Modified);
           });

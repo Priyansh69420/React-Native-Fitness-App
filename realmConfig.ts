@@ -2,7 +2,7 @@ import Realm, {ObjectSchema} from 'realm';
 import {createRealmContext} from '@realm/react'
 
 export class Post extends Realm.Object {
-  static schema: ObjectSchema = {
+  static readonly schema: ObjectSchema = {
     name: 'Post',
     primaryKey: 'id',
     properties: {
@@ -19,7 +19,7 @@ export class Post extends Realm.Object {
 }
 
 export class User extends Realm.Object {
-  static schema: ObjectSchema = {
+  static readonly schema: ObjectSchema = {
     name: 'User',
     properties: {
       email: 'string',
@@ -44,7 +44,7 @@ export class User extends Realm.Object {
 }
 
 export class NutritionInfo extends Realm.Object {
-  static schema: ObjectSchema = {
+  static readonly schema: ObjectSchema = {
     name: 'NutritionInfo',
     properties: {
       id: 'string',

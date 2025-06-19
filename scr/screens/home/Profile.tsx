@@ -34,6 +34,12 @@ interface UserData {
   stepGoal: number;
 }
 
+interface DetailError {
+  nameError: string;
+  heightError: string;
+  weightError: string;
+}
+
 interface Avatar {
   id: number;
   source: any;
@@ -84,6 +90,9 @@ export default function Profile() {
   const [calorieGoalError, setCalorieGoalError] = useState<string>('');
   const [glassGoalError, setGlassGoalError] = useState<string>('');
   const [stepGoalError, setStepGoalError] = useState<string>('');
+  const [goalError, setGoalError] = useState<string>('');
+  const [interestError, setInterestError] = useState<string>('');
+  const [detailError, setDetailError] = useState<DetailError>({ nameError: '', heightError: '', weightError: '' });
   const [showPasswordSection, setShowPasswordSection] = useState<boolean>(false);
 
   useEffect(() => {
@@ -103,11 +112,26 @@ export default function Profile() {
       setGlassGoal(userData.glassGoal?.toString() || '8');
       setStepGoal(userData.stepGoal?.toString() || '10000');
     }
-  }, [userData]);
+  }, [userData]);  
 
   useEffect(() => {
     setError('');
-  }, [currentPassword, newPassword, confirmNewPassword]);
+    
+    if(interests.length !== 0) setInterestError('');
+    if(goals.length !== 0) setGoalError('');
+    if(name.trim().length !== 0) setDetailError(prev => ({
+      ...prev,
+      nameError: '',
+    }));
+    if(height.trim() !== '0' && height.trim() !== '') setDetailError(prev => ({
+      ...prev,
+      heightError: ''
+    }))
+    if(weight.trim() !== '0' && weight.trim() !== '') setDetailError(prev => ({
+      ...prev,
+      weightError: ''
+    }))
+  }, [currentPassword, newPassword, confirmNewPassword, interests, goals, name, height, weight]);
 
   useEffect(() => {
     validateDailyMilestones();
@@ -148,7 +172,6 @@ export default function Profile() {
 
       const publicUrl = await getPublicUrl(filePath);
       setProfilePicture(publicUrl);
-      console.log('New profile picture updated:', publicUrl);
     } catch (error: any) {
       alert('Error uploading image: ' + error.message);
     } finally {
@@ -208,10 +231,8 @@ export default function Profile() {
     if (typeof profilePicture === 'string' && profilePicture.includes('supabase.co')) {
       const oldFilePath = profilePicture.split('/storage/v1/object/public/profileimages/')[1]?.split('?')[0];
       if (oldFilePath) {
-        console.log('Deleting old file:', oldFilePath);
         const { error: deleteError } = await supabase.storage.from('profileimages').remove([oldFilePath]);
         if (deleteError) console.log('Failed to delete old image:', deleteError.message);
-        else console.log('Old image deleted successfully');
       }
     }
   };
@@ -239,6 +260,25 @@ export default function Profile() {
 
   const handleSave = async (partialData?: Partial<UserData>) => {
     if (!validateDailyMilestones()) {
+      return;
+    }
+
+    if(interests.length === 0 || goals.length === 0 || name.trim().length === 0 || (height.trim() === '0' || height.trim() === '') || (weight.trim() === '0' || weight.trim() === '') ) {
+      if(interests.length === 0) setInterestError('Select atleast one field from here');
+      if(goals.length === 0) setGoalError('Select atleast one field from here');
+      if(name.trim().length === 0) setDetailError(prev => ({
+        ...prev,
+        nameError: 'Name must be at least 2 characters long',
+      }));
+      if(height.trim() === '0' || height.trim() === '') setDetailError(prev => ({
+        ...prev,
+        heightError: 'Can not leave this field empty'
+      }))
+      if(weight.trim() === '0' || weight.trim() === '') setDetailError(prev => ({
+        ...prev,
+        weightError: 'Can not leave this field empty'
+      }))
+
       return;
     }
 
@@ -392,7 +432,7 @@ export default function Profile() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Profile Picture</Text>
           <View style={styles.profilePictureContainer}>
-            {!imageLoading && (
+            {imageLoading && (
               <ActivityIndicator 
                 size="small" 
                 color="#b6b6b6" 
@@ -402,7 +442,7 @@ export default function Profile() {
 
             {profileImageSource && (
               <TouchableOpacity onPress={handleAddCustomPhoto}>
-                <Image source={profileImageSource} style={styles.profilePicture} onLoad={() => setImageLoading(false)} />
+                <Image source={profileImageSource} style={styles.profilePicture} onLoad={() => setImageLoading(true)} />
               </TouchableOpacity>
             )}
           </View>
@@ -437,7 +477,9 @@ export default function Profile() {
             onChangeText={setName}
             placeholder="Enter your name"
             placeholderTextColor="#999"
+            maxLength={20}
           />
+          {detailError.nameError ? (<Text style={styles.errorText}>{detailError.nameError}</Text>): null}
 
           <Text style={styles.subtitle}>Height (cm)</Text>
           <TextInput
@@ -450,7 +492,9 @@ export default function Profile() {
             placeholder="Enter your height"
             placeholderTextColor="#999"
             keyboardType="numeric"
+            maxLength={3}
           />
+          {detailError.heightError ? (<Text style={styles.errorText}>{detailError.heightError}</Text>): null}
 
           <Text style={styles.subtitle}>Weight (kg)</Text>
           <TextInput
@@ -463,7 +507,9 @@ export default function Profile() {
             placeholder="Enter your weight"
             placeholderTextColor="#999"
             keyboardType="numeric"
+            maxLength={3}
           />
+          {detailError.weightError ? (<Text style={styles.errorText}>{detailError.weightError}</Text>): null}
         </View>
 
         <View style={styles.section}>
@@ -538,6 +584,7 @@ export default function Profile() {
               </TouchableOpacity>
             ))}
           </View>
+          {goalError ? (<Text style={styles.errorText}>{goalError}</Text>) : null}
         </View>
 
         <View style={styles.section}>
@@ -563,6 +610,7 @@ export default function Profile() {
               </TouchableOpacity>
             ))}
           </View>
+          {interestError ? (<Text style={styles.errorText}>{interestError}</Text>): null}
         </View>
 
         <View style={styles.section}>
@@ -783,10 +831,10 @@ const styles = StyleSheet.create({
   },
   activityIndicator: {
     position: 'absolute',
-    top: 0,
+    top: -15,
     left: 0,
     right: 0, 
-    bottom: 5, 
+    bottom: 0, 
     justifyContent: 'center', 
     alignItems: 'center',
   },

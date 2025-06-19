@@ -1,7 +1,9 @@
-import React, { createContext, useContext, useState, ReactNode, useMemo } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { createContext, useContext, useState, ReactNode, useMemo, useEffect } from 'react';
 
 interface OnboardingData {
   email?: string;
+  isEmailVerified?: boolean, 
   password?: string;
   firstName?: string;
   lastName?: string;
@@ -26,8 +28,36 @@ const OnboardingContext = createContext<OnboardingContextType | undefined>(undef
 export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
   const [onboardingData, setOnboardingData] = useState<OnboardingData>({});
 
+
+  useEffect(() => {
+    const loadFromStorage = async () => {
+      try {
+        const jsonValue = await AsyncStorage.getItem('onboardingData');
+        if (jsonValue) {
+          setOnboardingData(JSON.parse(jsonValue));
+        }
+      } catch (err) {
+        console.error('❌ Failed to load onboarding data:', err);
+      }
+    };
+
+    loadFromStorage();
+  }, []);
+
+  const saveToAsyncStorage = async (data: OnboardingData) => {
+    try {
+      await AsyncStorage.setItem('onboardingData', JSON.stringify(data));
+    } catch (err) {
+      console.error('❌ Failed to save onboarding data:', err);
+    }
+  };
+  
   const updateOnboardingData = (data: Partial<OnboardingData>) => {
-    setOnboardingData((prev) => ({ ...prev, ...data }));
+    setOnboardingData((prev) => {
+      const updated = { ...prev, ...data };
+      saveToAsyncStorage(updated); 
+      return updated;
+    });
   };
 
   const value = useMemo(

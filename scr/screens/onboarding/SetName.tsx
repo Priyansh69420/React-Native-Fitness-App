@@ -2,11 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { TextInput, View, Text } from 'react-native';
 import { useOnboarding } from '../../contexts/OnboardingContext';
 import { OnboardingForm, onboardingStyles } from '../../components/OnboardingForm';
-import { useFormValidation } from '../../hooks/useFormValidation';
 
 export default function SetNameScreen() {
   const [firstName, setFirstName] = useState<string>('');
   const [lastName, setLastName] = useState<string>('');
+  const [firstNameError, setFirstNameError] = useState<string>('');
+
   const { updateOnboardingData, onboardingData } = useOnboarding();
 
   useEffect(() => {
@@ -14,13 +15,18 @@ export default function SetNameScreen() {
     if (onboardingData.lastName) setLastName(onboardingData.lastName);
   }, []);
 
-  const { errors, validateForm } = useFormValidation({
-    firstName: {
-      value: firstName.trim(),
-      required: true,
-      errorMessage: 'Please enter your first name.',
-    },
-  });
+  const validateForm = (): boolean => {
+    let isValid = true;
+
+    if (!firstName.trim()) {
+      setFirstNameError('Please enter your first name.');
+      isValid = false;
+    } else {
+      setFirstNameError('');
+    }
+
+    return isValid;
+  };
 
   const handleContinuePress = (): boolean => {
     const isValid = validateForm();
@@ -39,15 +45,21 @@ export default function SetNameScreen() {
         <TextInput
           style={onboardingStyles.onboardingInput}
           value={firstName}
-          onChangeText={(input) => setFirstName(input.replace(/\d/g, ''))}
+          onChangeText={(input) => {
+            setFirstName(input.replace(/\d/g, ''));
+            if (firstNameError && input.trim()) {
+              setFirstNameError('');
+            }
+          }}
           placeholder="First Name"
           autoCapitalize="words"
           autoFocus
         />
       </View>
-      {errors.firstName ? (
-        <Text style={onboardingStyles.onboardingErrorText}>{errors.firstName}</Text>
+      {firstNameError ? (
+        <Text style={onboardingStyles.onboardingErrorText}>{firstNameError}</Text>
       ) : null}
+
       <View style={onboardingStyles.onboardingInputContainer}>
         <TextInput
           style={onboardingStyles.onboardingInput}

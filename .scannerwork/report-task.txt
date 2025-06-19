@@ -2,5 +2,5 @@ projectKey=FitnessApp
 serverUrl=http://localhost:9100
 serverVersion=25.4.0.105899
 dashboardUrl=http://localhost:9100/dashboard?id=FitnessApp
-ceTaskId=ccffe594-ae3a-42fe-abf6-0007986cb6fd
-ceTaskUrl=http://localhost:9100/api/ce/task?id=ccffe594-ae3a-42fe-abf6-0007986cb6fd
+ceTaskId=943f1df8-7a53-46e8-8426-0d35dc167ca3
+ceTaskUrl=http://localhost:9100/api/ce/task?id=943f1df8-7a53-46e8-8426-0d35dc167ca3

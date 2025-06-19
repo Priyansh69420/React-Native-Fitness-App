@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Image, Dimensions, ScrollView, Modal, FlatList, KeyboardAvoidingView, Platform, ActivityIndicator, Animated, Easing } from 'react-native'
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Image, Dimensions, ScrollView, Modal, FlatList, KeyboardAvoidingView, Platform, ActivityIndicator, Animated, Easing, Alert, Pressable } from 'react-native'
 import React, { useCallback, useEffect, useState } from 'react'
 import { RFPercentage, RFValue } from 'react-native-responsive-fontsize';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
@@ -84,7 +84,7 @@ export default function Nutrition() {
   const isConnected = useNetInfo();
 	const [nutritionData, setNutritionData] = useState([
     { name: 'Fat', percentage: 0, color: '#66D3C8' },
-    { name: 'Carb', percentage: 0, color: '#9D6DEB' },
+    { name: 'Carbs', percentage: 0, color: '#9D6DEB' },
     { name: 'Protein', percentage: 0, color: '#FFA500' },
   ]);
 	const mealTypes = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
@@ -119,7 +119,7 @@ export default function Nutrition() {
 
   useEffect(() => {
     if (isConnected?.isConnected !== null) {
-      fetchNutritionInfo(realm);
+      fetchNutritionInfo();
     }
   }, [isConnected?.isConnected]);
 
@@ -128,10 +128,11 @@ export default function Nutrition() {
     saveData();
   }, [consumedFoods, totalCalories]);
 
-  const fetchNutritionInfo = async (realm: Realm) => {
+  const fetchNutritionInfo = async () => {
   
     try {
       // STEP 1: Load local data from Realm
+      
       const localData = realm.objects('NutritionInfo');
   
       const nutritionArray = Array.from(localData).map(item => ({
@@ -193,7 +194,7 @@ export default function Nutrition() {
     Object.keys(expandedMealCards).forEach((mealType) => {
         const isExpanded = expandedMealCards[mealType as MealType];
         Animated.timing(cardAnimations[mealType as MealType], {
-            toValue: isExpanded ? -15 : 0, // Move up 10px when expanded
+            toValue: isExpanded ? -15 : 0,
             duration: 200,
             easing: Easing.linear,
             useNativeDriver: true,
@@ -206,28 +207,69 @@ export default function Nutrition() {
   };
 
 	const handleAddButtonPress = () => {
-    if (selectedFoods.length > 0 && selectedMeal) {
-      setConsumedFoods((prevConsumedFoods) => {
-        const existingFoods = prevConsumedFoods[selectedMeal as MealType] || [];
-        const uniqueFoods = selectedFoods.filter(
-          (food) => !existingFoods.some((existingFood) => existingFood.name === food.name)
-        );
+    if (selectedFoods.length === 0 || !selectedMeal) return;
   
-        const foodsWithPortion = uniqueFoods.map((food) => ({
-          ...food,
-          portion: 1,
-        }));
+    setConsumedFoods((prevConsumedFoods) => {
+      return updateConsumedFoods(prevConsumedFoods, selectedMeal as MealType, selectedFoods);
+    });
   
-        return {
-          ...prevConsumedFoods,
-          [selectedMeal]: [...existingFoods, ...foodsWithPortion],
-        };
-      });
-      setSelectedFoods([]);
-      setSelectedMeal('');
-      setModalVisible(false);
-    }
+    clearSelections();
   };
+  
+  const updateConsumedFoods = (
+    prevConsumedFoods: Record<MealType, FoodItem[]>,
+    meal: MealType,
+    newFoods: FoodItem[]
+  ): Record<MealType, FoodItem[]> => {
+    const existingFoods = prevConsumedFoods[meal] || [];
+    const newUniqueFoods: FoodItem[] = [];
+    const duplicates: FoodItem[] = [];
+  
+    newFoods.forEach((food) => {
+      if (existingFoods.some((existingFood) => existingFood.name === food.name)) {
+        duplicates.push(food);
+      } else {
+        newUniqueFoods.push(food);
+      }
+    });
+  
+    const foodsWithPortion = newUniqueFoods.map((food) => ({
+      ...food,
+      portion: 1,
+      calories: food.calories,
+      fat: food.fat,
+      carb: food.carb,
+      protein: food.protein,
+    }));
+  
+    const updatedFoods = existingFoods.map((food) => {
+      const dup = duplicates.find((d) => d.name === food.name);
+      if (dup) {
+        const newPortion = food.portion + 1;
+        return {
+          ...food,
+          portion: newPortion,
+          calories: dup.calories * newPortion,
+          fat: dup.fat * newPortion,
+          carb: dup.carb * newPortion,
+          protein: dup.protein * newPortion,
+        };
+      }
+      return food;
+    });
+  
+    return {
+      ...prevConsumedFoods,
+      [meal]: [...updatedFoods, ...foodsWithPortion],
+    };
+  };
+  
+  const clearSelections = () => {
+    setSelectedFoods([]);
+    setSelectedMeal('');
+    setModalVisible(false);
+  };
+  
   
   const handleFoodSelection = (foodItem: FoodItem) => {
     if (selectedFoods.some((item) => item.name === foodItem.name)) {
@@ -281,13 +323,13 @@ export default function Nutrition() {
 
       setNutritionData([
         { name: 'Fat', percentage: fatPct, color: '#66D3C8' },
-        { name: 'Carb', percentage: carbPct, color: '#9D6DEB' },
+        { name: 'Carbs', percentage: carbPct, color: '#9D6DEB' },
         { name: 'Protein', percentage: proteinPct, color: '#FFA500' },
       ]);
     } else {
       setNutritionData([
         { name: 'Fat', percentage: 0, color: '#66D3C8' },
-        { name: 'Carb', percentage: 0, color: '#9D6DEB' },
+        { name: 'Carbs', percentage: 0, color: '#9D6DEB' },
         { name: 'Protein', percentage: 0, color: '#FFA500' },
       ]);
     }
@@ -345,7 +387,7 @@ export default function Nutrition() {
           setTotalProtein(0);
           setNutritionData([
             { name: 'Fat', percentage: 0, color: '#66D3C8' },
-            { name: 'Carb', percentage: 0, color: '#9D6DEB' },
+            { name: 'Carbs', percentage: 0, color: '#9D6DEB' },
             { name: 'Protein', percentage: 0, color: '#FFA500' },
           ]);
         }
@@ -358,7 +400,7 @@ export default function Nutrition() {
         setTotalProtein(0);
         setNutritionData([
           { name: 'Fat', percentage: 0, color: '#66D3C8' },
-          { name: 'Carb', percentage: 0, color: '#9D6DEB' },
+          { name: 'Carbs', percentage: 0, color: '#9D6DEB' },
           { name: 'Protein', percentage: 0, color: '#FFA500' },
         ]);
       }
@@ -370,7 +412,7 @@ export default function Nutrition() {
       setTotalProtein(0);
       setNutritionData([
         { name: 'Fat', percentage: 0, color: '#66D3C8' },
-        { name: 'Carb', percentage: 0, color: '#9D6DEB' },
+        { name: 'Carbs', percentage: 0, color: '#9D6DEB' },
         { name: 'Protein', percentage: 0, color: '#FFA500' },
       ]);
     }
@@ -437,28 +479,42 @@ export default function Nutrition() {
   };
 
   const updateFoodPortion = (mealType: MealType, foodName: string, increment: boolean) => {
+  setConsumedFoods((prevConsumedFoods) => {
+    const updatedFoods = prevConsumedFoods[mealType].map((food) => {
+      if (food.name === foodName) {
+        const newPortion = increment ? food.portion + 1 : Math.max(food.portion - 1, 1);
+        const baseCalories = food.calories / food.portion;
+        const baseFat = food.fat / food.portion;
+        const baseCarb = food.carb / food.portion;
+        const baseProtein = food.protein / food.portion;
+        return {
+          ...food,
+          portion: newPortion,
+          calories: baseCalories * newPortion,
+          fat: baseFat * newPortion,
+          carb: baseCarb * newPortion,
+          protein: baseProtein * newPortion,
+        };
+      }
+      return food;
+    });
+
+    return {
+      ...prevConsumedFoods,
+      [mealType]: updatedFoods,
+    };
+  });
+};
+
+  function handleDeleteItem(mealType: MealType, foodName: string): void {
     setConsumedFoods((prevConsumedFoods) => {
-      const updatedFoods = prevConsumedFoods[mealType].map((food) => {
-        if (food.name === foodName) {
-          const newPortion = increment ? food.portion + 1 : Math.max(food.portion - 1, 1); 
-          return {
-            ...food,
-            portion: newPortion,
-            calories: (food.calories / food.portion) * newPortion, 
-            fat: (food.fat / food.portion) * newPortion,
-            carb: (food.carb / food.portion) * newPortion,
-            protein: (food.protein / food.portion) * newPortion,
-          };
-        }
-        return food;
-      });
-  
+      const updatedFoods = prevConsumedFoods[mealType].filter((food) => food.name !== foodName);
       return {
         ...prevConsumedFoods,
         [mealType]: updatedFoods,
       };
     });
-  };
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -535,29 +591,29 @@ export default function Nutrition() {
 
         <View style={styles.nutritionContainer}>
           <View style={{flexDirection: 'row', borderBottomWidth: 0.5, borderBottomColor: '#d6d6d6', paddingVertical: 20, paddingHorizontal: 20}}>
-            <View style={{height: 20, width: 20, backgroundColor: 'orange', borderRadius: 6}} />
-            <View style={{flex: 1, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 10}}>
-              <Text style={{fontSize: 17}}>Protein</Text>
-              <Text style={{fontSize: 17, marginLeft: -20}}>{totalProtein}g</Text>
-              <Text style={{fontSize: 17, fontWeight: 'bold'}}>{Math.round(nutritionData[2].percentage * 100)}%</Text>
+            <View style={{height: 20, width: 20, backgroundColor: '#66D3C8', borderRadius: 6}} />
+            <View style={{flex: 1, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 12}}>
+              <Text style={{fontSize: 17}}>Fat</Text>
+              <Text style={{fontSize: 17}}>{totalFat}g</Text>
+              <Text style={{fontSize: 17, fontWeight: 'bold'}}>{Math.round(nutritionData[0].percentage * 100)}%</Text>
             </View>
           </View>
           
           <View style={{flexDirection: 'row', borderBottomWidth: 0.5, borderBottomColor: '#d6d6d6', paddingVertical: 20, paddingHorizontal: 20}}>
             <View style={{height: 20, width: 20, backgroundColor: '#9D6DEB', borderRadius: 6}} />
             <View style={{flex: 1, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 10}}>
-              <Text style={{fontSize: 17}}>Carb</Text>
+              <Text style={{fontSize: 17}}>Carbs</Text>
               <Text style={{fontSize: 17}}>{totalCarbs}g</Text>
               <Text style={{fontSize: 17, fontWeight: 'bold'}}>{Math.round(nutritionData[1].percentage * 100)}%</Text>
             </View>
           </View>
 
           <View style={{flexDirection: 'row', paddingVertical: 20, paddingHorizontal: 20}}>
-            <View style={{height: 20, width: 20, backgroundColor: '#66D3C8', borderRadius: 6}} />
-            <View style={{flex: 1, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 12}}>
-              <Text style={{fontSize: 17}}>Fats</Text>
-              <Text style={{fontSize: 17}}>{totalFat}g</Text>
-              <Text style={{fontSize: 17, fontWeight: 'bold'}}>{Math.round(nutritionData[0].percentage * 100)}%</Text>
+            <View style={{height: 20, width: 20, backgroundColor: 'orange', borderRadius: 6}} />
+            <View style={{flex: 1, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 10}}>
+              <Text style={{fontSize: 17}}>Protein</Text>
+              <Text style={{fontSize: 17, marginLeft: -20}}>{totalProtein}g</Text>
+              <Text style={{fontSize: 17, fontWeight: 'bold'}}>{Math.round(nutritionData[2].percentage * 100)}%</Text>
             </View>
           </View>
         </View>
@@ -571,16 +627,6 @@ export default function Nutrition() {
               const totalCarbs = foodList.reduce((sum, food) => sum + food.carb, 0);
               const totalCalories = foodList.reduce((sum, food) => sum + food.calories, 0);
 
-              function handleDeleteItem(mealType: MealType, foodName: string): void {
-                setConsumedFoods((prevConsumedFoods) => {
-                  const updatedFoods = prevConsumedFoods[mealType].filter((food) => food.name !== foodName);
-                  return {
-                    ...prevConsumedFoods,
-                    [mealType]: updatedFoods,
-                  };
-                });
-              }
-
               return (
                 <Animated.View key={mealType} 
                   style={[
@@ -588,14 +634,28 @@ export default function Nutrition() {
                     {
                         transform: [{ translateY: cardAnimations[mealType as MealType] }],
                     },
-              ]}
+                  ]}
                 >
-                  <TouchableOpacity
+                  <Pressable
                     style={styles.deleteCardButton}
-                    onPress={() => handleDeleteCard(mealType as MealType)}
+                    onPress={() => 
+                      Alert.alert(
+                        'Confirm Deletion',
+                        'Are you sure you want to delete this meal?',
+                        [
+                          {
+                            text: 'Cancel',
+                          },
+                          {
+                            text: 'OK',
+                            onPress: () => handleDeleteCard(mealType as MealType),
+                          },
+                        ],
+                        { cancelable: true } 
+                      )}
                   >
                     <Text style={styles.deleteCardText}>X</Text>
-                  </TouchableOpacity>
+                  </Pressable>
                     <Text style={styles.mealCardTitle}>{mealType}</Text>
                   <View style={styles.macroSummaryContainer}>
                     <View style={styles.macroRow}>
@@ -615,7 +675,7 @@ export default function Nutrition() {
                       </View>
                       <View style={styles.macroItem}>
                         <View style={[styles.macroColorBox, styles.fatColor]} />
-                        <Text style={styles.macroText}>Fats: {totalFat}g</Text>
+                        <Text style={styles.macroText}>Fat: {totalFat}g</Text>
                       </View>
                     </View>
                   </View>
@@ -653,12 +713,12 @@ export default function Nutrition() {
                               {food.calories} <Text style={{ fontSize: 15, color: 'gray' }}>Cal</Text>
                             </Text>
                             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                              <TouchableOpacity onPress={() => updateFoodPortion(mealType as MealType, food.name, false)} style={{flexDirection: 'row', alignItems: 'center'}}>
-                                <Image source={require('../../assets/minus-Icon.png')} style={{height: 15, width: 15}} />                              
+                              <TouchableOpacity onPress={() => updateFoodPortion(mealType as MealType, food.name, false)} style={{justifyContent: 'center', alignItems: 'center', height: 20, width: 20}}>
+                                <Image source={require('../../assets/minus-Icon.png')} style={{height: 16, width: 16, tintColor: '#a9a4ff'}} />                              
                               </TouchableOpacity>
                               <Text style={{ fontSize: 14, marginVertical: 7, marginHorizontal: 7 }}>{food.portion}</Text>
-                              <TouchableOpacity onPress={() => updateFoodPortion(mealType as MealType, food.name, true)}>
-                                <Image source={require('../../assets/plus-Icon.png')} style={{height: 15, width: 15}} />
+                              <TouchableOpacity onPress={() => updateFoodPortion(mealType as MealType, food.name, true)} style={{justifyContent: 'center', alignItems: 'center', height: 20, width: 20}}>
+                                <Image source={require('../../assets/plus-Icon.png')} style={{height: 16, width: 16, tintColor: '#a9a4ff'}} />
                               </TouchableOpacity>
                             </View>
                           </View>
@@ -747,6 +807,8 @@ export default function Nutrition() {
                 <TouchableOpacity style={styles.closeButton} onPress={() => {
                   setModalVisible(false)
                   setSearchQuery('')
+                  setSelectedFoods([]);
+                  setSelectedMeal('');
                   setIsLoading(false);
                 }}>
                   <Text style={{fontSize: RFValue(20), marginTop: -5}}>✕</Text>
@@ -878,7 +940,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 12,
     right: 15,
-    paddingHorizontal: 5
+    paddingHorizontal: 5,
+    height: 25,
+    width: 25,
   },
   deleteCardText: {
     fontSize: RFValue(16),
@@ -1092,5 +1156,6 @@ const styles = StyleSheet.create({
     marginRight: RFPercentage(1), 
     height: 18, 
     width: 18, 
+    tintColor: '#f77d73'
   },
 });

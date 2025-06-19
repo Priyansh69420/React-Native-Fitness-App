@@ -19,6 +19,7 @@ import { updateUser } from '../../store/slices/userSlice';
 import { auth, firestore } from '../../../firebaseConfig';
 import { doc, setDoc } from '@firebase/firestore';
 import { RootState } from '../../store/store';
+import { useNetInfo } from '@react-native-community/netinfo';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 const BUTTON_HORIZONTAL_MARGIN_PERCENTAGE = 6;
@@ -58,6 +59,7 @@ export default function GetPremium() {
   const carouselRef = useRef<ICarouselInstance>(null);
   const userPlanType = useSelector((state: RootState) => state.user.userData?.planType);
   const dispatch = useDispatch();
+  const isConnected = useNetInfo().isConnected;
 
   const getSelectedPlanDetails = () => {
     if (selectedPlan === 'monthly') {
@@ -140,6 +142,9 @@ export default function GetPremium() {
     isDisabled = true;
   } else if (userPlanType === 'monthly' && selectedPlan === 'yearly') {
     buttonText = 'Upgrade to Yearly';
+  } else if(!isConnected) {
+    isDisabled = true;
+    buttonText = 'No internet'
   } else {
     buttonText = 'Purchase';
   }

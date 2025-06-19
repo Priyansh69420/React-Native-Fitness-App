@@ -10,7 +10,7 @@ import {
   SafeAreaView,
   ScrollView,
 } from 'react-native';
-import NetInfo, {useNetInfo} from '@react-native-community/netinfo';
+import NetInfo from '@react-native-community/netinfo';
 import { auth } from '../../../firebaseConfig';
 import { HomeStackParamList } from '../../navigations/HomeStackParamList';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
@@ -23,7 +23,6 @@ import { fetchUserData, loadUserDataFromRealm } from '../../store/slices/userSli
 import { loadData } from './Water';
 import { fetchSteps } from '../../store/slices/footstepSlice';
 import { useRealm } from '../../../realmConfig';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type NavigationProp = DrawerNavigationProp<HomeStackParamList, 'Home'>;
 
@@ -31,7 +30,7 @@ const { width, height } = Dimensions.get('window');
 
 export default function Home() {
   const { userData, loading } = useSelector((state: RootState) => state.user);
-  const { steps } = useSelector((state: RootState) => state.footsteps);
+  let { steps } = useSelector((state: RootState) => state.footsteps);
   const [glassDrunk, setGlassDrunk] = useState<number>(0);
   const [rehydrated, setRehydrated] = useState<boolean>(false);
   const [imageLoading, setImageLoading] = useState<boolean>(true);
@@ -68,7 +67,7 @@ export default function Home() {
       if (result.meta.requestStatus === 'rejected') {
         const user = realm.objects('User')[0];
         if (user) {
-          dispatch(setSteps(user.steps || 0)); 
+          steps = 0;
         }
       }
     });
@@ -79,7 +78,7 @@ export default function Home() {
         if (result.meta.requestStatus === 'rejected') {
           const user = realm.objects('User')[0];
           if (user) {
-            dispatch(setSteps(user.steps || 0));
+            steps = 0;
           }
         }
       });
@@ -501,7 +500,3 @@ const styles = StyleSheet.create({
     marginTop: height * 0.02,
   },
 });
-
-function setSteps(arg0: {}): any {
-  throw new Error('Function not implemented.');
-}

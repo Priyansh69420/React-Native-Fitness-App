@@ -97,52 +97,61 @@ const AppNavigator = () => {
 
   useEffect(() => {
     const initializeUserData = async () => {
-      if (!user?.uid) {
-        return;
-      }
+      if (!user?.uid) return;
   
       try {
         const netState = await NetInfo.fetch();
-        const isConnected = netState.isConnected;
+        const isConnected = Boolean(netState.isConnected);
   
-        // Step 1: Check for pending sync
-        const pendingSync = await AsyncStorage.getItem('pendingUserSync');
-  
-        if (pendingSync === 'true' && isConnected) {
-          const pendingData = await AsyncStorage.getItem('pendingUserData');
-          if (pendingData) {
-            const parsedData = JSON.parse(pendingData) as UserData;
-            realm.write(() => {
-              realm.create('User', parsedData, UpdateMode.Modified);
-            });
-            await syncRealmUserToFirestore(realm, parsedData.email);
-            await AsyncStorage.removeItem('pendingUserSync');
-            await AsyncStorage.removeItem('pendingUserData');
-          } else {
-            await AsyncStorage.removeItem('pendingUserSync');
-          }
-        }
-  
-        // Step 2: Load data
-        if (!isConnected) {
-          try {
-            await dispatch(loadUserDataFromRealm(realm)).unwrap();
-          } catch (realmError) {
-          }
+        await handlePendingSync(isConnected);
+        if (isConnected) {
+          await loadUserDataOnline();
         } else {
-          try {
-            await dispatch(fetchUserData()).unwrap();
-          } catch (fetchError) {
-            console.error('[initializeUserData] Failed to fetch from Firestore:', fetchError);
-            try {
-              await dispatch(loadUserDataFromRealm(realm)).unwrap();
-            } catch (realmError) {
-              console.error('[initializeUserData] Failed to load from Realm:', realmError);
-            }
-          }
+          await loadUserDataOffline();
         }
       } catch (error) {
         console.error('[initializeUserData] Error during initialization:', error);
+      }
+    };
+  
+    const handlePendingSync = async (isConnected: boolean) => {
+      const pendingSync = await AsyncStorage.getItem('pendingUserSync');
+  
+      if (pendingSync !== 'true' || !isConnected) return;
+  
+      const pendingData = await AsyncStorage.getItem('pendingUserData');
+      if (pendingData) {
+        const parsedData = JSON.parse(pendingData) as UserData;
+  
+        realm.write(() => {
+          realm.create('User', parsedData, UpdateMode.Modified);
+        });
+  
+        await syncRealmUserToFirestore(realm, parsedData.email);
+        await AsyncStorage.multiRemove(['pendingUserSync', 'pendingUserData']);
+      } else {
+        await AsyncStorage.removeItem('pendingUserSync');
+      }
+    };
+  
+    const loadUserDataOffline = async () => {
+      try {
+        await dispatch(loadUserDataFromRealm(realm)).unwrap();
+      } catch {
+        // silently ignore
+      }
+    };
+  
+    const loadUserDataOnline = async () => {
+      try {
+        await dispatch(fetchUserData()).unwrap();
+      } catch (fetchError) {
+        console.error('[initializeUserData] Failed to fetch from Firestore:', fetchError);
+        try {
+          await dispatch(loadUserDataFromRealm(realm)).unwrap();
+        } catch (realmError) {
+          console.error('[initializeUserData] Failed to load from Realm:', realmError);
+        }
       }
     };
   

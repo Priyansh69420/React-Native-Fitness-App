@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, TouchableOpacity, TextInput, Alert, SafeAreaView, Image, StyleSheet, Dimensions, ActivityIndicator, Modal, Animated } from 'react-native';
-import { collection, query, orderBy, onSnapshot, doc, updateDoc, arrayUnion, arrayRemove, addDoc, serverTimestamp, getDoc, where, deleteDoc } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, doc, updateDoc, arrayUnion, arrayRemove, addDoc, serverTimestamp, getDoc, where, deleteDoc, limit, startAfter, getDocs, startAt, DocumentSnapshot, QuerySnapshot } from 'firebase/firestore';
 import { auth, firestore } from '../../../firebaseConfig';
 import { useNavigation } from '@react-navigation/native';
 import { User } from '@firebase/auth';
@@ -49,13 +49,14 @@ interface IUserStory {
 export const getTimeAgo = (timestamp: any) => {
   if (!timestamp) return 'Just now';
 
-  // Convert Firestore timestamp to Date, or use Date directly if already Date
-  const date =
-    timestamp instanceof Date
-      ? timestamp
-      : typeof timestamp.toDate === 'function'
-      ? timestamp.toDate()
-      : new Date(timestamp);
+  let date: Date;
+  if (timestamp instanceof Date) {
+    date = timestamp;
+  } else if (typeof timestamp.toDate === 'function') {
+    date = timestamp.toDate();
+  } else {
+    date = new Date(timestamp);
+  }
 
   const now = new Date();
   const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
@@ -73,7 +74,6 @@ export const getTimeAgo = (timestamp: any) => {
     return `${days} day${days > 1 ? 's' : ''} ago`;
   }
 };
-
 
 const Community = () => {
   const [posts, setPosts] = useState<Post[]>([]);
@@ -96,129 +96,166 @@ const Community = () => {
   const isConnected = useNetInfo().isConnected;
   const realm = useRealm()
   const navigation = useNavigation<NavigationProp>();
+  const [hasMore, setHasMore] = useState(true); 
+  const [loadingMore, setLoadingMore] = useState(false); 
+  const [lastVisibleDoc, setLastVisibleDoc] = useState<DocumentSnapshot | null>(null);
+  const [latestFirestorePostTimestamp, setLatestFirestorePostTimestamp] = useState<Date | null>(null);
 
-  useEffect(() => {
-    let unsubscribePosts: (() => void) | null = null;
-    let latestFirestorePostTimestamp: Date | null = null;
-  
-    const loadPosts = async () => {
-      const netInfo = await NetInfo.fetch();
-  
-      if (!netInfo.isConnected) {
-        // OFFLINE: Load from Realm
-        try {
-          const realm = await getRealmInstance();
-          const offlinePosts = realm.objects<Post>('Post').sorted('timestamp', true);
-          const deepCopiedPosts = offlinePosts.map(p => ({
-            id: p.id,
-            userId: p.userId,
-            content: p.content,
-            imageUrl: p.imageUrl,
-            timestamp: new Date(p.timestamp),
-            likes: [...(p.likes || [])], // Deep copy Realm List
-          }));
-
-          setPosts(deepCopiedPosts);
-          setLoading(false);
-        } catch (err) {
-          console.error('❌ Error loading posts from Realm:', err);
-          setError('Failed to load offline posts');
-          setLoading(false);
-        }
-        return;
-      }
-  
-      // ONLINE: Subscribe to Firestore
+    const loadOfflinePosts = async () => {
       try {
-        const postsCollection = collection(firestore, 'posts');
-        const postsQuery = query(postsCollection, orderBy('timestamp', 'desc'));
-  
-        unsubscribePosts = onSnapshot(
-          postsQuery,
-          async (snapshot) => {
-            try {
-              const allPosts = snapshot.docs.map((doc) => ({
-                id: doc.id,
-                ...doc.data(),
-              })) as Post[];
-    
-              if (allPosts.length === 0) {
-                setPosts([]);
-                setLoading(false);
-                return;
-              }
-  
-              // Check if there's a new post compared to last saved timestamp
-              const newestPostTimestamp = allPosts[0].timestamp instanceof Date
-                ? allPosts[0].timestamp
-                : allPosts[0].timestamp?.toDate?.() ?? new Date();
-  
-              const realm = await getRealmInstance();
-  
-              const shouldClearRealm = !latestFirestorePostTimestamp
-                || newestPostTimestamp > latestFirestorePostTimestamp;
-  
-              latestFirestorePostTimestamp = newestPostTimestamp;
-  
-              if (shouldClearRealm) {
-                realm.write(() => {
-                  const oldPosts = realm.objects<Post>('Post');
-                  realm.delete(oldPosts);
-                });
-              }
-  
-              // Save/update top 5 posts to Realm
-              const top5 = allPosts.slice(0, 5);
-  
-              realm.write(() => {
-                top5.forEach((post) => {
-                  const timestamp = post.timestamp instanceof Date
-                    ? post.timestamp
-                    : post.timestamp?.toDate?.() ?? new Date();
-  
-                  realm.create('Post', {
-                    ...post,
-                    timestamp,
-                  }, UpdateMode.Modified);
-                });
-              });
-  
-              // Fetch user data for all posts
-              const userIds = [...new Set(allPosts.map(post => post.userId))];
-              const userDataResults = await Promise.all(userIds.map(async userId => {
-                const userDoc = await getDoc(doc(firestore, 'users', userId));
-                return userDoc.exists()
-                  ? [userId, userDoc.data() as UserData]
-                  : [userId, { name: 'User', profilePicture: undefined }];
-              }));
-  
-              const newUserDataMap = Object.fromEntries(userDataResults);
-              setUserDataMap(newUserDataMap);
-  
-              setPosts(allPosts);
-              setLoading(false);
-  
-            } catch (e) {
-              console.error("❌ Error processing snapshot data:", e);
-              setError("Failed to process posts data");
-              setLoading(false);
-            }
-          },
-          (error) => {
-            console.error('❌ Error fetching posts:', error);
-            setError(error.message);
-            setLoading(false);
-          }
-        );
+        const realm = await getRealmInstance();
+        const offlinePosts = realm.objects<Post>('Post').sorted('timestamp', true);
+        const deepCopiedPosts = offlinePosts.map(p => ({
+          id: p.id,
+          userId: p.userId,
+          content: p.content,
+          imageUrl: p.imageUrl,
+          timestamp: new Date(p.timestamp),
+          likes: [...(p.likes || [])],
+        }));
+        setPosts(deepCopiedPosts);
+        setLoading(false);
       } catch (err) {
-        console.error('❌ Error setting up Firestore listener:', err);
-        setError('Failed to fetch posts');
+        console.error('❌ Error loading posts from Realm:', err);
+        setError('Failed to load offline posts');
         setLoading(false);
       }
     };
   
-    loadPosts();
+    const handleSnapshot = async (snapshot: QuerySnapshot, isInitialLoad: boolean = true) => {
+      try {
+        const allPosts = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+          timestamp: doc.data().timestamp?.toDate?.() ?? new Date(),
+        })) as Post[];
   
+        if (allPosts.length === 0) {
+          if (isInitialLoad) {
+            setPosts([]);
+          }
+          setHasMore(false);
+          setLoading(false);
+          setLoadingMore(false);
+          return;
+        }
+  
+        const newestPostTimestamp = allPosts[0].timestamp instanceof Date
+          ? allPosts[0].timestamp
+          : allPosts[0].timestamp?.toDate?.() ?? new Date();
+  
+        const realm = await getRealmInstance();
+        const shouldClearRealm = !latestFirestorePostTimestamp || newestPostTimestamp > latestFirestorePostTimestamp;
+        setLatestFirestorePostTimestamp(newestPostTimestamp);
+  
+        if (shouldClearRealm) {
+          realm.write(() => {
+            const oldPosts = realm.objects<Post>('Post');
+            realm.delete(oldPosts);
+          });
+        }
+  
+        const top5 = allPosts.slice(0, 5);
+        realm.write(() => {
+          top5.forEach((post) => {
+            realm.create('Post', {
+              ...post,
+              timestamp: post.timestamp,
+            }, UpdateMode.Modified);
+          });
+        });
+  
+        const userIds = [...new Set(allPosts.map(post => post.userId))];
+        const userDataResults = await Promise.all(userIds.map(async userId => {
+          try {
+            const userDoc = await getDoc(doc(firestore, 'users', userId));
+            return userDoc.exists()
+              ? [userId, userDoc.data() as UserData]
+              : [userId, { name: 'User', profilePicture: undefined }];
+          } catch (e) {
+            console.warn(`Failed to fetch user data for ${userId}:`, e);
+            return [userId, { name: 'User', profilePicture: undefined }];
+          }
+        }));
+  
+        const newUserDataMap = Object.fromEntries(userDataResults);
+        setUserDataMap(prev => ({ ...prev, ...newUserDataMap }));
+        setPosts(prev => isInitialLoad ? allPosts : [...prev.filter(p => !allPosts.some(np => np.id === p.id)), ...allPosts]);
+        setLastVisibleDoc(snapshot.docs[snapshot.docs.length - 1] || null);
+        setHasMore(allPosts.length === 5);
+        setLoading(false);
+        setLoadingMore(false);
+      } catch (e: any) {
+        console.error('❌ Error processing snapshot:', {
+          message: e.message,
+          code: e.code,
+        });
+        setError('Failed to process posts data: ' + e.message);
+        setLoading(false);
+        setLoadingMore(false);
+      }
+  };
+  
+  const loadOnlinePosts = () => {
+    try {
+      const postsCollection = collection(firestore, 'posts');
+      const postsQuery = query(postsCollection, orderBy('timestamp', 'desc'), limit(5));
+      const unsubscribe = onSnapshot(postsQuery, (snapshot) => handleSnapshot(snapshot, true), (error) => {
+        console.error('❌ Error fetching posts:', {
+          message: error.message,
+          code: error.code,
+        });
+        setError('Failed to fetch posts: ' + error.message);
+        setLoading(false);
+      });
+      return unsubscribe;
+    } catch (err: any) {
+      console.error('❌ Error setting up Firestore listener:', {
+        message: err.message,
+        code: err.code,
+      });
+      setError('Failed to fetch posts: ' + err.message);
+      setLoading(false);
+    }
+  };
+
+  const loadRemainingPosts = async () => {
+    if (!hasMore || loadingMore || !lastVisibleDoc) return;
+    try {
+      setLoadingMore(true);
+      const postsCollection = collection(firestore, 'posts');
+      const nextQuery = query(
+        postsCollection,
+        orderBy('timestamp', 'desc'),
+        startAfter(lastVisibleDoc),
+        limit(5)
+      );
+      const snapshot = await getDocs(nextQuery);
+      await handleSnapshot(snapshot, false);
+    } catch (err: any) {
+      console.error('❌ Error loading remaining posts:', {
+        message: err.message,
+        code: err.code,
+      });
+      setError('Failed to load remaining posts: ' + err.message);
+      setLoadingMore(false);
+    }
+  };
+
+  useEffect(() => {
+    let unsubscribePosts: (() => void) | null = null;
+
+    const loadPosts = async () => {
+      const netInfo = await NetInfo.fetch();
+      if (!netInfo.isConnected) {
+        await loadOfflinePosts();
+        return;
+      }
+      unsubscribePosts = loadOnlinePosts() || null;
+    };
+
+    loadPosts();
+
     return () => {
       if (unsubscribePosts) {
         unsubscribePosts();
@@ -850,6 +887,7 @@ const Community = () => {
               alignItems: 'center',
               marginHorizontal: width * 0.009 * scaleFactor,
               paddingHorizontal: 0,
+              borderWidth: 38
             }}
           />
         </View>
@@ -859,9 +897,9 @@ const Community = () => {
           keyExtractor={(item) => item.id}
           renderItem={renderPostItem}
           contentContainerStyle={styles.postsListContainer}
-          ListFooterComponent={() => (
-            !isConnected ? (<ActivityIndicator size='large' />) : (<></>)
-          )}
+          onEndReached={() => loadRemainingPosts()}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={isConnected && hasMore ? <ActivityIndicator size='large' color='#d3d3d3'  /> : <></>}
         />
       </ScrollView>
 

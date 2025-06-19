@@ -145,10 +145,6 @@ export default function Settings() {
                     <Text style={styles.optionText}>Help and Support</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.option} onPress={() =>  navigation.navigate('ConnectDevice')}>
-                    <Text style={styles.optionText}>Connect Device</Text>
-                </TouchableOpacity>
-
                 <TouchableOpacity style={styles.option} onPress={() => navigation.navigate('AboutUs')}>
                     <Text style={styles.optionText}>About Us</Text>
                 </TouchableOpacity>

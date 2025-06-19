@@ -7,7 +7,7 @@ import {
   Image,
   Dimensions,
   SafeAreaView,
-  Linking, // For social media links
+  Linking,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { DrawerNavigationProp } from '@react-navigation/drawer';

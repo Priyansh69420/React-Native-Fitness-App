@@ -154,7 +154,11 @@ const ConnectDeviceScreen: React.FC = () => {
 
       if (device?.name) {
         if (!devices.some(d => d.id === device.id)) {
-          setDevices(prevDevices => [...prevDevices, device]);
+          setDevices(prevDevices => {
+            if(prevDevices.some(existingDevice => existingDevice.name === device.name)) return prevDevices;
+
+            return [...prevDevices, device];
+          });
         }
       }
     });
