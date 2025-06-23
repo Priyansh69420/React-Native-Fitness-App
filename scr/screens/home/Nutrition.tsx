@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Image, Dimensions, ScrollView, Modal, FlatList, KeyboardAvoidingView, Platform, ActivityIndicator, Animated, Easing, Alert, Pressable } from 'react-native'
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Image, Dimensions, ScrollView, Modal, FlatList, KeyboardAvoidingView, Platform, ActivityIndicator, Animated, Easing, Alert, Pressable, Keyboard } from 'react-native'
 import React, { useCallback, useEffect, useState } from 'react'
 import { RFPercentage, RFValue } from 'react-native-responsive-fontsize';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
@@ -31,7 +31,7 @@ interface FoodItem {
   portion: number;
 }
 
-type MealType = 'Breakfast' | 'Lunch' | 'Dinner' | 'Snack';
+type MealType = 'Breakfast' | 'Lunch' | 'Dinner' | 'Snacks';
 
 const debounce = (func: (...args: any[]) => void, delay: number) => {
   let timeoutId: NodeJS.Timeout;
@@ -80,6 +80,8 @@ export default function Nutrition() {
   const [nutritionInfo, setNutritionInfo] = useState<FoodItem[]>([]);
   const [expandedMealCards, setExpandedMealCards] = useState<{ [key in MealType]?: boolean }>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+
   const realm = useRealm()
   const isConnected = useNetInfo();
 	const [nutritionData, setNutritionData] = useState([
@@ -87,17 +89,17 @@ export default function Nutrition() {
     { name: 'Carbs', percentage: 0, color: '#9D6DEB' },
     { name: 'Protein', percentage: 0, color: '#FFA500' },
   ]);
-	const mealTypes = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
+	const mealTypes = ['Breakfast', 'Lunch', 'Dinner', 'Snacks'];
   const [consumedFoods, setConsumedFoods] = useState<{
     Breakfast: FoodItem[];
     Lunch: FoodItem[];
     Dinner: FoodItem[];
-    Snack: FoodItem[];
+    Snacks: FoodItem[];
   }>({
     Breakfast: [],
     Lunch: [],
     Dinner: [],
-    Snack: [],
+    Snacks: [],
   });
   const [cardAnimations] = useState<{ [key in MealType]: Animated.Value }>(() => {
     const animations: { [key in MealType]?: Animated.Value } = {};
@@ -128,11 +130,23 @@ export default function Nutrition() {
     saveData();
   }, [consumedFoods, totalCalories]);
 
-  const fetchNutritionInfo = async () => {
+  useEffect(() => {
+    const keyboardDidOpen = Keyboard.addListener('keyboardDidShow', () => {
+      setIsKeyboardVisible(true);
+    })
+
+    const keyboardDidClose = Keyboard.addListener('keyboardDidHide', () => {
+      setIsKeyboardVisible(false);
+    })
   
+    return () => {
+      keyboardDidOpen.remove();
+      keyboardDidClose.remove();
+    }
+  }, []);
+  
+  const fetchNutritionInfo = async () => {
     try {
-      // STEP 1: Load local data from Realm
-      
       const localData = realm.objects('NutritionInfo');
   
       const nutritionArray = Array.from(localData).map(item => ({
@@ -148,11 +162,9 @@ export default function Nutrition() {
   
       setNutritionInfo(nutritionArray);
   
-      // STEP 2: Check if device is online before syncing
       if (isConnected?.isConnected) {
         const snapshot = await getDocs(collection(firestore, 'nutritionInfo'));
   
-        // STEP 3: Write to Realm
         realm.write(() => {
           snapshot.docs.forEach(doc => {
             const data = doc.data();
@@ -169,7 +181,6 @@ export default function Nutrition() {
           });
         });
   
-        // STEP 4: Reload and update local state
         const updatedLocal = realm.objects('NutritionInfo');
         const updatedArray = Array.from(updatedLocal).map(item => ({
           id: item.id,
@@ -380,7 +391,7 @@ export default function Nutrition() {
         if (storedFoods && lastSaved === today) {
           setConsumedFoods(JSON.parse(storedFoods));
         } else {
-          setConsumedFoods({ Breakfast: [], Lunch: [], Dinner: [], Snack: [] });
+          setConsumedFoods({ Breakfast: [], Lunch: [], Dinner: [], Snacks: [] });
           setTotalCalories(0);
           setTotalFat(0);
           setTotalCarbs(0);
@@ -393,7 +404,7 @@ export default function Nutrition() {
         }
       } catch (error) {
         console.error('Nutrtiton Screen: Error while loading data-', error);
-        setConsumedFoods({ Breakfast: [], Lunch: [], Dinner: [], Snack: [] });
+        setConsumedFoods({ Breakfast: [], Lunch: [], Dinner: [], Snacks: [] });
         setTotalCalories(0);
         setTotalFat(0);
         setTotalCarbs(0);
@@ -405,7 +416,7 @@ export default function Nutrition() {
         ]);
       }
     } else {
-      setConsumedFoods({ Breakfast: [], Lunch: [], Dinner: [], Snack: [] });
+      setConsumedFoods({ Breakfast: [], Lunch: [], Dinner: [], Snacks: [] });
       setTotalCalories(0);
       setTotalFat(0);
       setTotalCarbs(0);
@@ -710,10 +721,10 @@ export default function Nutrition() {
                           </View>
                           <View style={{ flexDirection: 'column', alignItems: 'center' }}>
                             <Text style={styles.foodCalories}>
-                              {food.calories} <Text style={{ fontSize: 15, color: 'gray' }}>Cal</Text>
+                              {String(food.calories).padStart(3, '0')} <Text style={{ fontSize: 15, color: 'gray' }}>Cal</Text>
                             </Text>
                             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                              <TouchableOpacity onPress={() => updateFoodPortion(mealType as MealType, food.name, false)} style={{justifyContent: 'center', alignItems: 'center', height: 20, width: 20}}>
+                              <TouchableOpacity onPress={() => updateFoodPortion(mealType as MealType, food.name, false)} style={{justifyContent: 'center', alignItems: 'center', height: 20, width: 20}} disabled={food.portion === 1}>
                                 <Image source={require('../../assets/minus-Icon.png')} style={{height: 16, width: 16, tintColor: '#a9a4ff'}} />                              
                               </TouchableOpacity>
                               <Text style={{ fontSize: 14, marginVertical: 7, marginHorizontal: 7 }}>{food.portion}</Text>
@@ -798,7 +809,7 @@ export default function Nutrition() {
                   />
                 )}
 
-                {selectedFoods.length > 0 && selectedMeal && (
+                {selectedFoods.length > 0 && selectedMeal && !isKeyboardVisible && (
                 <TouchableOpacity style={styles.addButton} onPress={handleAddButtonPress}>
                   <Text style={styles.addButtonText}>Add</Text>
                 </TouchableOpacity>

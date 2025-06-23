@@ -1,5 +1,5 @@
 import { View, Text, Dimensions, StyleSheet, SafeAreaView, TextInput, TouchableOpacity, Image, ActivityIndicator, Alert } from 'react-native';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigation } from "@react-navigation/native";
 import { RootStackParamList } from "../../navigations/RootStackParamList";
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -12,6 +12,7 @@ import { doc, getDoc, setDoc } from '@firebase/firestore';
 import { Ionicons } from '@expo/vector-icons';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useAuth } from '../../contexts/AuthContext';
+import { useNetInfo } from '@react-native-community/netinfo';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, "GettingStarted">;
 
@@ -36,6 +37,12 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>('');
   const [isVisible, setIsVisible] = useState<boolean>(false);
+  const isConnected = useNetInfo().isConnected;
+
+  useEffect(() => {
+    setError('')
+  }, [email, password, isConnected])
+  
 
   const handleLogin = async () => {
     if (!email || !password) {

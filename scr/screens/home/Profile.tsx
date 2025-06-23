@@ -272,11 +272,11 @@ export default function Profile() {
       }));
       if(height.trim() === '0' || height.trim() === '') setDetailError(prev => ({
         ...prev,
-        heightError: 'Can not leave this field empty'
+        heightError: 'Height is required.'
       }))
       if(weight.trim() === '0' || weight.trim() === '') setDetailError(prev => ({
         ...prev,
-        weightError: 'Can not leave this field empty'
+        weightError: 'Weight is required.'
       }))
 
       return;
@@ -307,8 +307,16 @@ export default function Profile() {
     }
   };
 
+  const checkPasswordRequirements = (pass: string) => {
+    const minLength = pass.length >= 8;
+    const hasUpperCase = /[A-Z]/.test(pass);
+    const hasNumber = /\d/.test(pass);
+    return { minLength, hasUpperCase, hasNumber };
+  };
+
   const handleChangePassword = async () => {
     let hasError = false;
+    const {hasUpperCase, hasNumber, minLength} = checkPasswordRequirements(newPassword)
   
     setError('');
   
@@ -326,6 +334,9 @@ export default function Profile() {
       hasError = true;
     } else if (newPassword !== confirmNewPassword) {
       setError('New passwords do not match.');
+      hasError = true;
+    } else if (!hasUpperCase || !hasNumber || !minLength) {
+      setError('New password should have atleast one UpperCase, one number and should be 8 characters long.')
       hasError = true;
     }
   

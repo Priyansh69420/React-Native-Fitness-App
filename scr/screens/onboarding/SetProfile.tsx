@@ -241,6 +241,10 @@ export default function SetProfile() {
             )}
           </TouchableOpacity>
 
+          <TouchableOpacity style={[styles.addPhotoButton, {marginBottom: -20, marginTop: -5}]} onPress={() => setModalVisible(prev => true)}> 
+            <Text style={[styles.addPhotoText, {fontSize: 14}]}>View Image</Text>
+          </TouchableOpacity>
+
             <Modal
               animationType='slide'
               transparent={true}
@@ -378,7 +382,7 @@ const styles = StyleSheet.create({
     borderRadius: width * 0.065, 
     width: '100%',
     alignItems: 'center', 
-    marginBottom: height * 0.001
+    marginBottom: height * 0.01
   },
   addPhotoText: {
     color: '#7A5FFF',

@@ -4,7 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigations/RootStackParamList';
 import { useOnboarding } from '../../contexts/OnboardingContext';
-import { fetchSignInMethodsForEmail, createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
+import { fetchSignInMethodsForEmail, createUserWithEmailAndPassword, sendEmailVerification, User } from 'firebase/auth';
 import { auth } from '../../../firebaseConfig';
 import { RFValue } from 'react-native-responsive-fontsize';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
@@ -19,13 +19,39 @@ export default function Signup() {
   const [email, setEmail] = useState('');
   const [error, setError] = useState<string>('');
   const [shouldValidate, setShouldValidate] = useState<boolean>(false);
+  const [emailVerified, setEmailVerified] = useState<boolean>(false);
   const [verifying, setVerifying] = useState<boolean>(false);
   const [verificationMessage, setVerificationMessage] = useState<string>('');
   const [verificationError, setVerificationError] = useState<string>('');
   const isConnected = useNetInfo();
 
+  const userRef = useRef<User | null>(null);
+
   const { updateOnboardingData, onboardingData } = useOnboarding();
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    const unsubscribeBlur = navigation.addListener('blur', async () => {
+      const user = auth.currentUser;
+      userRef.current = user
+  
+      if (user && !user.emailVerified) {
+        try {
+          await user.reload();
+          if (!user.emailVerified) {
+            await user.delete();
+            console.log('User deleted due to navigation before verification');
+          }
+        } catch (err) {
+          console.error('Error deleting user on blur:', err);
+        }
+      }
+    });
+  
+    return () => {
+      unsubscribeBlur();
+    };
+  }, [navigation]);  
 
   useEffect(() => {
     if (onboardingData.email) setEmail(onboardingData.email);
@@ -69,7 +95,7 @@ export default function Signup() {
     }
 
     if (!emailRegex.test(trimmedEmail)) {
-      setError('That doesn’t look like a valid email address');
+      setError('Please enter a valid email');
       return;
     }
 
@@ -95,7 +121,7 @@ export default function Signup() {
       }
     } catch (error: any) {
       if (error.code === 'auth/invalid-email') {
-        setError('That doesn’t look like a valid email address');
+        setError('Please enter a valid email');
       } else {
         console.error("Firebase error:", error.message);
         setError("Something went wrong. Please try again.");
@@ -128,6 +154,7 @@ export default function Signup() {
             setVerifying(false);
             setVerificationMessage('');
             updateOnboardingData({ isEmailVerified: true });
+            setEmailVerified(true)
             navigation.navigate('SetName');
           }
         }
@@ -182,7 +209,7 @@ export default function Signup() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.container}>
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} disabled={emailVerified || verifying}>
             <Image source={backIcon} style={styles.backIcon} />
           </TouchableOpacity>
 

@@ -194,8 +194,15 @@ export default function Home() {
                 <View style={styles.sectionDetails}>
                   <View style={styles.sectionHeader}>
                     <Text style={styles.sectionTitle}>Nutrition</Text>
-                    <TouchableOpacity style={styles.toggleButton}>
-                      <Text style={styles.toggleText}>On</Text>
+                    <TouchableOpacity 
+                      style={[
+                        styles.warningButton, 
+                        userData?.calories >= userData?.calorieGoal ? { backgroundColor: '#C8F2C8' } : null
+                      ]}
+                    >
+                      <Text style={[styles.toggleText, styles.warningText, userData?.calories >= userData?.calorieGoal ? { color: 'green' } : null]}>
+                        {userData?.calories >= userData?.calorieGoal ? 'Completed' : 'Warning'}
+                      </Text>
                     </TouchableOpacity>
                   </View>
                   <Text style={styles.sectionProgress}>

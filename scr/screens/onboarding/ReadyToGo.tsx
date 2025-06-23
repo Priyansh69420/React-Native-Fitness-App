@@ -22,6 +22,8 @@ export default function ReadyToGo() {
       setError('Network error. Please check your internet connection and try again.');
       return;
     }
+
+    setError('');
   }, [isConnected]);
 
   const handleFinish = async () => {
