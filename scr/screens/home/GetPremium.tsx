@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -20,6 +20,7 @@ import { auth, firestore } from '../../../firebaseConfig';
 import { doc, setDoc } from '@firebase/firestore';
 import { RootState } from '../../store/store';
 import { useNetInfo } from '@react-native-community/netinfo';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 const BUTTON_HORIZONTAL_MARGIN_PERCENTAGE = 6;
@@ -115,7 +116,10 @@ export default function GetPremium() {
         Alert.alert(alertTitle, successMessage, [
           {
             text: 'OK',
-            onPress: () => navigation.navigate('HomeStack'),
+            onPress: async() => {
+              await AsyncStorage.setItem('firstPurchase', 'true');
+              navigation.navigate('HomeStack')
+            },
           },
         ]);
       } catch {

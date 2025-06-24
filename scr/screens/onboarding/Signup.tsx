@@ -23,7 +23,7 @@ export default function Signup() {
   const [verifying, setVerifying] = useState<boolean>(false);
   const [verificationMessage, setVerificationMessage] = useState<string>('');
   const [verificationError, setVerificationError] = useState<string>('');
-  const isConnected = useNetInfo();
+  const isConnected = useNetInfo().isConnected;
 
   const userRef = useRef<User | null>(null);
 
@@ -60,25 +60,31 @@ export default function Signup() {
   useEffect(() => {
     if (!shouldValidate) return;
 
+    if(isConnected) setError('');
+
     if (email.length === 0) {
       setError('Please enter your email address');
     } else if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email.trim())) {
       setError('Please enter a valid email address');
+    } else if (!isConnected) {
+      setError('Network error. Please check your internet connection and try again.');
+      setVerificationMessage('');
     } else {
       setError('');
     }
-  }, [email, shouldValidate]);
+  }, [email, shouldValidate, isConnected]);
 
   useEffect(() => {
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
+
       }
     };
   }, []);
 
   async function handleContinue() {
-    if(!isConnected.isConnected) {
+    if(!isConnected) {
       setError('Network error. Please check your internet connection and try again.');
       return;
     }
@@ -168,7 +174,7 @@ export default function Signup() {
           intervalRef.current = null;
 
           await user.reload();
-          if (!user?.emailVerified) {
+          if (!user?.emailVerified || !isConnected) {
             try {
               await user.delete();
             } catch(error: any) {
@@ -176,10 +182,11 @@ export default function Signup() {
             }
 
             setVerifying(false);
+            setVerificationMessage('');
             setVerificationError('Email verification timed out. Please try again.');
           }
         }
-      }, 2 * 60 * 1000);
+      }, 60 * 1000);
     } catch (error: any) {
       console.error("Email verification error:", error.message);
       setVerifying(false);
@@ -209,9 +216,11 @@ export default function Signup() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.container}>
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} disabled={emailVerified || verifying}>
-            <Image source={backIcon} style={styles.backIcon} />
-          </TouchableOpacity>
+          {!emailVerified ? (
+            <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} disabled={emailVerified || verifying}>
+              <Image source={backIcon} style={styles.backIcon} />
+            </TouchableOpacity>
+          ) : (<></>)}
 
           <View style={styles.centeredContent}>
             <Image source={logo} style={styles.appLogo} resizeMode="contain" />
@@ -254,7 +263,7 @@ export default function Signup() {
               onPress={handleContinue}
               disabled={verifying}
             >
-              {verifying ? (
+              {verifying && isConnected ? (
                 <ActivityIndicator size="small" color="#FFF" />
               ) : (
                 <Text style={styles.buttonText}>

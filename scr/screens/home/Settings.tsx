@@ -29,6 +29,21 @@ export default function Settings() {
     const { clearAuthUser } = useAuth();
 
     useEffect(() => {
+      const loadPushSetting = async () => {
+        try {
+          const storedValue = await AsyncStorage.getItem('pushEnabled');
+          if (storedValue !== null) {
+            setIsPushEnabled(JSON.parse(storedValue));
+          }
+        } catch (error: any) {
+          console.log('Failed to load push setting:', error);
+        }
+      };
+    
+      loadPushSetting();
+    }, []);
+
+    useEffect(() => {
       const savePushSetting = async () => {
         try {
           await AsyncStorage.setItem('pushEnabled', JSON.stringify(isPushEnabled));
@@ -47,27 +62,83 @@ export default function Settings() {
     });
 
     const handleInviteFriend = async () => {
-        if (appLink) {
-          const message = `Check out this awesome app: ${appLink}`;
-          const url = `sms:?body=${encodeURIComponent(message)}`; 
-      
-          try {
-            const result = await Linking.openURL(url);
-            if (!result) {
-              console.error('Error', 'Could not open SMS app.');
-            }
-          } catch (error: any) {
-            console.error('Error', `Could not open SMS app: ${error.message}`);
+      if (appLink) {
+        const message = `Check out this awesome app: ${appLink}`;
+        const url = `sms:?body=${encodeURIComponent(message)}`; 
+    
+        try {
+          const result = await Linking.openURL(url);
+          if (!result) {
+            console.error('Error', 'Could not open SMS app.');
           }
-        } else {
-          console.error('Invite Not Supported', 'App link is not configured for this platform.');
+        } catch (error: any) {
+          console.error('Error', `Could not open SMS app: ${error.message}`);
         }
-      };
-      
+      } else {
+        console.error('Invite Not Supported', 'App link is not configured for this platform.');
+      }
+    };
+     
+    const handleOpenDialerWithNumber = async () => {
+      const phoneNumber = '7887052000';
+      const url = `tel:${phoneNumber}`; 
+    
+      try {
+        const supported = await Linking.canOpenURL(url);
+        if (supported) {
+          await Linking.openURL(url);
+        } else {
+          console.error('❌ Cannot open dialer for this device');
+        }
+      } catch (error: any) {
+        console.error('❌ Error opening dialer:', error.message);
+      }
+    };
+
+    const handleOpenGmail = async () => {
+      const email = 'contactus@gmail.com';
+      const subject = 'Support Request';
+      const body = 'Hi team, I need help with...';
+    
+      const url = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    
+      try {
+        const supported = await Linking.canOpenURL(url);
+        if (supported) {
+          await Linking.openURL(url);
+        } else {
+          console.error('❌ Email client is not available');
+        }
+      } catch (error: any) {
+        console.error('❌ Error opening email:', error.message);
+      }
+    };
+
+    const handleOpenMapLocation = async () => {
+      const latitude = 12.9716;
+      const longitude = 77.5946;
+      const label = 'Park Avenue, Bangalore';
+    
+      const url = Platform.select({
+        ios: `http://maps.apple.com/?ll=${latitude},${longitude}&q=${encodeURIComponent(label)}`,
+        android: `geo:${latitude},${longitude}?q=${latitude},${longitude}(${encodeURIComponent(label)})`,
+      });
+    
+      try {
+        const supported = await Linking.canOpenURL(url!);
+        if (supported) {
+          await Linking.openURL(url!);
+        } else {
+          console.error('❌ Maps app is not available on this device');
+        }
+      } catch (error: any) {
+        console.error('❌ Error opening maps:', error.message);
+      }
+    };
 
     const handleGiveFeedback = () => {
-        setIsFeedbackModalVisible(true);
-        setFeedbackText('');
+      setIsFeedbackModalVisible(true);
+      setFeedbackText('');
     };
 
     const handleSendFeedback = () => {
@@ -79,7 +150,7 @@ export default function Settings() {
             'Feedback Received',
             'Thanks for your feedback!\nWe will look into it as soon as possible.'
         );
-        setIsFeedbackModalVisible(false);
+        
         setFeedbackText('');
     };
 
@@ -189,10 +260,11 @@ export default function Settings() {
                                 <Text style={styles.modalButtonText}>Close</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
-                                style={[styles.modalButton, styles.modalSubmitButton]}
+                                style={[styles.modalButton, !feedbackText.trim() ? styles.modalCancelButton : styles.modalSubmitButton]}
                                 onPress={handleSendFeedback}
+                                disabled={!feedbackText.trim()}
                             >
-                                <Text style={[styles.modalButtonText, {color: '#FFF'}]}>Send</Text>
+                                <Text style={[styles.modalButtonText, , {color: !feedbackText.trim() ? '#7A5FFF' : '#fff'}]}>Send</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -214,25 +286,31 @@ export default function Settings() {
                         </Text>
 
                         <View style={styles.supportOptionsContainer}>
-                            <View style={styles.supportOption}>
-                                <View >
-                                    <Text style={styles.icon}>📍</Text>
-                                </View>
-                                
-                                <Text style={styles.supportDetail}> Park Avenue, Bangalore, 160010</Text>
-                            </View>
+                            <TouchableOpacity onPress={handleOpenMapLocation}>
+                              <View style={styles.supportOption}>
+                                  <View >
+                                      <Text style={styles.icon}>📍</Text>
+                                  </View>
+                                  
+                                  <Text style={styles.supportDetail}> Park Avenue, Bangalore, 160010</Text>
+                              </View>
+                            </TouchableOpacity>
 
-                            <View style={styles.supportOption}>
-                                    <Text style={styles.icon}>📞</Text>
-                                
-                                <Text style={styles.supportDetail}>+91-7887052000</Text>
-                            </View>
+                            <TouchableOpacity onPress={handleOpenDialerWithNumber}>
+                              <View style={styles.supportOption}>
+                                      <Text style={styles.icon}>📞</Text>
+                                  
+                                  <Text style={styles.supportDetail}>+91-7887052000</Text>
+                              </View>
+                            </TouchableOpacity>
 
+                            <TouchableOpacity onPress={handleOpenGmail}>
                             <View style={styles.supportOption}>
                                     <Text style={styles.icon}>✉️</Text>
                                 
                                 <Text style={styles.supportDetail}>contactus@gmail.com</Text>
                             </View>
+                            </TouchableOpacity>
                         </View>
 
                         <View style={styles.modalButtons}>

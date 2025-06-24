@@ -82,6 +82,10 @@ export default function Water() {
     fetchData().finally(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    if(worstPerformance?.count === bestPerformance?.count) setWorstPerformance(null);
+  }, [worstPerformance, bestPerformance]);
+
   const loadWeeklyPerformance = async () => {
     const userId = auth.currentUser?.uid;
     if (!userId) return;

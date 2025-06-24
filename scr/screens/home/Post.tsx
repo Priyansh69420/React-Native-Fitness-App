@@ -10,6 +10,7 @@ import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { CommunityStackParamList } from '../../navigations/CommunityStackParamList';
 import { ResizeMode, Video } from 'expo-av';
 import { getTimeAgo } from './Community';
+import { useNetInfo } from '@react-native-community/netinfo';
 
 type NavigationProp = DrawerNavigationProp<CommunityStackParamList, 'Community'>;
 
@@ -42,15 +43,17 @@ export default function Post() {
   const initialItem = route.params?.item || {} as Post;
   const { name, profilePic } = route.params;
   const [post, setPost] = useState<Post>(initialItem);
-    const [loading, setLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
   const [comments, setComments] = useState<Comment[]>([]);
   const [commentText, setCommentText] = useState('');
   const [userDataMap, setUserDataMap] = useState<Record<string, UserData>>({});
   const [loadingAuthor, setLoadingAuthor] = useState(false);
   const [loadingComments, setLoadingComments] = useState(false);
+
   const user = auth.currentUser;
   const isLiked = user ? post.likes?.includes(user.uid) : false;
   const navigation = useNavigation<NavigationProp>();
+  const isConnected = useNetInfo().isConnected;
 
   useEffect(() => {
     const fetchPostAuthorData = async () => {
@@ -155,7 +158,6 @@ export default function Post() {
     }
   };
   
-
   const handleAddComment = async () => {
     setLoading(true);
     if (!commentText.trim()) {
@@ -315,7 +317,7 @@ export default function Post() {
           value={commentText}
           onChangeText={setCommentText}
         />
-        <TouchableOpacity style={styles.newPostCommentButton} onPress={handleAddComment}>
+        <TouchableOpacity style={styles.newPostCommentButton} onPress={handleAddComment} disabled={!isConnected || loading}>
           {loading ? <ActivityIndicator size='small' color='#d3d3d3' /> : <Text style={styles.newPostCommentButtonText}>Post</Text>}
         </TouchableOpacity>
       </View>
@@ -473,7 +475,7 @@ const styles = StyleSheet.create({
   commentTimestamp: {
     fontSize: RFValue(10 * scaleFactor, height),
     color: '#757575',
-    marginLeft: width * 0.005 * scaleFactor,
+    marginLeft: width * 0.002 * scaleFactor,
     marginBottom: height * 0.02 * scaleFactor,
   },
   addCommentContainer: {

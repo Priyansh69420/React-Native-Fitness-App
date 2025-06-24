@@ -93,13 +93,14 @@ const Community = () => {
   const [editingPost, setEditingPost] = useState<Post | null>(null);
   const [editedContent, setEditedContent] = useState<string>('');
   const [likingPostId, setLikingPostId] = useState<string | null>(null);
-  const isConnected = useNetInfo().isConnected;
-  const realm = useRealm()
-  const navigation = useNavigation<NavigationProp>();
   const [hasMore, setHasMore] = useState(true); 
   const [loadingMore, setLoadingMore] = useState(false); 
   const [lastVisibleDoc, setLastVisibleDoc] = useState<DocumentSnapshot | null>(null);
   const [latestFirestorePostTimestamp, setLatestFirestorePostTimestamp] = useState<Date | null>(null);
+
+  const isConnected = useNetInfo().isConnected;
+  const realm = useRealm()
+  const navigation = useNavigation<NavigationProp>();
 
     const loadOfflinePosts = async () => {
       try {
@@ -155,16 +156,6 @@ const Community = () => {
           });
         }
   
-        const top5 = allPosts.slice(0, 5);
-        realm.write(() => {
-          top5.forEach((post) => {
-            realm.create('Post', {
-              ...post,
-              timestamp: post.timestamp,
-            }, UpdateMode.Modified);
-          });
-        });
-  
         const userIds = [...new Set(allPosts.map(post => post.userId))];
         const userDataResults = await Promise.all(userIds.map(async userId => {
           try {
@@ -181,6 +172,16 @@ const Community = () => {
         const newUserDataMap = Object.fromEntries(userDataResults);
         setUserDataMap(prev => ({ ...prev, ...newUserDataMap }));
         setPosts(prev => isInitialLoad ? allPosts : [...prev.filter(p => !allPosts.some(np => np.id === p.id)), ...allPosts]);
+        const top5 = posts.slice(0, 5);
+        realm.write(() => {
+          top5.forEach((post) => {
+            realm.create('Post', {
+              ...post,
+              timestamp: post.timestamp,
+            }, UpdateMode.Modified);
+          });
+        });
+
         setLastVisibleDoc(snapshot.docs[snapshot.docs.length - 1] || null);
         setHasMore(allPosts.length === 5);
         setLoading(false);
@@ -194,7 +195,7 @@ const Community = () => {
         setLoading(false);
         setLoadingMore(false);
       }
-  };
+    };
   
   const loadOnlinePosts = () => {
     try {
@@ -859,12 +860,34 @@ const Community = () => {
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
             <Text style={styles.headerTitle}>Community</Text>
             <View style={{ flexDirection: 'row', marginTop: height * 0.008 }}>
-              <TouchableOpacity onPress={handlePickStoryMedia} style={{ paddingVertical: height * 0.03, paddingHorizontal: width * 0.02 }}>
+              <TouchableOpacity onPress={() => {
+                  if(!isConnected) {
+                    Alert.alert(
+                      'No Internet Connection',
+                      'You are currently offline. Please connect to the internet to add story.'
+                    );
+                    return;
+                  }
+
+                  handlePickStoryMedia()
+                }}
+                style={{ paddingVertical: height * 0.03, paddingHorizontal: width * 0.02 }}
+              >
                 <Feather name="plus-square" size={24} color="#222" />
               </TouchableOpacity>
               <TouchableOpacity
                 style={{ paddingVertical: height * 0.03, paddingHorizontal: width * 0.02 }}
-                onPress={() => setIsAddPostModalVisible(true)}
+                onPress={() => {
+                  if (!isConnected) {
+                    Alert.alert(
+                      'No Internet Connection',
+                      'You are currently offline. Please connect to the internet to add post.'
+                    );
+                    return;
+                  }
+                
+                  setIsAddPostModalVisible(true);
+                }}
               >
                 <Feather name="inbox" size={24} color="#222" />
               </TouchableOpacity>
@@ -899,7 +922,7 @@ const Community = () => {
           contentContainerStyle={styles.postsListContainer}
           onEndReached={() => loadRemainingPosts()}
           onEndReachedThreshold={0.5}
-          ListFooterComponent={isConnected && hasMore ? <ActivityIndicator size='large' color='#d3d3d3'  /> : <></>}
+          ListFooterComponent={!isConnected || hasMore ? <ActivityIndicator size='large' color='#d3d3d3'  /> : <></>}
         />
       </ScrollView>
 
@@ -991,8 +1014,9 @@ const Community = () => {
                   }
                   setEditModalVisible(false);
                 }}
+                disabled={!editedContent.trim()}
               >
-                <Text style={[styles.modalButtonText, { color: 'blue', marginTop: 0.5 }]}>Save</Text>
+                <Text style={[styles.modalButtonText, { color: !editedContent.trim() ? '#a8a8a8' : '#007AFF', marginTop: 0.5 }]}>Save</Text>
               </TouchableOpacity>
             </View>
           </View>

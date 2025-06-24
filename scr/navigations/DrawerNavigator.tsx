@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { createDrawerNavigator, DrawerContentScrollView, DrawerItem } from '@react-navigation/drawer';
 import { DrawerParamList } from './DrawerParamList';
 import HomeStack from './HomeStack';
@@ -14,6 +14,7 @@ import { persistor, RootState } from '../store/store';
 import { useNavigationState } from '@react-navigation/native';
 import { RFPercentage, RFValue } from 'react-native-responsive-fontsize';
 import { useAuth } from '../contexts/AuthContext'; 
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Drawer = createDrawerNavigator<DrawerParamList>();
 
@@ -44,12 +45,17 @@ function CustomDrawerContent(props: any) {
   const { userData } = useSelector((state: RootState) => state.user);
   const navigationState = useNavigationState(state => state);
   const currentRouteName = navigationState?.routes?.[navigationState.index]?.name ?? 'HomeStack';
+  const [firstPurchase, setFirstPurchase] = useState<boolean | null>(null);
 
   const navigateToHome = () => props.navigation.navigate('HomeStack');
   const navigateToCommunity = () => props.navigation.navigate('Community');
   const navigateToNotifications = () => props.navigation.navigate('Notifications');
   const navigateToSettings = () => props.navigation.navigate('SettingStack');
   const navigateToGetPremium = () => props.navigation.navigate('GetPremium');
+
+  useEffect(() => {
+    checkFirstPurchase();
+  }, [])
 
   const confirmLogout = () => {
     Alert.alert(
@@ -63,6 +69,16 @@ function CustomDrawerContent(props: any) {
     );
   };
 
+  const checkFirstPurchase = async () => {
+      try {
+        const value = await AsyncStorage.getItem('firstPurchase');
+        setFirstPurchase(Boolean(value));
+      } catch (error) {
+        console.error('Error reading firstPurchase from AsyncStorage:', error);
+        return false;
+      }
+    };
+
   const handleCommunityNavigation = () => {
     if (!userData?.isPremium) {
       Alert.alert(
@@ -70,7 +86,7 @@ function CustomDrawerContent(props: any) {
         'Unlock all features of the app by upgrading to Premium.',
         [
           { text: 'Maybe Later' },
-          { text: 'Buy Premium', onPress: navigateToGetPremium }
+          { text: firstPurchase ? 'Renew Premium' : 'Buy Premium', onPress: navigateToGetPremium }
         ],
         { cancelable: true }
       );

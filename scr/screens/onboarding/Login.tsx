@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNetInfo } from '@react-native-community/netinfo';
+import { useOnboarding } from '../../contexts/OnboardingContext';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, "GettingStarted">;
 
@@ -38,6 +39,7 @@ export default function LoginScreen() {
   const [error, setError] = useState<string>('');
   const [isVisible, setIsVisible] = useState<boolean>(false);
   const isConnected = useNetInfo().isConnected;
+  const { resetOnboardingData, onboardingData } = useOnboarding();
 
   useEffect(() => {
     setError('')
@@ -70,6 +72,7 @@ export default function LoginScreen() {
       await setAuthUser(user.uid);
 
       await AsyncStorage.setItem('onboardingInProgress', JSON.stringify(false));
+      await resetOnboardingData();
     } catch (error: any) {
       console.error('LoginScreen: Sign-in error:', error.message);
 
@@ -130,6 +133,7 @@ export default function LoginScreen() {
       }
   
       await setAuthUser(user.uid);
+      await resetOnboardingData();
   
     } catch (error: any) {
       console.error("Google Sign-In Error:", error);

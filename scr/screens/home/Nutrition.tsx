@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Image, Dimensions, ScrollView, Modal, FlatList, KeyboardAvoidingView, Platform, ActivityIndicator, Animated, Easing, Alert, Pressable, Keyboard } from 'react-native'
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Image, Dimensions, ScrollView, Modal, FlatList, KeyboardAvoidingView, Platform, ActivityIndicator, Animated, Easing, Alert, Pressable, Keyboard, Button } from 'react-native'
 import React, { useCallback, useEffect, useState } from 'react'
 import { RFPercentage, RFValue } from 'react-native-responsive-fontsize';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
@@ -560,7 +560,7 @@ export default function Nutrition() {
                 const rotation = -90;
 
                 return (
-                    <G key={item.name}>
+                  <G key={item.name}>
                     <Circle
                       key={`bg-circle-${item.name}`} 
                       cx={center}
@@ -584,7 +584,7 @@ export default function Nutrition() {
                       transform={`rotate(${rotation}, ${center}, ${center})`}
                       fill="none"
                     />
-                    </G>
+                  </G>
                 );
               })}
             </Svg>
@@ -601,29 +601,41 @@ export default function Nutrition() {
 				</View>
 
         <View style={styles.nutritionContainer}>
-          <View style={{flexDirection: 'row', borderBottomWidth: 0.5, borderBottomColor: '#d6d6d6', paddingVertical: 20, paddingHorizontal: 20}}>
-            <View style={{height: 20, width: 20, backgroundColor: '#66D3C8', borderRadius: 6}} />
-            <View style={{flex: 1, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 12}}>
-              <Text style={{fontSize: 17}}>Fat</Text>
-              <Text style={{fontSize: 17}}>{totalFat}g</Text>
+          <View style={{flexDirection: 'row', borderBottomWidth: 0.5, borderBottomColor: '#d6d6d6', paddingVertical: 20, paddingLeft: 15, paddingRight: 20}}>
+            <View style={{flex: 1, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'}}>
+              <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: "60%"}}>
+                <View style={{flexDirection: 'row'}}>
+                  <View style={{height: 20, width: 20, backgroundColor: '#66D3C8', borderRadius: 6, marginRight: 10}} />
+                  <Text style={{fontSize: 17}}>Fat</Text>
+                </View>
+                <Text style={{fontSize: 17}}>{totalFat}g</Text>
+              </View>
               <Text style={{fontSize: 17, fontWeight: 'bold'}}>{Math.round(nutritionData[0].percentage * 100)}%</Text>
             </View>
           </View>
           
-          <View style={{flexDirection: 'row', borderBottomWidth: 0.5, borderBottomColor: '#d6d6d6', paddingVertical: 20, paddingHorizontal: 20}}>
-            <View style={{height: 20, width: 20, backgroundColor: '#9D6DEB', borderRadius: 6}} />
-            <View style={{flex: 1, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 10}}>
-              <Text style={{fontSize: 17}}>Carbs</Text>
-              <Text style={{fontSize: 17}}>{totalCarbs}g</Text>
+          <View style={{flexDirection: 'row', borderBottomWidth: 0.5, borderBottomColor: '#d6d6d6', paddingVertical: 20, paddingLeft: 15, paddingRight: 20}}>
+            <View style={{flex: 1, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'}}>
+              <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: "60%"}}>
+                <View style={{flexDirection: 'row'}}>
+                  <View style={{height: 20, width: 20, backgroundColor: '#9D6DEB', borderRadius: 6, marginRight: 10}} />
+                  <Text style={{fontSize: 17}}>Carbs</Text>
+                </View>
+                <Text style={{fontSize: 17}}>{totalCarbs}g</Text>
+              </View>
               <Text style={{fontSize: 17, fontWeight: 'bold'}}>{Math.round(nutritionData[1].percentage * 100)}%</Text>
             </View>
           </View>
 
-          <View style={{flexDirection: 'row', paddingVertical: 20, paddingHorizontal: 20}}>
-            <View style={{height: 20, width: 20, backgroundColor: 'orange', borderRadius: 6}} />
-            <View style={{flex: 1, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 10}}>
-              <Text style={{fontSize: 17}}>Protein</Text>
-              <Text style={{fontSize: 17, marginLeft: -20}}>{totalProtein}g</Text>
+          <View style={{flexDirection: 'row', paddingVertical: 20, paddingLeft: 15, paddingRight: 20}}>
+            <View style={{flex: 1, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'}}>
+              <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: "60%"}}>
+                <View style={{flexDirection: 'row'}}>
+                  <View style={{height: 20, width: 20, backgroundColor: 'orange', borderRadius: 6, marginRight: 10}} />
+                  <Text style={{fontSize: 17}}>Protein</Text>
+                </View>
+                <Text style={{fontSize: 17}}>{totalProtein}g</Text>
+              </View>
               <Text style={{fontSize: 17, fontWeight: 'bold'}}>{Math.round(nutritionData[2].percentage * 100)}%</Text>
             </View>
           </View>
@@ -751,82 +763,76 @@ export default function Nutrition() {
 					onRequestClose={() => setModalVisible(false)}
 					style={{height: height, width: width}}
 				>
-          <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : undefined}
-            style={{ flex: 1 }}
-            keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
-          >
-            <View style={styles.modalOverlay}>
-              <View style={styles.modalContainer}>
-                <View style={styles.modalHeader}>
-                  <Image source={require('../../assets/plateIcon.png')} style={{height: RFValue(60), width: RFValue(55)}} />
-                  <Text style={styles.modalTitle}>Choose Food</Text>
-                  <Text style={styles.modalSubtitle}>Select your meal and your foods that you consume today</Text>
-                </View>
-
-                <View style={styles.mealTypeCheckboxes}>
-                  {mealTypes.map((meal) => (
-                    <TouchableOpacity
-                      key={meal}
-                      style={styles.mealCheckboxContainerVertical} 
-                      onPress={() => handleMealTypeSelect(meal)}
-                    >
-                      <View style={styles.checkbox}>
-                        {selectedMeal === meal && (
-                          <Image
-                            source={require('../../assets/check.png')}
-                            style={styles.checkboxIcon} 
-                            resizeMode="contain"
-                          />
-                        )}
-                      </View>
-                      <Text style={styles.mealCheckboxText}>{meal}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-
-                <TextInput 
-                  placeholder='Search' 
-                  style={styles.inputContainer} 
-                  value={searchQuery}
-                  onChangeText={setSearchQuery}
-                />
-
-                {searchQuery && filteredNutritionInfo.length === 0 ? (
-                  <View style={styles.noResultsContainer}>
-                    {isLoading ? (
-                      <ActivityIndicator size="large" color="#7A5FFF" />
-                    ) : (
-                      <Text style={styles.noResultsText}>No record found for "{searchQuery}".</Text>
-                    )}
-                  </View>
-                ) : (
-                  <FlatList
-                    data={searchQuery ? filteredNutritionInfo : nutritionInfo}
-                    renderItem={renderFoodItem}
-                    keyExtractor={(item) => item.name}
-                    style={styles.foodList}
-                  />
-                )}
-
-                {selectedFoods.length > 0 && selectedMeal && !isKeyboardVisible && (
-                <TouchableOpacity style={styles.addButton} onPress={handleAddButtonPress}>
-                  <Text style={styles.addButtonText}>Add</Text>
-                </TouchableOpacity>
-                )}
-
-                <TouchableOpacity style={styles.closeButton} onPress={() => {
-                  setModalVisible(false)
-                  setSearchQuery('')
-                  setSelectedFoods([]);
-                  setSelectedMeal('');
-                  setIsLoading(false);
-                }}>
-                  <Text style={{fontSize: RFValue(20), marginTop: -5}}>✕</Text>
-                </TouchableOpacity>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContainer}>
+              <View style={styles.modalHeader}>
+                <Image source={require('../../assets/plateIcon.png')} style={{height: RFValue(60), width: RFValue(55)}} />
+                <Text style={styles.modalTitle}>Choose Food</Text>
+                <Text style={styles.modalSubtitle}>Select your meal and your foods that you consume today</Text>
               </View>
+
+              <View style={styles.mealTypeCheckboxes}>
+                {mealTypes.map((meal) => (
+                  <TouchableOpacity
+                    key={meal}
+                    style={styles.mealCheckboxContainerVertical} 
+                    onPress={() => handleMealTypeSelect(meal)}
+                  >
+                    <View style={styles.checkbox}>
+                      {selectedMeal === meal && (
+                        <Image
+                          source={require('../../assets/check.png')}
+                          style={styles.checkboxIcon} 
+                          resizeMode="contain"
+                        />
+                      )}
+                    </View>
+                    <Text style={styles.mealCheckboxText}>{meal}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <TextInput 
+                placeholder='Search' 
+                style={styles.inputContainer} 
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+              />
+
+              {searchQuery && filteredNutritionInfo.length === 0 ? (
+                <View style={styles.noResultsContainer}>
+                  {isLoading ? (
+                    <ActivityIndicator size="large" color="#7A5FFF" />
+                  ) : (
+                    <Text style={styles.noResultsText}>No record found for "{searchQuery}".</Text>
+                  )}
+                </View>
+              ) : (
+                <FlatList
+                  data={searchQuery ? filteredNutritionInfo : nutritionInfo}
+                  renderItem={renderFoodItem}
+                  keyExtractor={(item) => item.name}
+                  style={styles.foodList}
+                />
+              )}
+
+              {selectedFoods.length > 0 && selectedMeal && !isKeyboardVisible && (
+              <TouchableOpacity style={styles.addButton} onPress={handleAddButtonPress}>
+                <Text style={styles.addButtonText}>Add</Text>
+              </TouchableOpacity>
+              )}
+
+              <TouchableOpacity style={styles.closeButton} onPress={() => {
+                setModalVisible(false)
+                setSearchQuery('')
+                setSelectedFoods([]);
+                setSelectedMeal('');
+                setIsLoading(false);
+              }}>
+                <Text style={{fontSize: RFValue(20), marginTop: -5}}>✕</Text>
+              </TouchableOpacity>
             </View>
-          </KeyboardAvoidingView>
+          </View>
 				</Modal>
       </ScrollView>
     </SafeAreaView>

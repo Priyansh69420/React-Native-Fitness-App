@@ -214,7 +214,7 @@ const AppNavigator = () => {
 
       let attempts = parseInt(await AsyncStorage.getItem('biometric_attempts') ?? '0', 10);
 
-      while(attempts < 5) {
+      while(attempts < 1) {
         const result = await rnBiometrics.simplePrompt({
           promptMessage: "Authenticate to continue",
         });

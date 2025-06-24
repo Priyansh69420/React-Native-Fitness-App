@@ -21,6 +21,7 @@ interface OnboardingData {
 interface OnboardingContextType {
   onboardingData: OnboardingData;
   updateOnboardingData: (data: Partial<OnboardingData>) => void;
+  resetOnboardingData: () => Promise<void>;
 }
 
 const OnboardingContext = createContext<OnboardingContextType | undefined>(undefined);
@@ -51,6 +52,15 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
       console.error('❌ Failed to save onboarding data:', err);
     }
   };
+
+  const resetOnboardingData = async () => {
+    try {
+      setOnboardingData({});
+      await AsyncStorage.removeItem('onboardingData');
+    } catch (err) {
+      console.error('❌ Failed to reset onboarding data:', err);
+    }
+  };
   
   const updateOnboardingData = (data: Partial<OnboardingData>) => {
     setOnboardingData((prev) => {
@@ -61,9 +71,9 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const value = useMemo(
-    () => ({ onboardingData, updateOnboardingData }),
+    () => ({ onboardingData, updateOnboardingData, resetOnboardingData }),
     [onboardingData]
-  )
+  );
 
   return (
     <OnboardingContext.Provider value={value}>
