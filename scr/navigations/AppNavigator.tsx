@@ -649,7 +649,7 @@ const AppNavigator = () => {
                 body: `${userData.name} just posted!`,
                 postId: change.doc.id,
                 type: 'new_post',
-                timestamp: Date.now(),
+                timestamp: post.createdAt?.toMillis() ?? Date.now(),
               });
             }
           }

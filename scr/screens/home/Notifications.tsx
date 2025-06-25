@@ -41,9 +41,11 @@ const NotificationsScreen = () => {
     loadPushSetting();
   }, []);
 
+  let offset = 1;
+
   const renderNotificationItem = ({ item }: { item: NotificationItem }) => {
     const time = item.timestamp 
-      ? `${Math.floor((Date.now() - item.timestamp) / 60000)} minutes ago` 
+      ? `${Math.floor((Date.now() - item.timestamp + (1000000 + (offset++ * 100000))) / 60000)} minutes ago` 
       : 'Just now';
     let title = 'Someone';
     if (item.type === 'new_post' || item.type === 'comment' || item.type === 'like') {

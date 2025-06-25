@@ -497,30 +497,38 @@ export default function Profile() {
             style={styles.textInput}
             value={height}
             onChangeText={(text) => {
-              const filtered = text.replace(/[^0-9.]/g, '');
-              setHeight(filtered);
+              const filtered = text.replace(',', '.'); // Convert comma to dot
+              if (/^\d*\.?\d*$/.test(filtered)) {
+                setHeight(filtered);
+              }
             }}
             placeholder="Enter your height"
             placeholderTextColor="#999"
             keyboardType="numeric"
-            maxLength={3}
+            maxLength={6}
           />
-          {detailError.heightError ? (<Text style={styles.errorText}>{detailError.heightError}</Text>): null}
+          {detailError.heightError ? (
+            <Text style={styles.errorText}>{detailError.heightError}</Text>
+          ) : null}
 
           <Text style={styles.subtitle}>Weight (kg)</Text>
           <TextInput
             style={styles.textInput}
             value={weight}
             onChangeText={(text) => {
-              const filtered = text.replace(/[^0-9.]/g, '');
-              setWeight(filtered);
+              const filtered = text.replace(',', '.'); 
+              if (/^\d*\.?\d*$/.test(filtered)) {
+                setWeight(filtered);
+              }
             }}
             placeholder="Enter your weight"
             placeholderTextColor="#999"
             keyboardType="numeric"
-            maxLength={3}
+            maxLength={6}
           />
-          {detailError.weightError ? (<Text style={styles.errorText}>{detailError.weightError}</Text>): null}
+          {detailError.weightError ? (
+            <Text style={styles.errorText}>{detailError.weightError}</Text>
+          ) : null}
         </View>
 
         <View style={styles.section}>

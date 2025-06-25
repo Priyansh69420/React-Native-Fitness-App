@@ -5106,6 +5106,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"date-fns@npm:^4.1.0":
+  version: 4.1.0
+  resolution: "date-fns@npm:4.1.0"
+  checksum: fb681b242cccabed45494468f64282a7d375ea970e0adbcc5dcc92dcb7aba49b2081c2c9739d41bf71ce89ed68dd73bebfe06ca35129490704775d091895710b
+  languageName: node
+  linkType: hard
+
 "debug@npm:2.6.9, debug@npm:^2.2.0, debug@npm:^2.6.9":
   version: 2.6.9
   resolution: "debug@npm:2.6.9"
@@ -6154,6 +6161,7 @@ __metadata:
     "@supabase/supabase-js": ^2.49.4
     "@types/react": ^19.1.0
     "@types/react-native": ^0.73.0
+    date-fns: ^4.1.0
     expo: ^52.0.44
     expo-application: ~6.0.2
     expo-av: ~15.0.2
@@ -6174,6 +6182,7 @@ __metadata:
     react-native-biometrics: ^3.0.1
     react-native-ble-plx: ^3.5.0
     react-native-dev-menu: ^4.1.1
+    react-native-element-dropdown: ^2.12.4
     react-native-fs: ^2.20.0
     react-native-gesture-handler: ~2.20.2
     react-native-gifted-charts: ^1.4.60
@@ -9275,6 +9284,18 @@ __metadata:
     react-native-gesture-handler: ">= 2.0.0"
     react-native-reanimated: ">= 2.0.0"
   checksum: 8560d0529897c6c20b394471184ed42d6ccde84a85aac575de43f4894c67aaed69d77f7a684d61059ca4b3b738846e9068c5c62eb1c84986069f7a9ae7cea5f9
+  languageName: node
+  linkType: hard
+
+"react-native-element-dropdown@npm:^2.12.4":
+  version: 2.12.4
+  resolution: "react-native-element-dropdown@npm:2.12.4"
+  dependencies:
+    lodash: ^4.17.21
+  peerDependencies:
+    react: "*"
+    react-native: "*"
+  checksum: 4ac8962df350beb1a89d7994c4a96f06a5956f5ca7755e41b93c4d23873eedf4150903be74bbab8ebba9710da07c0c93ab29d2ff4345db797898ffef198bbadf
   languageName: node
   linkType: hard
 

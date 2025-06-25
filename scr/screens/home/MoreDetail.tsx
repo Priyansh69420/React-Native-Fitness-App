@@ -5,17 +5,22 @@ import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { HomeStackParamList } from '../../navigations/HomeStackParamList';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { loadMonthlyProgress } from '../../utils/monthlyProgressUtils'; 
+import { loadMonthlyProgress } from '../../utils/monthlyProgressUtils';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store/store';
+import { Dropdown } from 'react-native-element-dropdown';
+import { format, subMonths, startOfMonth, isSameMonth } from 'date-fns';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useRealm } from '../../../realmConfig';
+import { LinearGradient } from 'expo-linear-gradient';
 
 type NavigationProp = DrawerNavigationProp<HomeStackParamList, 'MoreDetail'>;
 
 interface DailyProgress {
-  date: string; 
+  date: string; // e.g., "2025-06-24"
   steps: number;
   calories: number;
-  water: number; 
+  water: number;
 }
 
 const monthNames = [
@@ -29,30 +34,132 @@ export default function MoreDetail() {
   const [selectedMetric, setSelectedMetric] = useState<'steps' | 'calories' | 'water'>('calories');
   const [monthlyData, setMonthlyData] = useState<DailyProgress[]>([]);
   const [selectedInfo, setSelectedInfo] = useState<string | null>(null);
-  
-  useEffect(() => {
-    const fetchData = async () => {
-      const data = await loadMonthlyProgress();
-      data.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-      setMonthlyData(data);
+  const [selectedMonth, setSelectedMonth] = useState<string>(format(new Date(), 'yyyy-MM'));
+  const realm = useRealm();
+
+  // Generate last 3 months for selector
+  const availableMonths = Array.from({ length: 3 }, (_, i) => {
+    const month = subMonths(new Date(), i);
+    return {
+      label: `${monthNames[month.getMonth()]} ${month.getFullYear()}`,
+      value: format(month, 'yyyy-MM'),
     };
-    fetchData();
-  }, []);
+  });
+
+  useEffect(() => {
+    const syncData = async () => {
+      try {
+        // Check last saved month for month-end save
+        const lastSavedMonth = await AsyncStorage.getItem('lastSavedMonth');
+        const currentDate = new Date();
+        const currentMonth = format(currentDate, 'yyyy-MM');
+
+        // Handle month-end save
+        if (lastSavedMonth && !isSameMonth(new Date(lastSavedMonth), currentDate)) {
+          const prevMonthData = realm
+            .objects('DailyProgress')
+            .filtered('date BEGINSWITH $0', lastSavedMonth)
+            .map((item) => ({
+              date: item.date,
+              steps: item.steps,
+              calories: item.calories,
+              water: item.water,
+            }));
+          realm.write(() => {
+            // Prune data older than 3 months
+            const cutoffDate = format(subMonths(currentDate, 3), 'yyyy-MM-dd');
+            const oldData = realm
+              .objects('DailyProgress')
+              .filtered('date < $0', cutoffDate);
+            realm.delete(oldData);
+
+            // Save previous month's data
+            prevMonthData.forEach((entry) => {
+              realm.create(
+                'DailyProgress',
+                {
+                  date: entry.date,
+                  steps: entry.steps,
+                  calories: entry.calories,
+                  water: entry.water,
+                },
+                Realm.UpdateMode.Modified
+              );
+            });
+          });
+          await AsyncStorage.setItem('lastSavedMonth', currentMonth);
+        } else if (!lastSavedMonth) {
+          await AsyncStorage.setItem('lastSavedMonth', currentMonth);
+        }
+
+        // Load data for selected month
+        let data: DailyProgress[] = [];
+        if (selectedMonth === currentMonth) {
+          // Fetch current month's data from Firestore
+          data = await loadMonthlyProgress();
+          // Cache in Realm for offline access
+          realm.write(() => {
+            data.forEach((entry) => {
+              realm.create(
+                'DailyProgress',
+                {
+                  date: entry.date,
+                  steps: entry.steps,
+                  calories: entry.calories,
+                  water: entry.water,
+                },
+                Realm.UpdateMode.Modified
+              );
+            });
+          });
+        } else {
+          // Load past month from Realm
+          data = realm
+            .objects('DailyProgress')
+            .filtered('date BEGINSWITH $0', selectedMonth)
+            .map((item) => ({
+              date: item.date as string,
+              steps: item.steps as number,
+              calories: item.calories as number,
+              water: item.water as number,
+            }));
+        }
+
+        // Sort and set data
+        data.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        setMonthlyData(data);
+      } catch (error) {
+        console.error('Error syncing progress:', error);
+        // Fallback to Realm for any month
+        const monthData = realm
+          .objects('DailyProgress')
+          .filtered('date BEGINSWITH $0', selectedMonth)
+          .map((item) => ({
+            date: item.date,
+            steps: item.steps,
+            calories: item.calories,
+            water: item.water,
+          }))
+          .sort((a, b) => new Date(a.date as string).getTime() - new Date(b.date as string).getTime());
+          setMonthlyData(monthData as DailyProgress[]);
+      }
+    };
+
+    syncData();
+  }, [selectedMonth, realm]);
 
   const totalSteps = monthlyData.reduce((sum, entry) => sum + entry.steps, 0);
   const totalCalories = monthlyData.reduce((sum, entry) => sum + entry.calories, 0);
   const totalWater = monthlyData.reduce((sum, entry) => sum + entry.water, 0).toFixed(1);
-  
+
   const formattedData = monthlyData.map((entry) => {
     const date = new Date(entry.date);
     const month = monthNames[date.getMonth()];
-    
     return {
       ...entry,
       displayDate: `${month} ${date.getDate()}`,
     };
   });
-  
 
   const renderDailyEntry = ({ item }: { item: typeof formattedData[0] }) => (
     <View style={styles.dailyEntry}>
@@ -82,21 +189,17 @@ export default function MoreDetail() {
 
   const trendTitle = (() => {
     switch (selectedMetric) {
-      case 'steps':
-        return 'Steps';
-      case 'calories':
-        return 'Calories';
-      case 'water':
-        return 'Water';
-      default:
-        return '';
+      case 'steps': return 'Steps';
+      case 'calories': return 'Calories';
+      case 'water': return 'Water';
+      default: return '';
     }
   })();
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.headerContainer}>
-        <View style={styles.header}>
+      <View style={styles.header}>
           <TouchableOpacity style={styles.backButtonContainer} onPress={() => navigation.goBack()}>
             <Image
               source={require('../../assets/backArrowIcon.png')}
@@ -104,6 +207,24 @@ export default function MoreDetail() {
             />
             <Text style={styles.backButton}>Back</Text>
           </TouchableOpacity>
+          <View style={styles.monthSelectorContainer}>
+            <LinearGradient
+              colors={['#b6b4ff', '#6952de']}
+              style={styles.monthPickerGradient}
+            >
+              <Dropdown
+                style={styles.dropdown}
+                containerStyle={styles.dropdownContainer}
+                itemTextStyle={styles.dropdownItemText}
+                selectedTextStyle={styles.selectedText}
+                data={availableMonths}
+                labelField="label"
+                valueField="value"
+                value={selectedMonth}
+                onChange={(item) => setSelectedMonth(item.value)}
+              />
+            </LinearGradient>
+          </View>
         </View>
         <Text style={styles.title}>Monthly Progress</Text>
       </View>
@@ -111,54 +232,50 @@ export default function MoreDetail() {
       <View style={styles.scrollContainer}>
         <View style={styles.summaryContainer}>
           <View style={styles.summaryCard}>
-            <Ionicons name='walk' size={30} color='#7A5FFF' />
+            <Ionicons name="walk" size={30} color="#7A5FFF" />
             <Text style={styles.summaryValue}>{totalSteps.toLocaleString()}</Text>
             <Text style={styles.summaryLabel}>Total Steps</Text>
           </View>
-
           <View style={styles.summaryCard}>
-            <Ionicons name='restaurant' size={30} color='#7A5FFF' />
+            <Ionicons name="restaurant" size={30} color="#7A5FFF" />
             <Text style={styles.summaryValue}>{totalCalories.toLocaleString()}</Text>
             <Text style={styles.summaryLabel}>Total Calories</Text>
           </View>
-
           <View style={styles.summaryCard}>
-            <Ionicons name='water' size={30} color='#7A5FFF' />
-            <Text style={styles.summaryValue}>{totalWater.toLocaleString()}</Text>
+            <Ionicons name="water" size={30} color="#7A5FFF" />
+            <Text style={styles.summaryValue}>{totalWater}</Text>
             <Text style={styles.summaryLabel}>Total Water (L)</Text>
           </View>
         </View>
 
         <View style={styles.toggleContainer}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.toggleButton, selectedMetric === 'steps' && styles.toggleButtonSelected]}
             onPress={() => {
-              if(selectedMetric !== 'steps') {
-                setSelectedMetric('steps')
+              if (selectedMetric !== 'steps') {
+                setSelectedMetric('steps');
                 setSelectedInfo('');
               }
             }}
           >
             <Text style={[styles.toggleText, selectedMetric === 'steps' && styles.toggleTextSelected]}>Steps</Text>
           </TouchableOpacity>
-
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.toggleButton, selectedMetric === 'calories' && styles.toggleButtonSelected]}
             onPress={() => {
-              if(selectedMetric !== 'calories') {
-                setSelectedMetric('calories')
+              if (selectedMetric !== 'calories') {
+                setSelectedMetric('calories');
                 setSelectedInfo('');
               }
             }}
           >
             <Text style={[styles.toggleText, selectedMetric === 'calories' && styles.toggleTextSelected]}>Nutrition</Text>
           </TouchableOpacity>
-
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.toggleButton, selectedMetric === 'water' && styles.toggleButtonSelected]}
             onPress={() => {
-              if(selectedMetric !== 'water') {
-                setSelectedMetric('water')
+              if (selectedMetric !== 'water') {
+                setSelectedMetric('water');
                 setSelectedInfo('');
               }
             }}
@@ -168,18 +285,16 @@ export default function MoreDetail() {
         </View>
 
         <View style={styles.trendContainer}>
-          <Text style={styles.trendTitle}>
-            {trendTitle} Stats
-          </Text>
-
-
+          <Text style={styles.trendTitle}>{trendTitle} Stats</Text>
+          {monthlyData.length !== 0 ? (
             <View style={styles.selectedInfoContainer}>
-              {selectedInfo ? 
-                <Text style={styles.selectedInfoText}>{selectedInfo}</Text> : 
-                <Text style={[styles.selectedInfoText, {color: '#999'}]}>Tap a bar to see details </Text>
-              }
-            </View>
-          
+            {selectedInfo ? (
+              <Text style={styles.selectedInfoText}>{selectedInfo}</Text>
+            ) : (
+              <Text style={[styles.selectedInfoText, { color: '#999' }]}>Tap a bar to see details</Text>
+            )}
+          </View>
+          ) : null}
 
           {formattedData.length > 0 ? (
             <ScrollView
@@ -196,20 +311,20 @@ export default function MoreDetail() {
                     ((entry.steps || 0) / (userData?.stepGoal ?? 10000)) * 100,
                     100
                   );
-                  displayData = entry.displayDate + ', ' + entry.steps + ' steps / ' + userData?.stepGoal + ' steps';
+                  displayData = `${entry.displayDate}, ${entry.steps} steps / ${userData?.stepGoal} steps`;
                 } else if (selectedMetric === 'calories') {
                   barHeight = Math.min(
                     ((entry.calories || 0) / (userData?.calorieGoal ?? 2000)) * 100,
                     100
                   );
-                  displayData = entry.displayDate + ', ' + entry.calories + ' cal / ' + userData?.calorieGoal + ' cal';
+                  displayData = `${entry.displayDate}, ${entry.calories} cal / ${userData?.calorieGoal} cal`;
                 } else {
                   const waterGoalLiters = userData?.glassGoal ? userData.glassGoal * 0.25 : 2;
                   barHeight = Math.min(
                     ((entry.water || 0) / waterGoalLiters) * 100,
                     100
                   );
-                  displayData = entry.displayDate + ', ' + entry.water.toFixed(1) + ' L / ' + ((userData?.glassGoal ?? 8) * 0.25) + ' L';
+                  displayData = `${entry.displayDate}, ${entry.water.toFixed(1)} L / ${((userData?.glassGoal ?? 8) * 0.25)} L`;
                 }
 
                 return (
@@ -222,7 +337,7 @@ export default function MoreDetail() {
                           backgroundColor: '#7A5FFF',
                         },
                       ]}
-                    ></View>
+                    />
                   </TouchableOpacity>
                 );
               })}
@@ -235,7 +350,7 @@ export default function MoreDetail() {
         <View style={styles.breakdownContainer}>
           <Text style={styles.breakdownTitle}>Daily Breakdown</Text>
           {formattedData.length > 0 ? (
-            <FlatList 
+            <FlatList
               data={formattedData}
               renderItem={renderDailyEntry}
               keyExtractor={(item) => item.date}
@@ -264,6 +379,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: width * 0.04,
     paddingVertical: height * 0.02,
     marginTop: height * 0.015,
@@ -295,6 +411,50 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: width * 0.04,
     paddingBottom: height * 0.03,
+  },
+  monthSelectorContainer: {
+    position: 'absolute',
+    right: width * 0.04, 
+    top: height * 0.02,
+    width: width * 0.35,
+    height: RFValue(28, height), 
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+  },
+  monthPickerGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: width * 0.4,
+    height: RFValue(35, height),
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  dropdown: {
+    flex: 1,
+    height: RFValue(28, height),
+    width: width * 0.28,
+    backgroundColor: 'transparent',
+    paddingHorizontal: width * 0.02,
+  },
+  dropdownContainer: {
+    backgroundColor: '#FFF',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  dropdownItemText: {
+    fontSize: RFValue(12, height),
+    fontWeight: '600',
+    color: '#000',
+  },
+  selectedText: {
+    fontSize: RFValue(12, height),
+    fontWeight: '600',
+    color: '#FFF',
+  },
+  dropdownIcon: {
+    marginRight: width * 0.015,
   },
   summaryContainer: {
     flexDirection: 'row',
@@ -382,36 +542,10 @@ const styles = StyleSheet.create({
     width: 8,
     borderRadius: 4,
   },
-  trendLabel: {
-    fontSize: RFValue(10, height),
-    color: '#666',
-    marginTop: height * 0.005,
-  },
   noDataText: {
     fontSize: RFValue(14, height),
     color: '#666',
     textAlign: 'center',
-  },
-  chartWrapper: {
-    flexDirection: 'row',
-    height: 120, 
-  },
-  yAxis: {
-    width: 40,
-    justifyContent: 'space-between',
-    position: 'relative',
-  },
-  yAxisLabel: {
-    position: 'absolute',
-    fontSize: 12,
-    color: '#666',
-    left: 0,
-  },
-  xAxisLabel: {
-    position: 'absolute',
-    bottom: -20,
-    fontSize: 10,
-    color: '#666',
   },
   breakdownContainer: {
     backgroundColor: '#FFF',
@@ -423,6 +557,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
     marginBottom: height * 0.02,
+    height: 250
   },
   breakdownTitle: {
     fontSize: RFValue(18, height),
@@ -459,11 +594,11 @@ const styles = StyleSheet.create({
     marginBottom: height * 0.01,
     backgroundColor: '#EFEFFF',
     borderRadius: 8,
-    alignItems: 'center'    
-  }, 
+    alignItems: 'center',
+  },
   selectedInfoText: {
     fontSize: RFValue(14, height),
-    fontWeight: 300,
-    color: '#333'
-  }
+    fontWeight: '300',
+    color: '#333',
+  },
 });

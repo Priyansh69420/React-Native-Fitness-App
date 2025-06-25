@@ -41,7 +41,7 @@ export default function LoginScreen() {
       if (error.code === 'auth/invalid-email') {
         setError('That doesn’t look like a valid email address.');
       } else if (error.code === 'auth/user-not-found') {
-        setError('No account is associated with this email address.');
+        setError('No account is linked with this email address.');
       } else if (error.code === 'auth/network-request-failed') {
         setError('Network error. Please check your internet connection and try again.');
       } else {
@@ -173,7 +173,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 4,
     elevation: 2,
-    marginBottom: height * 0.025
   },
   iconPlaceholder: {
     width: width * 0.045,
@@ -190,6 +189,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: height * 0.015,
     width: '85%',
+    marginBottom: height * 0.025
   },
   button: {
     backgroundColor: '#7A5FFF',

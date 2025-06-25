@@ -168,7 +168,7 @@ export default function Signup() {
 
       intervalRef.current = intervalId;
 
-      setTimeout(async () => {
+      const timeoutId = setTimeout(async () => {
         if (intervalRef.current) {
           clearInterval(intervalRef.current);
           intervalRef.current = null;
@@ -186,7 +186,8 @@ export default function Signup() {
             setVerificationError('Email verification timed out. Please try again.');
           }
         }
-      }, 60 * 1000);
+      }, 30 * 1000);
+
     } catch (error: any) {
       console.error("Email verification error:", error.message);
       setVerifying(false);

@@ -1,5 +1,5 @@
-import Realm, {ObjectSchema} from 'realm';
-import {createRealmContext} from '@realm/react'
+import Realm, { ObjectSchema } from 'realm';
+import { createRealmContext } from '@realm/react';
 
 export class Post extends Realm.Object {
   static readonly schema: ObjectSchema = {
@@ -10,7 +10,7 @@ export class Post extends Realm.Object {
       userId: 'string',
       content: 'string',
       timestamp: 'date',
-      imageUrl: 'string?', 
+      imageUrl: 'string?',
       videoUrl: 'string?',
       likes: 'string[]',
       comments: 'string[]',
@@ -40,7 +40,7 @@ export class User extends Realm.Object {
       stepGoal: 'float',
     },
     primaryKey: 'email',
-  }
+  };
 }
 
 export class NutritionInfo extends Realm.Object {
@@ -57,13 +57,26 @@ export class NutritionInfo extends Realm.Object {
       portion: 'int?',
     },
     primaryKey: 'id',
-  }
+  };
+}
+
+export class DailyProgress extends Realm.Object {
+  static schema: ObjectSchema = {
+    name: 'DailyProgress',
+    primaryKey: 'date',
+    properties: {
+      date: 'string', // e.g., '2025-06-18'
+      steps: 'int',
+      calories: 'int',
+      water: 'float',
+    },
+  };
 }
 
 const realmConfig = {
-  schema: [User, NutritionInfo, Post],
-  schemaVersion: 9,
-}
+  schema: [User, NutritionInfo, Post, DailyProgress],
+  schemaVersion: 10, // Incremented from 9
+};
 
 let realmInstance: Realm | null = null;
 
@@ -73,8 +86,8 @@ export const getRealmInstance = async (): Promise<Realm> => {
   }
 
   realmInstance = await Realm.open({
-    schema: [User, NutritionInfo, Post],
-    schemaVersion: 9,
+    schema: [User, NutritionInfo, Post, DailyProgress],
+    schemaVersion: 10,
   });
 
   return realmInstance;

@@ -4,30 +4,43 @@ import { useOnboarding } from '../../contexts/OnboardingContext';
 import { OnboardingForm, onboardingStyles } from '../../components/OnboardingForm';
 
 export default function SetDetails() {
-  const [userHeight, setUserHeight] = useState<number | undefined>();
-  const [userWeight, setUserWeight] = useState<number | undefined>();
-  const [heightError, setHeightError] = useState<string>('');
-  const [weightError, setWeightError] = useState<string>('');
+  const [heightText, setHeightText] = useState('');
+  const [weightText, setWeightText] = useState('');
+  const [heightError, setHeightError] = useState('');
+  const [weightError, setWeightError] = useState('');
 
   const { updateOnboardingData, onboardingData } = useOnboarding();
 
   useEffect(() => {
-    if (onboardingData.userHeight) setUserHeight(onboardingData.userHeight);
-    if (onboardingData.userWeight) setUserWeight(onboardingData.userWeight);
+    if (onboardingData.userHeight !== undefined) {
+      setHeightText(String(onboardingData.userHeight));
+    }
+    if (onboardingData.userWeight !== undefined) {
+      setWeightText(String(onboardingData.userWeight));
+    }
   }, []);
 
   const validateForm = (): boolean => {
     let isValid = true;
 
-    if (userHeight === undefined || isNaN(userHeight)) {
+    const parsedHeight = parseFloat(heightText.replace(',', '.'));
+    const parsedWeight = parseFloat(weightText.replace(',', '.'));
+
+    if (isNaN(parsedHeight)) {
       setHeightError('Please enter your height.');
+      isValid = false;
+    } else if (parsedHeight > 300) {
+      setHeightError('Height can not be more than 300cm.');
       isValid = false;
     } else {
       setHeightError('');
     }
 
-    if (userWeight === undefined || isNaN(userWeight)) {
+    if (isNaN(parsedWeight)) {
       setWeightError('Please enter your weight.');
+      isValid = false;
+    } else if (parsedWeight > 300) {
+      setWeightError('Weight can not be more than 300 kgs.');
       isValid = false;
     } else {
       setWeightError('');
@@ -37,10 +50,17 @@ export default function SetDetails() {
   };
 
   const handleContinuePress = (): boolean => {
+    const parsedHeight = parseFloat(heightText.replace(',', '.'));
+    const parsedWeight = parseFloat(weightText.replace(',', '.'));
+
     const isValid = validateForm();
     if (!isValid) return false;
 
-    updateOnboardingData({ userHeight, userWeight });
+    updateOnboardingData({
+      userHeight: parsedHeight,
+      userWeight: parsedWeight,
+    });
+
     return true;
   };
 
@@ -53,16 +73,18 @@ export default function SetDetails() {
       <View style={onboardingStyles.onboardingInputContainer}>
         <TextInput
           style={onboardingStyles.onboardingInput}
-          value={userHeight !== undefined ? String(userHeight) : ''}
+          value={heightText}
           onChangeText={(text) => {
-            const parsed = text ? parseFloat(text) : undefined;
-            setUserHeight(parsed);
-            if (heightError && !isNaN(parsed!)) setHeightError('');
+            const cleaned = text.replace(',', '.');
+            if (/^\d*\.?\d*$/.test(cleaned)) {
+              setHeightText(cleaned);
+              if (heightError && !isNaN(parseFloat(cleaned))) setHeightError('');
+            }
           }}
           placeholder="Height (cm)"
           keyboardType="numeric"
           autoFocus
-          maxLength={3}
+          maxLength={5}
         />
       </View>
       {heightError ? (
@@ -72,15 +94,17 @@ export default function SetDetails() {
       <View style={onboardingStyles.onboardingInputContainer}>
         <TextInput
           style={onboardingStyles.onboardingInput}
-          value={userWeight !== undefined ? String(userWeight) : ''}
+          value={weightText}
           onChangeText={(text) => {
-            const parsed = text ? parseFloat(text) : undefined;
-            setUserWeight(parsed);
-            if (weightError && !isNaN(parsed!)) setWeightError('');
+            const cleaned = text.replace(',', '.');
+            if (/^\d*\.?\d*$/.test(cleaned)) {
+              setWeightText(cleaned);
+              if (weightError && !isNaN(parseFloat(cleaned))) setWeightError('');
+            }
           }}
           placeholder="Weight (kg)"
           keyboardType="numeric"
-          maxLength={3}
+          maxLength={5}
         />
       </View>
       {weightError ? (

@@ -70,14 +70,14 @@ function CustomDrawerContent(props: any) {
   };
 
   const checkFirstPurchase = async () => {
-      try {
-        const value = await AsyncStorage.getItem('firstPurchase');
-        setFirstPurchase(Boolean(value));
-      } catch (error) {
-        console.error('Error reading firstPurchase from AsyncStorage:', error);
-        return false;
-      }
-    };
+    try {
+      const value = await AsyncStorage.getItem('firstPurchase');
+      setFirstPurchase(Boolean(value));
+    } catch (error) {
+      console.error('Error reading firstPurchase from AsyncStorage:', error);
+      return false;
+    }
+  };
 
   const handleCommunityNavigation = () => {
     if (!userData?.isPremium) {

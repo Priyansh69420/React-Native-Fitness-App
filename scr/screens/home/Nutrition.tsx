@@ -737,7 +737,7 @@ export default function Nutrition() {
                             </Text>
                             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                               <TouchableOpacity onPress={() => updateFoodPortion(mealType as MealType, food.name, false)} style={{justifyContent: 'center', alignItems: 'center', height: 20, width: 20}} disabled={food.portion === 1}>
-                                <Image source={require('../../assets/minus-Icon.png')} style={{height: 16, width: 16, tintColor: '#a9a4ff'}} />                              
+                                <Image source={require('../../assets/minus-Icon.png')} style={{height: 16, width: 16, tintColor: food.portion === 1 ? '#d9d9d9' : '#a9a4ff'}} />                              
                               </TouchableOpacity>
                               <Text style={{ fontSize: 14, marginVertical: 7, marginHorizontal: 7 }}>{food.portion}</Text>
                               <TouchableOpacity onPress={() => updateFoodPortion(mealType as MealType, food.name, true)} style={{justifyContent: 'center', alignItems: 'center', height: 20, width: 20}}>
