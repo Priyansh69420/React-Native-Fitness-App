@@ -1,9 +1,9 @@
-import { View, Text, Dimensions, StyleSheet, SafeAreaView, TextInput, TouchableOpacity, Image, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, Dimensions, StyleSheet, SafeAreaView, TextInput, TouchableOpacity, Image, ActivityIndicator, Alert, useColorScheme } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import { useNavigation } from "@react-navigation/native";
 import { RootStackParamList } from "../../navigations/RootStackParamList";
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { GoogleAuthProvider, sendPasswordResetEmail, signInWithCredential, signInWithEmailAndPassword } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithCredential, signInWithEmailAndPassword } from 'firebase/auth';
 import { auth, firestore } from '../../../firebaseConfig';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -40,6 +40,7 @@ export default function LoginScreen() {
   const [isVisible, setIsVisible] = useState<boolean>(false);
   const isConnected = useNetInfo().isConnected;
   const { resetOnboardingData, onboardingData } = useOnboarding();
+  const theme = useColorScheme();
 
   useEffect(() => {
     setError('')
@@ -125,6 +126,7 @@ export default function LoginScreen() {
           calorieGoal: 2000,
           glassGoal: 8,
           stepGoal: 10000,
+          darkMode: theme === 'dark' ? true : false,
         });
         
         console.log("LoginScreen: Created initial user document for Google Sign-in");
@@ -202,12 +204,16 @@ export default function LoginScreen() {
           </View>
 
           <View style={styles.forgotPasswordContainer}>
-            <TouchableOpacity onPress={() => navigation.navigate('ForgetPassword')}>
+            <TouchableOpacity onPress={() => {
+              navigation.navigate('ForgetPassword');
+              setEmail('');
+              setPassword('');
+            }}>
               <Text style={styles.forgotPassword}>Forgot Password?</Text>
             </TouchableOpacity>
           </View>
 
-          {error ? <Text style={{ color: 'red', width: '85%', textAlign: 'center' }}>{error}</Text> : <></>}
+          {error ? <Text style={{ color: 'red', width: '85%', textAlign: 'center' }}>{error}</Text> : null}
 
           <Text style={styles.signInWithText}>Sign in with</Text>
 

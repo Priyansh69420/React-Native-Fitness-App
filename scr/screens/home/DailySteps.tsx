@@ -14,6 +14,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Linking from 'expo-linking';
 import { saveDailyProgress } from '../../utils/monthlyProgressUtils';
 import PerformanceContainer from '../../components/PerformanceContainer';
+import { useTheme } from '../../contexts/ThemeContext';
 
 type NavigationProp = DrawerNavigationProp<HomeStackParamList, 'DailySteps'>;
 
@@ -37,6 +38,8 @@ export default function DailySteps() {
   const [bestPerformance, setBestPerformance] = useState<DailyStepsPerformance | null>(null);
   const [worstPerformance, setWorstPerformance] = useState<DailyStepsPerformance | null>(null);
   const stepGoal = userData?.stepGoal ?? 10000;
+  const theme = useTheme();
+  const darkMode = userData?.darkMode;
 
   useEffect(() => {
     const initializeData = async () => {
@@ -193,8 +196,8 @@ export default function DailySteps() {
   
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.backgroundPrimary }]}>
+      <View style={[styles.header, { backgroundColor: theme.backgroundPrimary }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButtonContainer}>
           <Image
             source={require('../../assets/backArrowIcon.png')}
@@ -212,7 +215,7 @@ export default function DailySteps() {
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.stepsContainer}>
-          <Text style={styles.title}>You walked <Text style={styles.highlight}>{loading ? '...' : steps}</Text> steps today</Text>
+          <Text style={[styles.title, { color: theme.textPrimary }]}>You walked <Text style={styles.highlight}>{loading ? '...' : steps}</Text> steps today</Text>
         </View>
 
         <View style={styles.progressContainer}>
@@ -226,7 +229,7 @@ export default function DailySteps() {
                 cx={CIRCLE_RADIUS * 0.75}
                 cy={CIRCLE_RADIUS * 0.75}
                 r={(CIRCLE_RADIUS - 10) * 0.75}
-                stroke="#fff"
+                stroke={darkMode ? '#3f3f3f': '#fff'}
                 strokeWidth={13}
                 fill="none"
               />
@@ -263,7 +266,7 @@ export default function DailySteps() {
                 right: 0,
                 textAlign: 'center',
                 fontSize: 20,
-                color: '#000',
+                color: theme.textSecondary,
                 fontWeight: 'bold',
               }}
             >
@@ -277,18 +280,18 @@ export default function DailySteps() {
 
         <View style={styles.statsContainer}>
           <View style={styles.stat}>
-            <Text style={styles.statValue}>{caloriesBurned}</Text>
+            <Text style={[styles.statValue, { color: theme.textSecondary }]}>{caloriesBurned}</Text>
             <Text style={styles.statLabel}>Cal Burned</Text>
           </View>
           <View style={styles.divider} />
           <View style={styles.stat}>
-            <Text style={styles.statValue}>{stepGoal}</Text>
+            <Text style={[styles.statValue, { color: theme.textSecondary }]}>{stepGoal}</Text>
             <Text style={styles.statLabel}>Daily goal</Text>
           </View>
         </View>
 
-        <View style={styles.graphContainer}>
-          <Text style={styles.graphTitle}>Statistic</Text>
+        <View style={[styles.graphContainer, {backgroundColor: theme.backgroundSecondary}]}>
+          <Text style={[styles.graphTitle, {color: theme.textPrimary}]}>Statistic</Text>
           <LineGraph />
         </View>
 
@@ -309,7 +312,7 @@ export default function DailySteps() {
           <View style={styles.modalContainer}>
             <View style={styles.modalBackground}>
               <View style={styles.topHalfBackground} />
-              <View style={styles.bottomHalfBackground} />
+              <View style={[styles.bottomHalfBackground, {backgroundColor: theme.backgroundPrimary}]} />
             </View>
 
             <TouchableOpacity
@@ -325,10 +328,10 @@ export default function DailySteps() {
             </View>
 
             <View style={styles.floatingCardScrollView}>
-              <View style={styles.floatingCard}>
+              <View style={[styles.floatingCard, {backgroundColor: theme.backgroundSecondary}]}>
                 <View style={styles.userInfo}>
                   <Image source={profileImageSource} style={profilePictureStyle} />
-                  <Text style={styles.userName}>{userData?.name}</Text>
+                  <Text style={[styles.userName, { color: theme.textPrimary }]}>{userData?.name}</Text>
                   <Image
                     source={require('../../assets/logo.png')}
                     style={styles.logo}
@@ -341,7 +344,7 @@ export default function DailySteps() {
                     width={CIRCLE_RADIUS * 1.5}
                     style={styles.modalSvg}
                   >
-                    <Circle cx={CIRCLE_RADIUS * 0.75} cy={CIRCLE_RADIUS * 0.75} r={(CIRCLE_RADIUS - 10) * 0.75} stroke="#d9d9d9" strokeWidth={13} fill="none" />
+                    <Circle cx={CIRCLE_RADIUS * 0.75} cy={CIRCLE_RADIUS * 0.75} r={(CIRCLE_RADIUS - 10) * 0.75} stroke={darkMode ? '#3f3f3f': '#d9d9d9'} strokeWidth={13} fill="none" />
                     <Circle cx={CIRCLE_RADIUS * 0.75} cy={CIRCLE_RADIUS * 0.75} r={(CIRCLE_RADIUS - 10) * 0.75} stroke="#7A5FFF" strokeWidth={9} fill="none" strokeDasharray={CIRCLE_CIRCUMFERENCE * 0.75} strokeDashoffset={strokeDashoffset * 0.75} strokeLinecap="round" transform={`rotate(-90 ${CIRCLE_RADIUS * 0.75} ${CIRCLE_RADIUS * 0.75})`} />
                   </Svg>
                   <Image
@@ -349,19 +352,19 @@ export default function DailySteps() {
                     style={styles.progressIcon}
                   />
                   <View style={styles.progressTextContainer}>
-                    <Text style={styles.progressStepsValue}>{steps}</Text>
-                    <Text style={styles.progressStepsLabel}>steps today</Text>
+                    <Text style={[styles.progressStepsValue, { color: theme.textPrimary }]}>{steps}</Text>
+                    <Text style={[styles.progressStepsLabel, { color: theme.textPrimary }]}>steps today</Text>
                   </View>
                 </View>
 
                 <View style={styles.modalStatsRow}>
                   <View style={styles.stat}>
-                    <Text style={styles.statValueGray}>{caloriesBurned}</Text>
+                    <Text style={[styles.statValueGray, { color: theme.textSecondary }]}>{caloriesBurned}</Text>
                     <Text style={styles.statLabel}>Cal Burned</Text>
                   </View>
                   <View style={styles.divider} />
                   <View style={styles.stat}>
-                    <Text style={styles.statValueGray}>{stepGoal}</Text>
+                    <Text style={[styles.statValueGray, { color: theme.textSecondary }]}>{stepGoal}</Text>
                     <Text style={styles.statLabel}>Daily goal</Text>
                   </View>
                 </View>

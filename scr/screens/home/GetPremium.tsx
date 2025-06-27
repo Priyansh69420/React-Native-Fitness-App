@@ -21,6 +21,7 @@ import { doc, setDoc } from '@firebase/firestore';
 import { RootState } from '../../store/store';
 import { useNetInfo } from '@react-native-community/netinfo';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 const BUTTON_HORIZONTAL_MARGIN_PERCENTAGE = 6;
@@ -59,8 +60,10 @@ export default function GetPremium() {
   const [activeSlide, setActiveSlide] = useState(0);
   const carouselRef = useRef<ICarouselInstance>(null);
   const userPlanType = useSelector((state: RootState) => state.user.userData?.planType);
+  const isPremium = useSelector((state: RootState) => state.user.userData?.isPremium);
   const dispatch = useDispatch();
   const isConnected = useNetInfo().isConnected;
+  const theme = useTheme();
 
   const getSelectedPlanDetails = () => {
     if (selectedPlan === 'monthly') {
@@ -74,23 +77,23 @@ export default function GetPremium() {
   const handlePurchase = async () => {
     const planDetails = getSelectedPlanDetails();
     const user = auth.currentUser;
-  
+
     if (!user) {
       Alert.alert('Error', 'User not logged in');
       return;
     }
-  
+
     if (!planDetails) {
       Alert.alert('Error', 'Please select a plan.');
       return;
     }
-  
+
     let confirmText = `Are you sure you want to purchase the ${planDetails.name} plan for ${planDetails.price}?`;
-  
+
     if (userPlanType === 'monthly' && selectedPlan === 'yearly') {
       confirmText = `Upgrade to Yearly for ${planDetails.price}?`;
     }
-  
+
     const handlePurchaseConfirmation = async () => {
       try {
         await setDoc(doc(firestore, 'users', user.uid), {
@@ -116,9 +119,9 @@ export default function GetPremium() {
         Alert.alert(alertTitle, successMessage, [
           {
             text: 'OK',
-            onPress: async() => {
+            onPress: async () => {
               await AsyncStorage.setItem('firstPurchase', 'true');
-              navigation.navigate('HomeStack')
+              navigation.navigate('HomeStack');
             },
           },
         ]);
@@ -137,7 +140,53 @@ export default function GetPremium() {
       },
     ]);
   };
-  
+
+  const handleCancelSubscription = () => {
+    Alert.alert(
+      'Are you sure?',
+      'Do you really want to cancel your premium subscription?',
+      [
+        {
+          text: 'No',
+          style: 'cancel',
+        },
+        {
+          text: 'Yes, Cancel',
+          style: 'destructive',
+          onPress: async () => {
+            const user = auth.currentUser;
+            if (!user) return;
+
+            try {
+              if (!isPremium) throw new Error();
+
+              await setDoc(doc(firestore, 'users', user.uid), {
+                isPremium: false,
+                planType: '',
+              }, { merge: true });
+
+              dispatch(updateUser({
+                isPremium: false,
+                planType: '',
+              }));
+
+              await AsyncStorage.removeItem('firstPurchase');
+
+              Alert.alert('Subscription Cancelled', 'Your premium subscription has been cancelled.', [
+                {
+                  text: 'OK',
+                },
+              ]);
+            } catch (error) {
+              Alert.alert('Error', 'Something went wrong while cancelling your subscription.');
+            }
+          },
+        },
+      ],
+      { cancelable: true }
+    );
+  };
+
   let buttonText: string;
   let isDisabled = false;
 
@@ -146,9 +195,9 @@ export default function GetPremium() {
     isDisabled = true;
   } else if (userPlanType === 'monthly' && selectedPlan === 'yearly') {
     buttonText = 'Upgrade to Yearly';
-  } else if(!isConnected) {
+  } else if (!isConnected) {
     isDisabled = true;
-    buttonText = 'No internet'
+    buttonText = 'No internet';
   } else {
     buttonText = 'Purchase';
   }
@@ -157,14 +206,14 @@ export default function GetPremium() {
     <View style={styles.carouselItem}>
       <Image source={item.image} style={styles.carouselImage} />
       <View style={styles.carouselTextContainer}>
-        <Text style={styles.carouselTitle}>{item.title}</Text>
-        <Text style={styles.carouselDescription}>{item.description}</Text>
+        <Text style={[styles.carouselTitle, { color: theme.textPrimary }]}>{item.title}</Text>
+        <Text style={[styles.carouselDescription, { color: theme.textSecondary }]}>{item.description}</Text>
       </View>
     </View>
   );
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.backgroundSecondary }]}>
       <View style={styles.container}>
         <View style={styles.carouselContainer}>
           <Carousel
@@ -186,75 +235,81 @@ export default function GetPremium() {
             >
               <Image
                 source={require('../../assets/backArrowIcon.png')}
-                style={styles.backArrowIcon}
+                style={[styles.backArrowIcon, { tintColor: theme.textButtonTertiary }]}
               />
-              <Text style={styles.backButton}>Back</Text>
+              <Text style={[styles.backButton, { color: theme.textButtonTertiary }]}>Back</Text>
             </TouchableOpacity>
           </View>
 
           <View style={styles.paginationContainer}>
             {carouselItems.map((item) => (
               <View
-              key={item.title}
-              style={[styles.dotStyle, activeSlide === carouselItems.indexOf(item) && styles.activeDotStyle]}
+                key={item.title}
+                style={[styles.dotStyle, { backgroundColor: theme.borderPrimary }, activeSlide === carouselItems.indexOf(item) && { backgroundColor: theme.borderAccent }]}
               />
             ))}
           </View>
         </View>
 
         <TouchableOpacity
-          style={[styles.planContainer, selectedPlan === 'monthly' && styles.selectedPlan]}
+          style={[styles.planContainer, { backgroundColor: theme.backgroundPrimary, shadowColor: theme.shadow }, , selectedPlan === 'monthly' && styles.selectedPlan]}
           onPress={() => setSelectedPlan('monthly')}
         >
           <View style={styles.planDetails}>
             {selectedPlan === 'monthly' ? (
-              <View style={styles.radioSelected}>
-                <View style={styles.radioInner} />
+              <View style={[styles.radioSelected, { borderColor: theme.borderAccent }]}>
+                <View style={[styles.radioInner, { backgroundColor: theme.borderAccent }]} />
               </View>
             ) : (
-              <View style={styles.radio} />
+              <View style={[styles.radio, { borderColor: theme.borderPrimary }]} />
             )}
-            <Text style={styles.planPrice}>$4.99/month</Text>
+            <Text style={[styles.planPrice, { color: theme.textPrimary }]}>$4.99/month</Text>
           </View>
-          <View style={styles.freeTrialBadge}>
-            <Text style={styles.freeTrialText}>Free Trial</Text>
+          <View style={[styles.freeTrialBadge, { backgroundColor: theme.backgroundBadge }]}>
+            <Text style={[styles.freeTrialText, { color: theme.textButtonSecondary }]}>Free Trial</Text>
           </View>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.planContainer, selectedPlan === 'yearly' && styles.selectedPlan]}
+          style={[styles.planContainer, { backgroundColor: theme.backgroundPrimary, shadowColor: theme.shadow }, , selectedPlan === 'yearly' && styles.selectedPlan]}
           onPress={() => setSelectedPlan('yearly')}
         >
           <View style={styles.planDetails}>
             {selectedPlan === 'yearly' ? (
-              <View style={styles.radioSelected}>
-                <View style={styles.radioInner} />
+              <View style={[styles.radioSelected, { borderColor: theme.borderAccent }]}>
+                <View style={[styles.radioInner, { backgroundColor: theme.borderAccent }]} />
               </View>
             ) : (
-              <View style={styles.radio} />
+              <View style={[styles.radio, { borderColor: theme.borderPrimary }]} />
             )}
-            <Text style={styles.planPrice}>$89.99/year</Text>
+            <Text style={[styles.planPrice, { color: theme.textPrimary }]}>$89.99/year</Text>
           </View>
-          <View style={styles.freeTrialBadge}>
-            <Text style={styles.freeTrialText}>Free Trial</Text>
+          <View style={[styles.freeTrialBadge, { backgroundColor: theme.backgroundBadge }]}>
+            <Text style={[styles.freeTrialText, { color: theme.textButtonSecondary }]}>Free Trial</Text>
           </View>
         </TouchableOpacity>
 
-        <Text style={styles.billingTitle}>Recurring billing, cancel anytime</Text>
-        <Text style={styles.billingDescription}>
+        <Text style={[styles.billingTitle, { color: theme.textPrimary }]}>Recurring billing, cancel anytime</Text>
+        <Text style={[styles.billingDescription, { color: theme.textSecondary }]}>
           Contrary to what many people think, eating healthy is not easier said than done. Just a few good habits can make a great difference.
         </Text>
 
         <TouchableOpacity
           style={[
             styles.purchaseButton,
-            isDisabled && { backgroundColor: '#ccc' },
+            { backgroundColor: theme.backgroundButtonPrimary },
+            isDisabled && { backgroundColor: theme.backgroundButtonDisabled },
           ]}
           onPress={handlePurchase}
           disabled={isDisabled}
         >
-          <Text style={styles.purchaseButtonText}>{buttonText}</Text>
+          <Text style={[styles.purchaseButtonText, { color: theme.textButtonPrimary }]}>{buttonText}</Text>
         </TouchableOpacity>
+        {isPremium ? (
+          <TouchableOpacity style={styles.cancelContainer} onPress={handleCancelSubscription}>
+            <Text style={[styles.cancelText, { color: theme.textButtonTertiary }]}>Cancel Subscription</Text>
+          </TouchableOpacity>
+        ) : null}
       </View>
     </SafeAreaView>
   );
@@ -272,7 +327,7 @@ const styles = StyleSheet.create({
   },
   carouselContainer: {
     position: 'relative',
-    marginBottom: 30,
+    marginBottom: 15,
   },
   carouselItem: {
     alignItems: 'center',
@@ -430,5 +485,17 @@ const styles = StyleSheet.create({
     fontSize: RFValue(18, screenHeight),
     fontWeight: 'bold',
     color: '#FFF',
+  },
+  cancelContainer: {
+    width: '100%',
+    alignItems: 'center',
+    marginTop: 5
+  },
+  cancelText: {
+    fontSize: 14,
+    color: '#0000FF',
+    textAlign: 'center',
+    fontWeight: '500',
+    justifyContent: 'flex-end',
   },
 });

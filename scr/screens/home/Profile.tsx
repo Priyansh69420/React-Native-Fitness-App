@@ -15,6 +15,7 @@ import * as ImagePicker from 'expo-image-picker';
 import RNFS from 'react-native-fs';
 import { Ionicons } from '@expo/vector-icons';
 import { useRealm } from '../../../realmConfig';
+import { useTheme } from '../../contexts/ThemeContext';
 
 type NavigationProp = StackNavigationProp<SettingStackParamList, 'Profile'>;
 
@@ -65,6 +66,7 @@ export default function Profile() {
   const userData = useSelector((state: RootState) => state.user.userData);
   const [imageLoading, setImageLoading] = useState<boolean>(true);
   const realm = useRealm();
+  const theme = useTheme();
 
   const [name, setName] = useState(userData?.name ?? '');
   const [height, setHeight] = useState(userData?.userHeight?.toString() ?? '');
@@ -429,31 +431,31 @@ export default function Profile() {
   const profileImageSource = profilePicture ? { uri: profilePicture } : null;
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.backgroundPrimary }]}>
       <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
             <Image source={require('../../assets/backArrowIcon.png')} style={styles.backArrowIcon} />
-            <Text style={styles.backButtonText}>Back</Text>
+            <Text style={[styles.backButtonText, { color: theme.textButtonTertiary }]}>Back</Text>
           </TouchableOpacity>
-          <Text style={styles.title}>Edit Profile</Text>
+          <Text style={[styles.title, { color: theme.textPrimary }]}>Edit Profile</Text>
           <View style={styles.headerSpacer} />
         </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Profile Picture</Text>
+        <View style={[styles.section, { backgroundColor: theme.backgroundSecondary }]}>
+          <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Profile Picture</Text>
           <View style={styles.profilePictureContainer}>
             {imageLoading && (
               <ActivityIndicator 
                 size="small" 
-                color="#b6b6b6" 
+                color={theme.activityIndicatorPrimary} 
                 style={styles.activityIndicator} 
               /> 
             )}
 
             {profileImageSource && (
               <TouchableOpacity onPress={handleAddCustomPhoto}>
-                <Image source={profileImageSource} style={styles.profilePicture} onLoad={() => setImageLoading(true)} />
+                <Image source={profileImageSource} style={[styles.profilePicture, { borderColor: theme.borderAccent }]} onLoad={() => setImageLoading(true)} />
               </TouchableOpacity>
             )}
           </View>
@@ -466,54 +468,54 @@ export default function Profile() {
             showsHorizontalScrollIndicator={false}
             renderItem={({ item }) => (
               <TouchableOpacity
-                style={[styles.avatarItem, profilePicture === item.source.uri && styles.selectedAvatar]}
+                style={[styles.avatarItem, profilePicture === item.source.uri && [styles.selectedAvatar, { borderColor: theme.borderAccent }]]}
                 onPress={() => setProfilePicture(item.source.uri)}
               >
                 <Image source={item.source} style={styles.avatarImage} />
               </TouchableOpacity>
             )}
           />
-          <TouchableOpacity style={styles.addPhotoButton} onPress={handleAddCustomPhoto}>
-            <Text style={styles.addPhotoText}>Add Custom Photo</Text>
+          <TouchableOpacity style={[styles.addPhotoButton, { backgroundColor: theme.backgroundButtonPrimary }]} onPress={handleAddCustomPhoto}>
+            <Text style={[styles.addPhotoText, { color: theme.textButtonPrimary }]}>Add Custom Photo</Text>
           </TouchableOpacity>
         </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Details</Text>
+        <View style={[styles.section, { backgroundColor: theme.backgroundSecondary }]}>
+          <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Details</Text>
           
-          <Text style={styles.subtitle}>Name</Text>
+          <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Name</Text>
           <TextInput
-            style={styles.textInput}
+            style={[styles.textInput, { backgroundColor: theme.backgroundTertiary, color: theme.textPrimary, borderColor: theme.borderPrimary }]}
             value={name}
             onChangeText={setName}
             placeholder="Enter your name"
-            placeholderTextColor="#999"
+            placeholderTextColor={theme.textPlaceholder}
             maxLength={20}
           />
-          {detailError.nameError ? (<Text style={styles.errorText}>{detailError.nameError}</Text>): null}
+          {detailError.nameError ? (<Text style={[styles.errorText, { color: theme.textError }]}>{detailError.nameError}</Text>) : null}
 
-          <Text style={styles.subtitle}>Height (cm)</Text>
+          <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Height (cm)</Text>
           <TextInput
-            style={styles.textInput}
+            style={[styles.textInput, { backgroundColor: theme.backgroundTertiary, color: theme.textPrimary, borderColor: theme.borderPrimary }]}
             value={height}
             onChangeText={(text) => {
-              const filtered = text.replace(',', '.'); // Convert comma to dot
+              const filtered = text.replace(',', '.'); 
               if (/^\d*\.?\d*$/.test(filtered)) {
                 setHeight(filtered);
               }
             }}
             placeholder="Enter your height"
-            placeholderTextColor="#999"
+            placeholderTextColor={theme.textPlaceholder}
             keyboardType="numeric"
             maxLength={6}
           />
           {detailError.heightError ? (
-            <Text style={styles.errorText}>{detailError.heightError}</Text>
+            <Text style={[styles.errorText, { color: theme.textError }]}>{detailError.heightError}</Text>
           ) : null}
 
-          <Text style={styles.subtitle}>Weight (kg)</Text>
+          <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Weight (kg)</Text>
           <TextInput
-            style={styles.textInput}
+            style={[styles.textInput, { backgroundColor: theme.backgroundTertiary, color: theme.textPrimary, borderColor: theme.borderPrimary }]}
             value={weight}
             onChangeText={(text) => {
               const filtered = text.replace(',', '.'); 
@@ -522,21 +524,21 @@ export default function Profile() {
               }
             }}
             placeholder="Enter your weight"
-            placeholderTextColor="#999"
+            placeholderTextColor={theme.textPlaceholder}
             keyboardType="numeric"
             maxLength={6}
           />
           {detailError.weightError ? (
-            <Text style={styles.errorText}>{detailError.weightError}</Text>
+            <Text style={[styles.errorText, { color: theme.textError }]}>{detailError.weightError}</Text>
           ) : null}
         </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Daily Milestones</Text>
+        <View style={[styles.section, { backgroundColor: theme.backgroundSecondary }]}>
+          <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Daily Milestones</Text>
           
-          <Text style={styles.subtitle}>Daily Calories</Text>
+          <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Daily Calories</Text>
           <TextInput
-            style={styles.textInput}
+            style={[styles.textInput, { backgroundColor: theme.backgroundTertiary, color: theme.textPrimary, borderColor: theme.borderPrimary }]}
             value={String(calorieGoal ?? '')}
             onChangeText={(text) => {
               const filtered = text.replace(/[^0-9.]/g, '');
@@ -544,16 +546,16 @@ export default function Profile() {
               validateDailyMilestones(); 
             }}
             placeholder="Set your daily calorie intake"
-            placeholderTextColor="#999"
+            placeholderTextColor={theme.textPlaceholder}
             keyboardType="numeric"
           />
           {calorieGoalError ? (
-            <Text style={styles.errorText}>{calorieGoalError}</Text>
+            <Text style={[styles.errorText, { color: theme.textError }]}>{calorieGoalError}</Text>
           ) : null}
 
-          <Text style={styles.subtitle}>Daily Water Intake</Text>
+          <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Daily Water Intake</Text>
           <TextInput
-            style={styles.textInput}
+            style={[styles.textInput, { backgroundColor: theme.backgroundTertiary, color: theme.textPrimary, borderColor: theme.borderPrimary }]}
             value={String(glassGoal ?? '')}
             onChangeText={(text) => {
               const filtered = text.replace(/[^0-9.]/g, '');
@@ -561,16 +563,16 @@ export default function Profile() {
               validateDailyMilestones(); 
             }}
             placeholder="Set your daily water intake"
-            placeholderTextColor="#999"
+            placeholderTextColor={theme.textPlaceholder}
             keyboardType="numeric"
           />
           {glassGoalError ? (
-            <Text style={styles.errorText}>{glassGoalError}</Text>
+            <Text style={[styles.errorText, { color: theme.textError }]}>{glassGoalError}</Text>
           ) : null}
 
-          <Text style={styles.subtitle}>Daily Steps</Text>
+          <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Daily Steps</Text>
           <TextInput
-            style={styles.textInput}
+            style={[styles.textInput, { backgroundColor: theme.backgroundTertiary, color: theme.textPrimary, borderColor: theme.borderPrimary }]}
             value={String(stepGoal ?? '')}
             onChangeText={(text) => {
               const filtered = text.replace(/[^0-9.]/g, '');
@@ -578,71 +580,65 @@ export default function Profile() {
               validateDailyMilestones(); 
             }}
             placeholder="Set your daily steps intake"
-            placeholderTextColor="#999"
+            placeholderTextColor={theme.textPlaceholder}
             keyboardType="numeric"
           />
           {stepGoalError ? (
-            <Text style={styles.errorText}>{stepGoalError}</Text>
+            <Text style={[styles.errorText, { color: theme.textError }]}>{stepGoalError}</Text>
           ) : null}
         </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Goals</Text>
+        <View style={[styles.section, { backgroundColor: theme.backgroundSecondary }]}>
+          <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Goals</Text>
           <View style={styles.toggleContainer}>
             {goalsOptions.map((goal) => (
               <TouchableOpacity
                 key={goal}
                 onPress={() => toggleGoal(goal)}
-                style={[styles.toggleButton, goals.includes(goal) && styles.toggleButtonSelected]}
+                style={[styles.toggleButton, { backgroundColor: theme.backgroundButtonSecondary }, goals.includes(goal) && { backgroundColor: theme.backgroundButtonPrimary }]}
               >
                 <Text
-                  style={[styles.toggleText, goals.includes(goal) && styles.toggleTextSelected]}
+                  style={[styles.toggleText, { color: theme.textPrimary }, goals.includes(goal) && { color: theme.textButtonPrimary }]}
                 >
                   {goal}
                 </Text>
               </TouchableOpacity>
             ))}
           </View>
-          {goalError ? (<Text style={styles.errorText}>{goalError}</Text>) : null}
+          {goalError ? (<Text style={[styles.errorText, { color: theme.textError }]}>{goalError}</Text>) : null}
         </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Interests</Text>
+        <View style={[styles.section, { backgroundColor: theme.backgroundSecondary }]}>
+          <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Interests</Text>
           <View style={styles.toggleContainer}>
             {interestsOptions.map((interest) => (
               <TouchableOpacity
                 key={interest}
                 onPress={() => toggleInterests(interest)}
-                style={[
-                  styles.toggleButton,
-                  interests.includes(interest) && styles.toggleButtonSelected,
-                ]}
+                style={[styles.toggleButton, { backgroundColor: theme.backgroundButtonSecondary }, interests.includes(interest) && { backgroundColor: theme.backgroundButtonPrimary }]}
               >
                 <Text
-                  style={[
-                    styles.toggleText,
-                    interests.includes(interest) && styles.toggleTextSelected,
-                  ]}
+                  style={[styles.toggleText, { color: theme.textPrimary }, interests.includes(interest) && { color: theme.textButtonPrimary }]}
                 >
                   {interest}
                 </Text>
               </TouchableOpacity>
             ))}
           </View>
-          {interestError ? (<Text style={styles.errorText}>{interestError}</Text>): null}
+          {interestError ? (<Text style={[styles.errorText, { color: theme.textError }]}>{interestError}</Text>) : null}
         </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Gender</Text>
+        <View style={[styles.section, { backgroundColor: theme.backgroundSecondary }]}>
+          <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Gender</Text>
           <View style={styles.toggleContainer}>
             {genderOptions.map((option) => (
               <TouchableOpacity
                 key={option}
                 onPress={() => setGender(option)}
-                style={[styles.toggleButton, gender === option && styles.toggleButtonSelected]}
+                style={[styles.toggleButton, { backgroundColor: theme.backgroundButtonSecondary }, gender === option && { backgroundColor: theme.backgroundButtonPrimary }]}
               >
                 <Text
-                  style={[styles.toggleText, gender === option && styles.toggleTextSelected]}
+                  style={[styles.toggleText, { color: theme.textPrimary }, gender === option && { color: theme.textButtonPrimary }]}
                 >
                   {option}
                 </Text>
@@ -651,18 +647,18 @@ export default function Profile() {
           </View>
         </View>
 
-        <View style={[styles.section, !showPasswordSection && {paddingBottom: 2}]}>
+        <View style={[styles.section, { backgroundColor: theme.backgroundSecondary }, !showPasswordSection && { paddingBottom: 2 }]}>
           <TouchableOpacity
             style={styles.sectionHeader}
             onPress={() => setShowPasswordSection(!showPasswordSection)}
           >
-            <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>
+            <Text style={[styles.sectionTitle, { marginBottom: 0, color: theme.textPrimary }]}>
               Change Password
             </Text>
             <Ionicons
               name={showPasswordSection ? 'chevron-down' : 'chevron-forward'}
               size={22}
-              color="#666"
+              color={theme.iconSecondary}
             />
           </TouchableOpacity>
 
@@ -670,9 +666,9 @@ export default function Profile() {
             <View>
               <View style={styles.inputWrapper}>
                 <TextInput
-                  style={styles.textInput}
+                  style={[styles.textInput, { backgroundColor: theme.backgroundTertiary, color: theme.textPrimary, borderColor: theme.borderPrimary }]}
                   placeholder="Current Password"
-                  placeholderTextColor="#999"
+                  placeholderTextColor={theme.textPlaceholder}
                   secureTextEntry={!showCurrent}
                   value={currentPassword}
                   onChangeText={setCurrentPassword}
@@ -681,16 +677,16 @@ export default function Profile() {
                   <Ionicons
                     name={showCurrent ? "eye-off-outline" : "eye-outline"}
                     size={22}
-                    color="#666"
+                    color={theme.iconSecondary}
                   />
                 </TouchableOpacity>
               </View>
 
               <View style={styles.inputWrapper}>
                 <TextInput
-                  style={styles.textInput}
+                  style={[styles.textInput, { backgroundColor: theme.backgroundTertiary, color: theme.textPrimary, borderColor: theme.borderPrimary }]}
                   placeholder="New Password"
-                  placeholderTextColor="#999"
+                  placeholderTextColor={theme.textPlaceholder}
                   secureTextEntry={!showNew}
                   value={newPassword}
                   onChangeText={setNewPassword}
@@ -699,16 +695,16 @@ export default function Profile() {
                   <Ionicons
                     name={showNew ? "eye-off-outline" : "eye-outline"}
                     size={22}
-                    color="#666"
+                    color={theme.iconSecondary}
                   />
                 </TouchableOpacity>
               </View>
 
               <View style={styles.inputWrapper}>
                 <TextInput
-                  style={styles.textInput}
+                  style={[styles.textInput, { backgroundColor: theme.backgroundTertiary, color: theme.textPrimary, borderColor: theme.borderPrimary }]}
                   placeholder="Confirm New Password"
-                  placeholderTextColor="#999"
+                  placeholderTextColor={theme.textPlaceholder}
                   secureTextEntry={!showConfirm}
                   value={confirmNewPassword}
                   onChangeText={setConfirmNewPassword}
@@ -717,24 +713,24 @@ export default function Profile() {
                   <Ionicons
                     name={showConfirm ? "eye-off-outline" : "eye-outline"}
                     size={22}
-                    color="#666"
+                    color={theme.iconSecondary}
                   />
                 </TouchableOpacity>
               </View>
 
               {error ? (
-                <Text style={{ color: 'red', textAlign: 'center' }}>{error}</Text>
+                <Text style={[styles.errorText, { color: theme.textError }]}>{error}</Text>
               ) : null}
 
               <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
                 <TouchableOpacity
                   onPress={handleChangePassword}
-                  style={[styles.addPhotoButton, { width: '100%' }]}
+                  style={[styles.addPhotoButton, { backgroundColor: theme.backgroundButtonPrimary }]}
                 >
                   {updatingPassword ? (
-                    <ActivityIndicator size="small" color="#d0d0d0" />
+                    <ActivityIndicator size="small" color={theme.activityIndicatorSecondary} />
                   ) : (
-                    <Text style={styles.addPhotoText}>Update Password</Text>
+                    <Text style={[styles.addPhotoText, { color: theme.textButtonPrimary }]}>Update Password</Text>
                   )}
                 </TouchableOpacity>
               </View>
@@ -743,12 +739,12 @@ export default function Profile() {
         </View>
 
         <View style={{ paddingHorizontal: 60 }}>
-          <TouchableOpacity onPress={() => handleSave()} style={styles.saveButton} disabled={disableSave()}>
-            {loading ? <ActivityIndicator size='small' color='#d0d0d0'/> : <Text style={styles.buttonText}>Save Changes</Text>}
+          <TouchableOpacity onPress={() => handleSave()} style={[styles.saveButton, { backgroundColor: theme.backgroundButtonPrimary }]} disabled={disableSave()}>
+            {loading ? <ActivityIndicator size='small' color={theme.activityIndicatorSecondary} /> : <Text style={[styles.buttonText, { color: theme.textButtonPrimary }]}>Save Changes</Text>}
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.cancelButton}>
-            <Text style={styles.cancelButtonText}>Cancel</Text>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={[styles.cancelButton, { backgroundColor: theme.backgroundButtonSecondary }]}>
+            <Text style={[styles.cancelButtonText, { color: theme.textPrimary }]}>Cancel</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

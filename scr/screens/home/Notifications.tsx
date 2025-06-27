@@ -7,6 +7,7 @@ import { useNotifications } from '../../contexts/NotificationsContext';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { HomeStackParamList } from '../../navigations/HomeStackParamList';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTheme } from '../../contexts/ThemeContext';
 
 type NavigationProp = DrawerNavigationProp<HomeStackParamList, 'Notification'>;
 
@@ -26,17 +27,17 @@ const NotificationsScreen = () => {
   const { notifications } = useNotifications();
   const [isPushEnabled, setIsPushEnabled] = useState(true);
   const navigation = useNavigation<NavigationProp>();
+  const theme = useTheme();
 
   useEffect(() => {
     const loadPushSetting = async () => {
       try {
         const value = await AsyncStorage.getItem('pushEnabled');
-
-        if(value != null) setIsPushEnabled(JSON.parse(value));
+        if (value != null) setIsPushEnabled(JSON.parse(value));
       } catch (error: any) {
         console.error('Failed to load push setting:', error);
       }
-    }
+    };
 
     loadPushSetting();
   }, []);
@@ -54,50 +55,51 @@ const NotificationsScreen = () => {
     const body = item.body ?? (item.type === 'comment' ? 'New comment' : '');
 
     return (
-      <View style={styles.notificationItem}>
+      <View style={[styles.notificationItem, { borderBottomColor: theme.borderPrimary }]}>
         <View style={styles.notificationTextContainer}>
-          <Text style={styles.notificationTitle}>{title} <Text style={styles.notificationBody}>{body}</Text></Text>
+          <Text style={[styles.notificationTitle, { color: theme.textPrimary }]}>
+            {title} <Text style={[styles.notificationBody, { color: theme.textSecondary }]}>{body}</Text>
+          </Text>
         </View>
-        <Text style={styles.notificationTime}>{time}</Text>
-        {!item.timestamp && <View style={styles.unreadDot} />}
+        <Text style={[styles.notificationTime, { color: theme.textPlaceholder }]}>{time}</Text>
+        {!item.timestamp && <View style={[styles.unreadDot, { backgroundColor: theme.borderAccent }]} />}
       </View>
     );
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.backgroundPrimary }]}>
       <TouchableOpacity style={styles.drawerContainer} onPress={() => navigation.openDrawer()}>
-        <Image source={require('../../assets/drawerIcon.png')} style={styles.drawerIcon} />
+        <Image source={require('../../assets/drawerIcon.png')} style={[styles.drawerIcon, { tintColor: theme.iconPrimary }]} />
       </TouchableOpacity>
 
-      <Text style={styles.title}>Notifications</Text>
-      
+      <Text style={[styles.title, { color: theme.textPrimary }]}>Notifications</Text>
 
-      <View style={styles.notificationContainer}>
+      <View style={[styles.notificationContainer, { backgroundColor: theme.backgroundSecondary }]}>
         {(() => {
           if (!isPushEnabled) {
-        return (
-          <Text style={styles.notificationDisabledText}>
-            Enable Notifications to receive updates about likes, comments, and more.
-          </Text>
-        );
+            return (
+              <Text style={[styles.notificationDisabledText, { color: theme.textPlaceholder }]}>
+                Enable Notifications to receive updates about likes, comments, and more.
+              </Text>
+            );
           }
 
           if (notifications.length > 0) {
-        return (
-          <FlatList
-            data={notifications as any}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={styles.listContent}
-            renderItem={renderNotificationItem}
-          />
-        );
+            return (
+              <FlatList
+                data={notifications as any}
+                keyExtractor={(item) => item.id}
+                contentContainerStyle={styles.listContent}
+                renderItem={renderNotificationItem}
+              />
+            );
           }
 
           return (
-        <Text style={styles.noNotificationsText}>
-          No notifications available.
-        </Text>
+            <Text style={[styles.noNotificationsText, { color: theme.textPlaceholder }]}>
+              No notifications available.
+            </Text>
           );
         })()}
       </View>

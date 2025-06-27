@@ -15,6 +15,7 @@ import { useNavigationState } from '@react-navigation/native';
 import { RFPercentage, RFValue } from 'react-native-responsive-fontsize';
 import { useAuth } from '../contexts/AuthContext'; 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTheme } from '../contexts/ThemeContext';
 
 const Drawer = createDrawerNavigator<DrawerParamList>();
 
@@ -28,16 +29,18 @@ const DrawerMenuItem = ({
   icon: React.ReactNode;
   isActive?: boolean;
   onPress: () => void;
-}) => (
-  <DrawerItem
-    label={label}
-    onPress={onPress}
-    icon={() => icon}
-    labelStyle={[styles.label, isActive && styles.activeLabel]}
-    style={isActive && styles.activeItem}
-  />
-);
-
+}) => {
+  const theme = useTheme();
+  return (
+    <DrawerItem
+      label={label}
+      onPress={onPress}
+      icon={() => icon}
+      labelStyle={[styles.label, { color: theme.textPrimary }, isActive && styles.activeLabel]}
+      style={isActive && [styles.activeItem, { backgroundColor: theme.backgroundActiveItem }]}
+    />
+  );
+};
 
 function CustomDrawerContent(props: any) {
   const dispatch = useDispatch();
@@ -46,6 +49,7 @@ function CustomDrawerContent(props: any) {
   const navigationState = useNavigationState(state => state);
   const currentRouteName = navigationState?.routes?.[navigationState.index]?.name ?? 'HomeStack';
   const [firstPurchase, setFirstPurchase] = useState<boolean | null>(null);
+  const theme = useTheme();
 
   const navigateToHome = () => props.navigation.navigate('HomeStack');
   const navigateToCommunity = () => props.navigation.navigate('Community');
@@ -55,7 +59,7 @@ function CustomDrawerContent(props: any) {
 
   useEffect(() => {
     checkFirstPurchase();
-  }, [])
+  }, []);
 
   const confirmLogout = () => {
     Alert.alert(
@@ -109,16 +113,16 @@ function CustomDrawerContent(props: any) {
 
   const communityLabel = () => (
     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flex: 1 }}>
-      <Text style={[styles.label, currentRouteName === 'Community' && styles.activeLabel]}>
+      <Text style={[styles.label, { color: theme.textPrimary }, currentRouteName === 'Community' && styles.activeLabel]}>
         Community
       </Text>
       {!userData?.isPremium && (
-        <Image source={require('../assets/lockIcon.png')} style={styles.lockIcon} />
+        <Image source={require('../assets/lockIcon.png')} style={[styles.lockIcon, { tintColor: theme.iconLock }]} />
       )}
     </View>
   );
 
-  const communityIcon = () => <Image source={require('../assets/CommunityIcon.png')} style={styles.icon} />;
+  const communityIcon = () => <Image source={require('../assets/CommunityIcon.png')} style={[styles.icon, { tintColor: theme.iconPrimary }]} />;
 
   const profileImageSource = typeof userData?.profilePicture === 'string'
     ? { uri: userData.profilePicture }
@@ -135,14 +139,14 @@ function CustomDrawerContent(props: any) {
   };
 
   return (
-    <DrawerContentScrollView {...props} contentContainerStyle={styles.contentContainer}>
-      <View style={styles.profileContainer}>
+    <DrawerContentScrollView {...props} contentContainerStyle={[styles.contentContainer, { backgroundColor: theme.backgroundSecondary }]}>
+      <View style={[styles.profileContainer, { borderBottomColor: theme.borderPrimary }]}>
         <Image source={profileImageSource} style={profilePictureStyle} />
-        <Text style={styles.userName}>{userData?.name}</Text>
+        <Text style={[styles.userName, { color: theme.textPrimary }]}>{userData?.name}</Text>
         {userData?.isPremium && (
-          <View style={styles.premiumBadge}>
-            <Image source={require('../assets/PremiumIcon.png')} style={styles.premiumIcon} />
-            <Text style={styles.premiumText}>Premium Member</Text>
+          <View style={[styles.premiumBadge, { backgroundColor: theme.backgroundBadge }]}>
+            <Image source={require('../assets/PremiumIcon.png')} style={[styles.premiumIcon, { tintColor: theme.iconAccent }]} />
+            <Text style={[styles.premiumText, { color: theme.textButtonSecondary }]}>Premium Member</Text>
           </View>
         )}
       </View>
@@ -150,7 +154,7 @@ function CustomDrawerContent(props: any) {
       <View style={styles.menuContainer}>
         <DrawerMenuItem
           label="Home"
-          icon={<Image source={require('../assets/HomeIcon.png')} style={styles.icon} />}
+          icon={<Image source={require('../assets/HomeIcon.png')} style={[styles.icon, { tintColor: theme.iconPrimary }]} />}
           isActive={currentRouteName === 'HomeStack'}
           onPress={navigateToHome}
         />
@@ -159,34 +163,34 @@ function CustomDrawerContent(props: any) {
           label={communityLabel}
           onPress={handleCommunityNavigation}
           icon={communityIcon}
-          labelStyle={[styles.label, currentRouteName === 'Community' && styles.activeLabel]}
-          style={currentRouteName === 'Community' && styles.activeItem}
+          labelStyle={[styles.label, { color: theme.textPrimary }, currentRouteName === 'Community' && styles.activeLabel]}
+          style={currentRouteName === 'Community' && [styles.activeItem, { backgroundColor: theme.backgroundActiveItem }]}
         />
 
         <DrawerMenuItem
           label="Notifications"
-          icon={<Image source={require('../assets/NotificationsIcon.png')} style={styles.icon} />}
+          icon={<Image source={require('../assets/NotificationsIcon.png')} style={[styles.icon, { tintColor: theme.iconPrimary }]} />}
           isActive={currentRouteName === 'Notifications'}
           onPress={navigateToNotifications}
         />
 
         <DrawerMenuItem
           label="Settings"
-          icon={<Image source={require('../assets/SettingsIcon.png')} style={styles.icon} />}
+          icon={<Image source={require('../assets/SettingsIcon.png')} style={[styles.icon, { tintColor: theme.iconPrimary }]} />}
           isActive={currentRouteName === 'SettingStack'}
           onPress={navigateToSettings}
         />
 
         <DrawerMenuItem
           label="Get Premium"
-          icon={<Image source={require('../assets/PremiumIcon.png')} style={styles.icon} />}
+          icon={<Image source={require('../assets/PremiumIcon.png')} style={[styles.icon, { tintColor: theme.iconPrimary }]} />}
           isActive={currentRouteName === 'GetPremium'}
           onPress={navigateToGetPremium}
         />
 
         <DrawerMenuItem
           label="Logout"
-          icon={<Image source={require('../assets/LogoutIcon.png')} style={styles.icon} />}
+          icon={<Image source={require('../assets/LogoutIcon.png')} style={[styles.icon, { tintColor: theme.iconPrimary }]} />}
           onPress={confirmLogout}
         />
       </View>

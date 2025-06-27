@@ -20,6 +20,25 @@ export default function SetDetails() {
     }
   }, []);
 
+  useEffect(() => {
+    const parsedHeight = parseFloat(heightText.replace(',', '.'));
+    const parsedWeight = parseFloat(weightText.replace(',', '.'));
+
+    if (parsedHeight > 300) {
+      setHeightError('Height can not be more than 300cm.');
+    } else {
+      setHeightError('');
+    } 
+
+    if (parsedWeight > 300) {
+      setWeightError('Weight can not be more than 300 kgs.');
+    } else {
+      setWeightError('');
+    }
+
+  }, [heightText, weightText]);
+  
+
   const validateForm = (): boolean => {
     let isValid = true;
 

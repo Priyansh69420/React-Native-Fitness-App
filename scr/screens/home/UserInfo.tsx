@@ -6,6 +6,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { UserInfoScreenRouteProp } from '../../navigations/CommunityStack';
 import { RFPercentage, RFValue } from 'react-native-responsive-fontsize';
 import { Feather } from '@expo/vector-icons';
+import { useTheme } from '../../contexts/ThemeContext';
 
 type NavigationProp = DrawerNavigationProp<CommunityStackParamList, 'UserInfo'>;
 
@@ -13,62 +14,69 @@ const UserInfo = () => {
   const route = useRoute<UserInfoScreenRouteProp>();
   const { user } = route.params; 
   const navigation = useNavigation<NavigationProp>();
+  const theme = useTheme();
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.backgroundPrimary }]}>
+      <View style={[styles.header, { backgroundColor: theme.backgroundPrimary }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButtonContainer}>
-          <Image source={require('../../assets/backArrowIcon.png')} style={styles.backIcon} />
-          <Text style={styles.backButton}>Back</Text>
+          <Image
+            source={require('../../assets/backArrowIcon.png')}
+            style={[styles.backIcon, { tintColor: theme.textButtonTertiary }]}
+          />
+          <Text style={[styles.backButton, { color: theme.textButtonTertiary }]}>Back</Text>
         </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.profileHeader}>
           {user?.profilePicture ? (
-            <Image source={{ uri: user.profilePicture }} style={styles.profileImage} />
+            <Image
+              source={{ uri: user.profilePicture }}
+              style={[styles.profileImage, { borderColor: theme.borderPrimary }]}
+            />
           ) : (
-            <View style={styles.profileImagePlaceholder} />
+            <View style={[styles.profileImagePlaceholder, { backgroundColor: theme.backgroundTertiary }]} />
           )}
-          <Text style={styles.userName}>{user?.name ?? 'User Name'}</Text>
-          {user?.email && <Text style={styles.userEmail}>{user.email}</Text>}
+          <Text style={[styles.userName, { color: theme.textPrimary }]}>{user?.name ?? 'User Name'}</Text>
+          {user?.email && <Text style={[styles.userEmail, { color: theme.textPlaceholder }]}>{user.email}</Text>}
         </View>
 
-        <View style={styles.infoSection}>
+        <View style={[styles.infoSection, { backgroundColor: theme.backgroundSecondary, borderColor: theme.borderPrimary }]}>
           <View style={styles.sectionHeader}>
             <Feather name="target" size={RFValue(20, height)} color="#27ae60" style={styles.sectionIcon} />
             <Text style={[styles.sectionTitle, { color: '#27ae60' }]}>Goals</Text>
           </View>
           {user?.goals && user.goals.length > 0 ? (
             user.goals.map((goal) => (
-                <Text key={goal} style={styles.infoText}>• {goal}</Text>
+              <Text key={goal} style={[styles.infoText, { color: theme.textSecondary }]}>• {goal}</Text>
             ))
           ) : (
-            <Text style={styles.emptyText}>No goals specified.</Text>
+            <Text style={[styles.emptyText, { color: theme.textPlaceholder }]}>No goals specified.</Text>
           )}
         </View>
 
-        <View style={styles.infoSection}>
+        <View style={[styles.infoSection, { backgroundColor: theme.backgroundSecondary, borderColor: theme.borderPrimary }]}>
           <View style={styles.sectionHeader}>
             <Feather name="heart" size={RFValue(20, height)} color="#e74c3c" style={styles.sectionIcon} />
             <Text style={[styles.sectionTitle, { color: '#e74c3c' }]}>Interests</Text>
           </View>
           {user?.interests && user.interests.length > 0 ? (
             user.interests.map((interest) => (
-              <Text key={interest} style={styles.infoText}>• {interest}</Text>
+              <Text key={interest} style={[styles.infoText, { color: theme.textSecondary }]}>• {interest}</Text>
             ))
           ) : (
-            <Text style={styles.emptyText}>No interests specified.</Text>
+            <Text style={[styles.emptyText, { color: theme.textPlaceholder }]}>No interests specified.</Text>
           )}
         </View>
 
         {user?.gender && (
-          <View style={styles.infoSection}>
+          <View style={[styles.infoSection, { backgroundColor: theme.backgroundSecondary, borderColor: theme.borderPrimary }]}>
             <View style={styles.sectionHeader}>
               <Feather name="user" size={RFValue(20, height)} color="#3498db" style={styles.sectionIcon} />
               <Text style={[styles.sectionTitle, { color: '#3498db' }]}>Gender</Text>
             </View>
-            <Text style={styles.infoText}>{user.gender || 'Not specified'}</Text>
+            <Text style={[styles.infoText, { color: theme.textSecondary }]}>{user.gender || 'Not specified'}</Text>
           </View>
         )}
       </ScrollView>

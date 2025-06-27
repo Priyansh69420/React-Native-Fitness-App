@@ -11,6 +11,7 @@ import { CommunityStackParamList } from '../../navigations/CommunityStackParamLi
 import { ResizeMode, Video } from 'expo-av';
 import { getTimeAgo } from './Community';
 import { useNetInfo } from '@react-native-community/netinfo';
+import { useTheme } from '../../contexts/ThemeContext';
 
 type NavigationProp = DrawerNavigationProp<CommunityStackParamList, 'Community'>;
 
@@ -50,6 +51,7 @@ export default function Post() {
   const [loadingAuthor, setLoadingAuthor] = useState(false);
   const [loadingComments, setLoadingComments] = useState(false);
 
+  const theme = useTheme();
   const user = auth.currentUser;
   const isLiked = user ? post.likes?.includes(user.uid) : false;
   const navigation = useNavigation<NavigationProp>();
@@ -208,18 +210,16 @@ export default function Post() {
     const commentUserData = userDataMap[comment.userId] || { name: 'User' };
 
     return (
-      <View style={styles.commentItem}>
+      <View style={[styles.commentItem, { borderBottomColor: theme.borderPrimary }]}>
         {commentUserData?.profilePicture ? (
           <Image source={{ uri: commentUserData.profilePicture }} style={styles.commentAvatar} />
         ) : (
-          <View style={styles.commentAvatarPlaceholder} />
+          <View style={[styles.commentAvatarPlaceholder, { backgroundColor: theme.backgroundTertiary }]} />
         )}
         <View style={styles.commentTextContainer}>
-          <Text style={styles.commentUserId}>{commentUserData.name}</Text>
-          <Text style={styles.commentTimestamp}>
-            {getTimeAgo(comment.timestamp)}
-          </Text>
-          <Text style={styles.commentContent}>{comment.content}</Text>
+          <Text style={[styles.commentUserId, { color: theme.textPrimary }]}>{commentUserData.name}</Text>
+          <Text style={[styles.commentTimestamp, { color: theme.textPlaceholder }]}>{getTimeAgo(comment.timestamp)}</Text>
+          <Text style={[styles.commentContent, { color: theme.textSecondary }]}>{comment.content}</Text>
         </View>
       </View>
     );
@@ -227,50 +227,48 @@ export default function Post() {
 
   if (loadingAuthor) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.backgroundSecondary }]}>
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <ActivityIndicator size="large" color="#7A5FFF" />
+          <ActivityIndicator size="large" color={theme.backgroundButtonPrimary} />
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header1}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.backgroundSecondary }]}>
+      <View style={[styles.header1, { backgroundColor: theme.backgroundSecondary }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButtonContainer1}>
-          <Image source={require('../../assets/backArrowIcon.png')} style={styles.backIcon1} />
-          <Text style={styles.backButton1}>Back</Text>
+          <Image source={require('../../assets/backArrowIcon.png')} style={[styles.backIcon1, { tintColor: theme.textButtonTertiary }]} />
+          <Text style={[styles.backButton1, { color: theme.textButtonTertiary }]}>Back</Text>
         </TouchableOpacity>
       </View>
 
       <ScrollView>
-        <View style={styles.postContainer}>
+        <View style={[styles.postContainer, { backgroundColor: theme.backgroundSecondary }]}>
           <View style={styles.postHeader}>
             {profilePic ? (
               <Image source={{ uri: profilePic }} style={styles.avatar} />
             ) : (
-              <View style={styles.avatarPlaceholder} />
+              <View style={[styles.avatarPlaceholder, { backgroundColor: theme.backgroundTertiary }]} />
             )}
             <View style={styles.userInfo}>
-              <Text style={styles.userName}>{name ?? 'User'}</Text>
-              <Text style={styles.timestamp}>
-                {getTimeAgo(post.timestamp)}
-              </Text>
+              <Text style={[styles.userName, { color: theme.textPrimary }]}>{name ?? 'User'}</Text>
+              <Text style={[styles.timestamp, { color: theme.textPlaceholder }]}>{getTimeAgo(post.timestamp)}</Text>
             </View>
           </View>
 
-          <Text style={styles.content}>{post.content}</Text>
+          <Text style={[styles.content, { color: theme.textPrimary }]}>{post.content}</Text>
 
           <View style={{ justifyContent: 'center', alignItems: 'center' }}>
             {post.videoUrl && (
               <Video
                 source={{ uri: post.videoUrl }}
-                  style={styles.postImage}              
-                  resizeMode={ResizeMode.COVER}         
-                  useNativeControls={true}                 
-                  shouldPlay={true}                    
-                  isLooping={true}                    
+                style={styles.postImage}
+                resizeMode={ResizeMode.COVER}
+                useNativeControls={true}
+                shouldPlay={true}
+                isLooping={true}
               />
             )}
 
@@ -281,23 +279,25 @@ export default function Post() {
 
           <View style={styles.postActions}>
             <TouchableOpacity style={styles.actionButton} onPress={handleLikePost}>
-              <Image source={isLiked ? require('../../assets/likedIcon.png') : require('../../assets/likeIcon.png')} 
-                     style={[styles.likeIcon, !isLiked && {tintColor: '#000'}]} />
-              <Text style={styles.actionText}>{post.likes ? post.likes.length : 0}</Text>
+              <Image
+                source={isLiked ? require('../../assets/likedIcon.png') : require('../../assets/likeIcon.png')}
+                style={[styles.likeIcon, !isLiked && { tintColor: theme.iconPrimary }]}
+              />
+              <Text style={[styles.actionText, { color: theme.textPrimary }]}>{post.likes ? post.likes.length : 0}</Text>
             </TouchableOpacity>
             <View style={styles.actionButton}>
-              <SimpleLineIcons name="bubble" size={20} color="#000" />
-              <Text style={styles.actionText}>{post.commentCount ?? 0}</Text>
+              <SimpleLineIcons name="bubble" size={20} color={theme.iconPrimary} />
+              <Text style={[styles.actionText, { color: theme.textPrimary }]}>{post.commentCount ?? 0}</Text>
             </View>
           </View>
         </View>
 
         <View style={styles.commentsHeader}>
-          <Text style={styles.commentsHeaderText}>Comments</Text>
+          <Text style={[styles.commentsHeaderText, { color: theme.textPrimary }]}>Comments</Text>
         </View>
         {loadingComments ? (
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-            <ActivityIndicator size="small" color="#7A5FFF" />
+            <ActivityIndicator size="small" color={theme.backgroundButtonPrimary} />
           </View>
         ) : (
           <FlatList
@@ -307,18 +307,26 @@ export default function Post() {
             style={styles.commentsList}
           />
         )}
-
       </ScrollView>
 
-      <View style={styles.newAddCommentContainer}>
+      <View style={[styles.newAddCommentContainer, { backgroundColor: theme.backgroundSecondary }]}>
         <TextInput
-          style={styles.newCommentInput}
+          style={[styles.newCommentInput, { borderColor: theme.borderPrimary, backgroundColor: theme.backgroundSecondary, color: theme.textPrimary }]}
           placeholder="Write comment..."
+          placeholderTextColor={theme.textPlaceholder}
           value={commentText}
           onChangeText={setCommentText}
         />
-        <TouchableOpacity style={styles.newPostCommentButton} onPress={handleAddComment} disabled={!isConnected || loading}>
-          {loading ? <ActivityIndicator size='small' color='#d3d3d3' /> : <Text style={styles.newPostCommentButtonText}>Post</Text>}
+        <TouchableOpacity
+          style={[styles.newPostCommentButton, { backgroundColor: theme.backgroundButtonPrimary }]}
+          onPress={handleAddComment}
+          disabled={!isConnected || loading}
+        >
+          {loading ? (
+            <ActivityIndicator size="small" color={theme.activityIndicatorPrimary} />
+          ) : (
+            <Text style={[styles.newPostCommentButtonText, { color: theme.textButtonPrimary }]}>Post</Text>
+          )}
         </TouchableOpacity>
       </View>
     </SafeAreaView>

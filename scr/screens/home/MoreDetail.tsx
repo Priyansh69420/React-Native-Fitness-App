@@ -9,10 +9,11 @@ import { loadMonthlyProgress } from '../../utils/monthlyProgressUtils';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store/store';
 import { Dropdown } from 'react-native-element-dropdown';
-import { format, subMonths, startOfMonth, isSameMonth } from 'date-fns';
+import { format, subMonths, isSameMonth } from 'date-fns';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRealm } from '../../../realmConfig';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTheme } from '../../contexts/ThemeContext';
 
 type NavigationProp = DrawerNavigationProp<HomeStackParamList, 'MoreDetail'>;
 
@@ -36,6 +37,8 @@ export default function MoreDetail() {
   const [selectedInfo, setSelectedInfo] = useState<string | null>(null);
   const [selectedMonth, setSelectedMonth] = useState<string>(format(new Date(), 'yyyy-MM'));
   const realm = useRealm();
+  const theme = useTheme();
+  const darkMode = userData?.darkMode;
 
   // Generate last 3 months for selector
   const availableMonths = Array.from({ length: 3 }, (_, i) => {
@@ -163,24 +166,24 @@ export default function MoreDetail() {
 
   const renderDailyEntry = ({ item }: { item: typeof formattedData[0] }) => (
     <View style={styles.dailyEntry}>
-      <Text style={styles.dailyEntryDate}>{item.displayDate}</Text>
+      <Text style={[styles.dailyEntryDate, { color: theme.textSecondary }]}>{item.displayDate}</Text>
       <View style={styles.dailyEntryValueContainer}>
         {selectedMetric === 'steps' && (
           <>
             <Ionicons name="walk" size={20} color="#7A5FFF" style={styles.dailyEntryIcon} />
-            <Text style={styles.dailyEntryValue}>{item.steps.toLocaleString()} steps</Text>
+            <Text style={[styles.dailyEntryValue, { color: theme.textSecondary }]}>{item.steps.toLocaleString()} steps</Text>
           </>
         )}
         {selectedMetric === 'calories' && (
           <>
             <Ionicons name="restaurant" size={20} color="#7A5FFF" style={styles.dailyEntryIcon} />
-            <Text style={styles.dailyEntryValue}>{item.calories.toLocaleString()} cal</Text>
+            <Text style={[styles.dailyEntryValue, { color: theme.textSecondary }]}>{item.calories.toLocaleString()} cal</Text>
           </>
         )}
         {selectedMetric === 'water' && (
           <>
             <Ionicons name="water" size={20} color="#7A5FFF" style={styles.dailyEntryIcon} />
-            <Text style={styles.dailyEntryValue}>{item.water.toFixed(1)} L</Text>
+            <Text style={[styles.dailyEntryValue, { color: theme.textSecondary }]}>{item.water.toFixed(1)} L</Text>
           </>
         )}
       </View>
@@ -197,8 +200,8 @@ export default function MoreDetail() {
   })();
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.headerContainer}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.backgroundPrimary }]}>
+      <View style={[styles.headerContainer, { backgroundColor: theme.backgroundPrimary }]}>
       <View style={styles.header}>
           <TouchableOpacity style={styles.backButtonContainer} onPress={() => navigation.goBack()}>
             <Image
@@ -222,35 +225,36 @@ export default function MoreDetail() {
                 valueField="value"
                 value={selectedMonth}
                 onChange={(item) => setSelectedMonth(item.value)}
+                iconStyle={{tintColor: '#fff'}}
               />
             </LinearGradient>
           </View>
         </View>
-        <Text style={styles.title}>Monthly Progress</Text>
+        <Text style={[styles.title, { color: theme.textPrimary }]}>Monthly Progress</Text>
       </View>
 
       <View style={styles.scrollContainer}>
         <View style={styles.summaryContainer}>
-          <View style={styles.summaryCard}>
+          <View style={[styles.summaryCard, { backgroundColor: theme.backgroundSecondary }]}>
             <Ionicons name="walk" size={30} color="#7A5FFF" />
-            <Text style={styles.summaryValue}>{totalSteps.toLocaleString()}</Text>
-            <Text style={styles.summaryLabel}>Total Steps</Text>
+            <Text style={[styles.summaryValue, { color: theme.textPrimary }]}>{totalSteps.toLocaleString()}</Text>
+            <Text style={[styles.summaryLabel, { color: theme.textSecondary }]}>Total Steps</Text>
           </View>
-          <View style={styles.summaryCard}>
+          <View style={[styles.summaryCard, { backgroundColor: theme.backgroundSecondary }]}>
             <Ionicons name="restaurant" size={30} color="#7A5FFF" />
-            <Text style={styles.summaryValue}>{totalCalories.toLocaleString()}</Text>
-            <Text style={styles.summaryLabel}>Total Calories</Text>
+            <Text style={[styles.summaryValue, { color: theme.textPrimary }]}>{totalCalories.toLocaleString()}</Text>
+            <Text style={[styles.summaryLabel, { color: theme.textSecondary }]}>Total Calories</Text>
           </View>
-          <View style={styles.summaryCard}>
+          <View style={[styles.summaryCard, { backgroundColor: theme.backgroundSecondary }]}>
             <Ionicons name="water" size={30} color="#7A5FFF" />
-            <Text style={styles.summaryValue}>{totalWater}</Text>
-            <Text style={styles.summaryLabel}>Total Water (L)</Text>
+            <Text style={[styles.summaryValue, { color: theme.textPrimary }]}>{totalWater}</Text>
+            <Text style={[styles.summaryLabel, { color: theme.textSecondary }]}>Total Water (L)</Text>
           </View>
         </View>
 
-        <View style={styles.toggleContainer}>
+        <View style={[styles.toggleContainer]}>
           <TouchableOpacity
-            style={[styles.toggleButton, selectedMetric === 'steps' && styles.toggleButtonSelected]}
+            style={[styles.toggleButton, { backgroundColor: theme.backgroundButtonSecondary }, selectedMetric === 'steps' && styles.toggleButtonSelected]}
             onPress={() => {
               if (selectedMetric !== 'steps') {
                 setSelectedMetric('steps');
@@ -258,10 +262,10 @@ export default function MoreDetail() {
               }
             }}
           >
-            <Text style={[styles.toggleText, selectedMetric === 'steps' && styles.toggleTextSelected]}>Steps</Text>
+            <Text style={[styles.toggleText, { color: darkMode ? '#fff' : '#000' }, selectedMetric === 'steps' && styles.toggleTextSelected]}>Steps</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.toggleButton, selectedMetric === 'calories' && styles.toggleButtonSelected]}
+            style={[styles.toggleButton, { backgroundColor: theme.backgroundButtonSecondary }, selectedMetric === 'calories' && styles.toggleButtonSelected]}
             onPress={() => {
               if (selectedMetric !== 'calories') {
                 setSelectedMetric('calories');
@@ -269,10 +273,10 @@ export default function MoreDetail() {
               }
             }}
           >
-            <Text style={[styles.toggleText, selectedMetric === 'calories' && styles.toggleTextSelected]}>Nutrition</Text>
+            <Text style={[styles.toggleText, , { color: darkMode ? '#fff' : '#000' }, selectedMetric === 'calories' && styles.toggleTextSelected]}>Nutrition</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.toggleButton, selectedMetric === 'water' && styles.toggleButtonSelected]}
+            style={[styles.toggleButton, { backgroundColor: theme.backgroundButtonSecondary }, selectedMetric === 'water' && styles.toggleButtonSelected]}
             onPress={() => {
               if (selectedMetric !== 'water') {
                 setSelectedMetric('water');
@@ -280,12 +284,12 @@ export default function MoreDetail() {
               }
             }}
           >
-            <Text style={[styles.toggleText, selectedMetric === 'water' && styles.toggleTextSelected]}>Water</Text>
+            <Text style={[styles.toggleText, { color: darkMode ? '#fff' : '#000' }, selectedMetric === 'water' && styles.toggleTextSelected]}>Water</Text>
           </TouchableOpacity>
         </View>
 
-        <View style={styles.trendContainer}>
-          <Text style={styles.trendTitle}>{trendTitle} Stats</Text>
+        <View style={[styles.trendContainer, { backgroundColor: theme.backgroundSecondary }]}>
+          <Text style={[styles.trendTitle, { color: theme.textPrimary }]}>{trendTitle} Stats</Text>
           {monthlyData.length !== 0 ? (
             <View style={styles.selectedInfoContainer}>
             {selectedInfo ? (
@@ -324,7 +328,7 @@ export default function MoreDetail() {
                     ((entry.water || 0) / waterGoalLiters) * 100,
                     100
                   );
-                  displayData = `${entry.displayDate}, ${entry.water.toFixed(1)} L / ${((userData?.glassGoal ?? 8) * 0.25)} L`;
+                  displayData = `${entry.displayDate}, ${entry.water.toFixed(1)} L / ${((userData?.glassGoal ?? 8) * 0.25).toFixed(1)} L`;
                 }
 
                 return (
@@ -347,8 +351,8 @@ export default function MoreDetail() {
           )}
         </View>
 
-        <View style={styles.breakdownContainer}>
-          <Text style={styles.breakdownTitle}>Daily Breakdown</Text>
+        <View style={[styles.breakdownContainer, { backgroundColor: theme.backgroundSecondary }]}>
+          <Text style={[styles.breakdownTitle, { color: theme.textPrimary }]}>Daily Breakdown</Text>
           {formattedData.length > 0 ? (
             <FlatList
               data={formattedData}
@@ -357,7 +361,7 @@ export default function MoreDetail() {
               showsVerticalScrollIndicator={false}
             />
           ) : (
-            <Text style={styles.noDataText}>No data available for this month</Text>
+            <Text style={[styles.noDataText, {marginTop: 70, color: theme.textSecondary}]}>No data available for this month.</Text>
           )}
         </View>
       </View>
@@ -592,7 +596,7 @@ const styles = StyleSheet.create({
     paddingVertical: height * 0.01,
     paddingHorizontal: width * 0.03,
     marginBottom: height * 0.01,
-    backgroundColor: '#EFEFFF',
+    backgroundColor: '#e1e1ff',
     borderRadius: 8,
     alignItems: 'center',
   },

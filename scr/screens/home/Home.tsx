@@ -23,6 +23,7 @@ import { fetchUserData, loadUserDataFromRealm } from '../../store/slices/userSli
 import { loadData } from './Water';
 import { fetchSteps } from '../../store/slices/footstepSlice';
 import { useRealm } from '../../../realmConfig';
+import { useTheme } from '../../contexts/ThemeContext';
 
 type NavigationProp = DrawerNavigationProp<HomeStackParamList, 'Home'>;
 
@@ -38,6 +39,7 @@ export default function Home() {
   const navigation = useNavigation<NavigationProp>();
   const dispatch = useDispatch<AppDispatch>();
   const realm = useRealm();
+  const theme = useTheme();
 
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener((state) => {
@@ -90,7 +92,7 @@ export default function Home() {
   if (loading || !rehydrated || (!userData && !loading)) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#7A5FFF" />
+        <ActivityIndicator size="large" color={theme.backgroundButtonPrimary} />
       </View>
     );
   }
@@ -98,10 +100,10 @@ export default function Home() {
   if (!userData) {
     return (
       <View style={styles.container}>
-        <Text style={styles.greeting}>Welcome, User!</Text>
-        <Text style={styles.subtitle}>Please complete your profile setup.</Text>
+        <Text style={[styles.greeting, { color: theme.textPrimary }]}>Welcome, User!</Text>
+        <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Please complete your profile setup.</Text>
         <TouchableOpacity onPress={() => auth.signOut()}>
-          <Text style={styles.signOut}>Sign-Out</Text>
+          <Text style={[styles.signOut, { color: theme.textError }]}>Sign-Out</Text>
         </TouchableOpacity>
       </View>
     );
@@ -127,7 +129,7 @@ export default function Home() {
 
   return (
     <ScrollView>
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.backgroundPrimary }]}>
         <View style={styles.header}>
           <TouchableOpacity
             style={styles.drawerContainer}
@@ -135,7 +137,7 @@ export default function Home() {
           >
             <Image
               source={require('../../assets/drawerIcon.png')}
-              style={styles.drawerIcon}
+              style={[styles.drawerIcon, { tintColor: theme.iconPrimary }]}
             />
           </TouchableOpacity>
           <View style={styles.profileContainer}>
@@ -155,10 +157,10 @@ export default function Home() {
                     onLoad={() => setImageLoading(false)}
                     onError={() => setImageLoading(false)}
                   />
-                  <View style={styles.editIcon}>
+                  <View style={[styles.editIcon, { backgroundColor: theme.backgroundButtonPrimary, borderColor: theme.backgroundPrimary }]}>
                     <Image
                       source={require('../../assets/editIon.png')}
-                      style={{ height: 12, width: 12, alignContent: 'center', tintColor: '#F5F7FA' }}
+                      style={{ height: 12, width: 12, alignContent: 'center', tintColor: theme.textButtonPrimary }}
                     />
                   </View>
                 </TouchableOpacity>
@@ -169,18 +171,18 @@ export default function Home() {
           </View>
         </View>
 
-        <Text style={styles.greeting}>Greetings, {userData.name || 'User'}</Text>
-        <Text style={styles.subtitle}>
+        <Text style={[styles.greeting, { color: theme.textPrimary }]}>Greetings, {userData.name || 'User'}</Text>
+        <Text style={[styles.subtitle, { color: theme.textPrimary }]}>
           Eat the right amount of food and stay hydrated through the day
         </Text>
 
         <TouchableOpacity style={styles.detailsOption} onPress={() => navigation.navigate('MoreDetail')}>
-          <Text style={styles.detailsText}>More Details</Text>
+          <Text style={[styles.detailsText, { color: theme.textButtonSecondary }]}>More Details</Text>
         </TouchableOpacity>
 
         <View>
           <TouchableOpacity
-            style={styles.section}
+            style={[styles.section, { backgroundColor: theme.backgroundSecondary, borderTopColor: theme.borderTertiary, borderBottomColor: theme.borderTertiary }]}
             onPress={() => navigation.navigate('Nutrition')}
           >
             <View style={styles.sectionContent}>
@@ -193,7 +195,7 @@ export default function Home() {
                 </View>
                 <View style={styles.sectionDetails}>
                   <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionTitle}>Nutrition</Text>
+                    <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Nutrition</Text>
                     <TouchableOpacity 
                       style={[
                         styles.warningButton, 
@@ -205,10 +207,10 @@ export default function Home() {
                       </Text>
                     </TouchableOpacity>
                   </View>
-                  <Text style={styles.sectionProgress}>
+                  <Text style={[styles.sectionProgress, { color: theme.textPlaceholder }]}>
                     {userData?.calories ?? 0} cal / {userData?.calorieGoal ?? 2000} cal
                   </Text>
-                  <View style={styles.progressBarContainer}>
+                  <View style={[styles.progressBarContainer, { backgroundColor: theme.backgroundBadge }]}>
                     <LinearGradient
                       colors={['#66D3C8', '#66D3C8', '#9D6DEB', '#9D6DEB', '#FFA500', '#FFA500']}
                       locations={[0, 0.33, 0.33, 0.66, 0.66, 1]}
@@ -225,7 +227,7 @@ export default function Home() {
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.section} onPress={() => navigation.navigate('Water')}>
+          <TouchableOpacity style={[styles.section, { backgroundColor: theme.backgroundSecondary, borderTopColor: theme.borderTertiary, borderBottomColor: theme.borderTertiary }]} onPress={() => navigation.navigate('Water')}>
             <View style={styles.sectionContent}>
               <View style={styles.sectionRow}>
                 <View style={styles.iconContainer}>
@@ -236,7 +238,7 @@ export default function Home() {
                 </View>
                 <View style={styles.sectionDetails}>
                   <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionTitle}>Water</Text>
+                    <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Water</Text>
                     <TouchableOpacity 
                       style={[
                         styles.warningButton, 
@@ -248,7 +250,7 @@ export default function Home() {
                       </Text>
                     </TouchableOpacity>
                   </View>
-                  <Text style={styles.sectionProgress}>
+                  <Text style={[styles.sectionProgress, { color: theme.textPlaceholder }]}>
                     {glassDrunk} / {userData?.glassGoal ?? 8} glasses
                   </Text>
                   <View style={styles.progressBarContainer}>
@@ -269,7 +271,7 @@ export default function Home() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.section}
+            style={[styles.section, { backgroundColor: theme.backgroundSecondary, borderTopColor: theme.borderTertiary, borderBottomColor: theme.borderTertiary }]}
             onPress={() => navigation.navigate('DailySteps')}
           >
             <View style={styles.sectionContent}>
@@ -282,12 +284,12 @@ export default function Home() {
                 </View>
                 <View style={styles.sectionDetails}>
                   <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionTitle}>Daily Steps</Text>
+                    <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Daily Steps</Text>
                     <TouchableOpacity style={styles.toggleButton}>
                       <Text style={styles.toggleText}>On</Text>
                     </TouchableOpacity>
                   </View>
-                  <Text style={styles.sectionProgress}>
+                  <Text style={[styles.sectionProgress, { color: theme.textPlaceholder }]}>
                     {steps} steps / {userData?.stepGoal ?? 10000} steps
                   </Text>
                   <View style={styles.progressBarContainer}>
@@ -307,11 +309,11 @@ export default function Home() {
             </View>
           </TouchableOpacity>
         </View>
+        <View style={{ backgroundColor: theme.backgroundPrimary, height: '100%' }} />
       </SafeAreaView>
     </ScrollView>
   );
 }
-
 
 const styles = StyleSheet.create({
   safeArea: {
@@ -392,14 +394,14 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333',
     marginLeft: width * 0.05,
-    marginTop: height * 0.02,
+    marginTop: height * 0.03,
   },
   subtitle: {
     fontSize: RFPercentage(2),
     color: '#666',
     width: width * 0.8,
     marginLeft: width * 0.05,
-    marginTop: height * 0.02,
+    marginTop: height * 0.01,
     marginBottom: height * 0.023,
   },
   detailsOption: {

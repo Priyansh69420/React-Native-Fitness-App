@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Dimensions, Image } from 'react-native';
 import { RFPercentage, RFValue } from 'react-native-responsive-fontsize';
+import { useTheme } from '../contexts/ThemeContext';
 
 const { width, height } = Dimensions.get('window');
 
@@ -15,9 +16,11 @@ const PerformanceContainer: React.FC<PerformanceContainerProps> = ({
   bestPerformance = null,
   worstPerformance = null,
 }) => {
+  const theme = useTheme();
+
   return (
-    <View style={[styles.performanceContainer, showBorderTop && { borderTopWidth: 1, borderTopColor: '#E5E5E5' }]}>
-      <View style={[styles.performanceBox, { borderBottomWidth: 0.5, borderBottomColor: '#d9d9d9' }]}>
+    <View style={[styles.performanceContainer, showBorderTop && { borderTopWidth: 1, borderTopColor: theme.borderPrimary }]}>
+      <View style={[styles.performanceBox, { borderBottomWidth: 0.5, borderBottomColor: '#d9d9d9', backgroundColor: theme.backgroundSecondary }]}>
         <View style={styles.performanceRow}>
           <View style={styles.smileyContainer}>
             <Image
@@ -25,13 +28,13 @@ const PerformanceContainer: React.FC<PerformanceContainerProps> = ({
               style={styles.smileyIcon}
             />
           </View>
-          <Text style={styles.performanceText}>Best Performance</Text>
-          <Text style={styles.performanceValue}>{bestPerformance?.count ?? '-'}</Text>
+          <Text style={[styles.performanceText, { color: theme.textSecondary }]}>Best Performance</Text>
+          <Text style={[styles.performanceValue, { color: theme.textPrimary }]}>{bestPerformance?.count ?? '-'}</Text>
         </View>
         <Text style={styles.performanceDay}>{bestPerformance?.day ?? '-'}</Text>
       </View>
 
-      <View style={styles.performanceBox}>
+      <View style={[styles.performanceBox, {backgroundColor: theme.backgroundSecondary}]}>
         <View style={styles.performanceRow}>
           <View style={styles.smileyContainer}>
             <Image
@@ -39,8 +42,8 @@ const PerformanceContainer: React.FC<PerformanceContainerProps> = ({
               style={styles.smileyIcon}
             />
           </View>
-          <Text style={styles.performanceText}>Worst Performance</Text>
-          <Text style={styles.performanceValue}>{worstPerformance?.count ?? '-'}</Text>
+          <Text style={[styles.performanceText, { color: theme.textSecondary }]}>Worst Performance</Text>
+          <Text style={[styles.performanceValue, { color: theme.textPrimary}]}>{worstPerformance?.count ?? '-'}</Text>
         </View>
         <Text style={styles.performanceDay}>{worstPerformance?.day ?? '-'}</Text>
       </View>

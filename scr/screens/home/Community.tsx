@@ -19,6 +19,7 @@ import { Post } from './Post';
 import { getRealmInstance, useRealm } from '../../../realmConfig';
 import NetInfo, { useNetInfo } from '@react-native-community/netinfo';
 import { UpdateMode } from 'realm';
+import { useTheme } from '../../contexts/ThemeContext';
 
 type NavigationProp = DrawerNavigationProp<CommunityStackParamList, 'Community'>;
 
@@ -98,6 +99,7 @@ const Community = () => {
   const [lastVisibleDoc, setLastVisibleDoc] = useState<DocumentSnapshot | null>(null);
   const [latestFirestorePostTimestamp, setLatestFirestorePostTimestamp] = useState<Date | null>(null);
 
+  const theme = useTheme();
   const isConnected = useNetInfo().isConnected;
   const realm = useRealm()
   const navigation = useNavigation<NavigationProp>();
@@ -273,7 +275,7 @@ const Community = () => {
       const storiesQuery = query(
         storiesCollection,
         where('timestamp', '>', twentyFourHoursAgo),
-        orderBy('timestamp', 'desc')
+        orderBy('timestamp', 'asc')
       );
 
       const unsubscribe = onSnapshot(
@@ -656,7 +658,7 @@ const Community = () => {
     };
 
     return (
-      <View style={styles.postContainer}>
+      <View style={[styles.postContainer, { backgroundColor: theme.backgroundSecondary, borderColor: theme.borderSecondary }]}>
         <View style={styles.postHeader}>
           <View style={styles.leftSection}>
             {userData.profilePicture ? (
@@ -664,11 +666,11 @@ const Community = () => {
                 <Image source={{ uri: userData.profilePicture }} style={styles.avatar} />
               </TouchableOpacity>
             ) : (
-              <View style={styles.avatarPlaceholder} />
+              <View style={[styles.avatarPlaceholder, { backgroundColor: theme.backgroundTertiary }]} />
             )}
             <View style={styles.userInfo}>
-              <Text style={styles.userName}>{userData.name}</Text>
-              <Text style={styles.timestamp}>{getTimeAgo(item.timestamp)}</Text>
+              <Text style={[styles.userName, { color: theme.textPrimary }]}>{userData.name}</Text>
+              <Text style={[styles.timestamp, { color: theme.textPlaceholder }]}>{getTimeAgo(item.timestamp)}</Text>
             </View>
           </View>
 
@@ -679,7 +681,7 @@ const Community = () => {
                 onRequestClose={() => setVisiblePostId(null)}
                 anchor={
                   <TouchableOpacity onPress={() => setVisiblePostId(item.id)}>
-                    <SimpleLineIcons name="options-vertical" size={18} color="#555" />
+                    <SimpleLineIcons name="options-vertical" size={18} color={theme.iconPrimary} />
                   </TouchableOpacity>
                 }
               >
@@ -691,7 +693,7 @@ const Community = () => {
                     setEditModalVisible(true);
                   }}
                 >
-                  Edit Post
+                  <Text style={{ color: '#000' }}>Edit Post</Text>
                 </MenuItem>
                 <MenuItem
                   onPress={() => {
@@ -703,7 +705,7 @@ const Community = () => {
                         {
                           text: 'Yes',
                           onPress: () => {
-                            handleDeletePost(item.id);
+                            handleDeletePost(item.id); 
                           },
                           style: 'destructive',
                         },
@@ -711,7 +713,7 @@ const Community = () => {
                       { cancelable: true }
                     );
                   }}
-                  textStyle={{ color: 'red' }}
+                  textStyle={{ color: theme.textError }}
                 >
                   Delete Post
                 </MenuItem>
@@ -720,7 +722,7 @@ const Community = () => {
           </View>
         </View>
 
-        {item.content ? <Text style={styles.content}>{item.content}</Text> : <></>}
+        {item.content ? <Text style={[styles.content, { color: theme.textPrimary }]}>{item.content}</Text> : <></>}
 
         <View style={{ justifyContent: 'center', alignItems: 'center' }}>
           {(() => {
@@ -728,7 +730,11 @@ const Community = () => {
               return (
                 <TapGestureHandler
                   numberOfTaps={2}
-                  onActivated={() => handleDoubleTap(item.id)}
+                  onActivated={() => {
+                    handleDoubleTap(item.id); 
+                    setShowHeart(true);
+                    setTimeout(() => setShowHeart(false), 500);
+                  }}
                 >
                   <View>
                     <Video
@@ -744,7 +750,7 @@ const Community = () => {
                         <View style={styles.heartOverlay}>
                           <Image
                             source={require('../../assets/likedIcon.png')}
-                            style={{ width: 50, height: 50, tintColor: 'white' }}
+                            style={{ width: 50, height: 50, tintColor: theme.iconSecondary }}
                           />
                         </View>
                       </Animated.View>
@@ -756,7 +762,11 @@ const Community = () => {
               return (
                 <TapGestureHandler
                   numberOfTaps={2}
-                  onActivated={() => handleDoubleTap(item.id)}
+                  onActivated={() => {
+                    handleDoubleTap(item.id); 
+                    setShowHeart(true);
+                    setTimeout(() => setShowHeart(false), 500);
+                  }}
                 >
                   <View>
                     <Image
@@ -769,7 +779,7 @@ const Community = () => {
                         <View style={styles.heartOverlay}>
                           <Image
                             source={require('../../assets/likedIcon.png')}
-                            style={{ width: 50, height: 50, tintColor: 'white' }}
+                            style={{ width: 50, height: 50, tintColor: theme.iconSecondary }}
                           />
                         </View>
                       </Animated.View>
@@ -789,7 +799,8 @@ const Community = () => {
             onPress={() => {
               if (likingPostId !== item.id) {
                 setLikingPostId(item.id);
-                handleLikePost(item.id).finally(() => setLikingPostId(null));
+                handleLikePost(item.id).finally(() => setLikingPostId(null)); 
+                setLikingPostId(null);
               }
             }}
             disabled={likingPostId === item.id}
@@ -800,9 +811,9 @@ const Community = () => {
                   ? require('../../assets/likedIcon.png')
                   : require('../../assets/likeIcon.png')
               }
-              style={[styles.likeIcon, !isLiked && { tintColor: '#000' }]}
+              style={[styles.likeIcon, !isLiked && { tintColor: theme.iconPrimary }]}
             />
-            <Text style={styles.actionText}>
+            <Text style={[styles.actionText, { color: theme.textPrimary }]}>
               {item.likes ? item.likes.length : 0}
             </Text>
           </TouchableOpacity>
@@ -810,8 +821,8 @@ const Community = () => {
             style={styles.actionButton}
             onPress={() => navigation.navigate('Post', { item, name, profilePic })}
           >
-            <SimpleLineIcons name="bubble" size={20} color="#000" />
-            <Text style={styles.actionText}>
+            <SimpleLineIcons name="bubble" size={20} color={theme.iconPrimary} />
+            <Text style={[styles.actionText, { color: theme.textPrimary }]}>
               {item.commentCount ?? 0}
             </Text>
           </TouchableOpacity>
@@ -822,9 +833,9 @@ const Community = () => {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.backgroundPrimary }]}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#7A5FFF" />
+          <ActivityIndicator size="large" color={theme.backgroundButtonPrimary} />
         </View>
       </SafeAreaView>
     );
@@ -832,25 +843,25 @@ const Community = () => {
 
   if (error) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.backgroundPrimary }]}>
         <View style={styles.container}>
-          <Text style={styles.title}>Community</Text>
-          <Text>Error loading posts: {error}</Text>
+          <Text style={[styles.title, { color: theme.textPrimary }]}>Community</Text>
+          <Text style={[{ color: theme.textError }]}>Error loading posts: {error}</Text>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.backgroundPrimary }]}>
       <View style={styles.fixedHeader}>
         <TouchableOpacity
-          style={styles.drawerContainer}
+          style={[styles.drawerContainer]}
           onPress={() => navigation.openDrawer()}
         >
           <Image
             source={require('../../assets/drawerIcon.png')}
-            style={styles.drawerIcon}
+            style={[styles.drawerIcon, { tintColor: theme.iconPrimary }]}
           />
         </TouchableOpacity>
       </View>
@@ -858,7 +869,7 @@ const Community = () => {
       <ScrollView>
         <View style={styles.header}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Text style={styles.headerTitle}>Community</Text>
+            <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>Community</Text>
             <View style={{ flexDirection: 'row', marginTop: height * 0.008 }}>
               <TouchableOpacity onPress={() => {
                   if(!isConnected) {
@@ -873,7 +884,7 @@ const Community = () => {
                 }}
                 style={{ paddingVertical: height * 0.03, paddingHorizontal: width * 0.02 }}
               >
-                <Feather name="plus-square" size={24} color="#222" />
+                <Feather name="plus-square" size={24} color={theme.iconPrimary} />
               </TouchableOpacity>
               <TouchableOpacity
                 style={{ paddingVertical: height * 0.03, paddingHorizontal: width * 0.02 }}
@@ -889,7 +900,7 @@ const Community = () => {
                   setIsAddPostModalVisible(true);
                 }}
               >
-                <Feather name="inbox" size={24} color="#222" />
+                <Feather name="inbox" size={24} color={theme.iconPrimary} />
               </TouchableOpacity>
             </View>
           </View>
@@ -901,9 +912,7 @@ const Community = () => {
             data={storiesData}
             duration={10}
             avatarSize={RFValue(65 * scaleFactor, height)}
-            avatarTextStyle={{
-              fontSize: RFValue(0 * scaleFactor, height),
-            }}
+            showAvatarText={false}
             unPressedBorderColor="#7A5FFF"
             pressedBorderColor="#d3d3d3"
             avatarWrapperStyle={{
@@ -935,33 +944,60 @@ const Community = () => {
         }}
       >
         <View style={styles.centeredView}>
-          <View style={styles.modalView}>
-            <Text style={styles.modalTitle}>Create New Post</Text>
+          <View style={[styles.modalView, { backgroundColor: theme.backgroundSecondary }]}>
+            <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>Create New Post</Text>
             <TextInput
-              style={styles.modalInput}
+              style={[styles.modalInput, { borderColor: theme.borderPrimary}]}
               placeholder="What's on your mind?"
               multiline
               value={newPostContent}
               onChangeText={setNewPostContent}
             />
 
-            <TouchableOpacity style={styles.modalImagePlaceholder} onPress={handlePickMedia}>
-              <Text style={{ color: '#757575' }}>Tap to add Media</Text>
+            <TouchableOpacity style={[styles.modalImagePlaceholder, { borderColor: theme.borderPrimary}]} onPress={handlePickMedia}>
+              {!newPostImage && !newPostVideo ? (
+                <View style={{ justifyContent: 'center', alignItems: 'center' }}>
+                  <Text style={{ color: '#757575' }}>Tap to add Media</Text>
+                  <SimpleLineIcons name="cloud-upload" size={20} color="#757575" />
+                </View>
+              ) : null}
+
               {uploadingImage && <ActivityIndicator size="small" color="#7A5FFF" />}
-              {newPostImage && <Image source={{ uri: newPostImage }} style={styles.modalImagePreview} />}
-              {newPostVideo && 
-                <Video
-                  source={{ uri: newPostVideo }}
-                  style={styles.modalImagePreview}
-                  resizeMode={ResizeMode.COVER}
-                  shouldPlay={true}
-                  isLooping={true}
-                />}
+
+              {newPostImage && (
+                <View style={{ position: 'relative' }}>
+                  <Image source={{ uri: newPostImage }} style={styles.modalImagePreview} />
+                  <TouchableOpacity
+                    onPress={() => setNewPostImage(null)}
+                    style={styles.closeButton}
+                  >
+                    <SimpleLineIcons name="close" size={20} color="#000" />
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              {newPostVideo && (
+                <View style={{ position: 'relative' }}>
+                  <Video
+                    source={{ uri: newPostVideo }}
+                    style={styles.modalImagePreview}
+                    resizeMode={ResizeMode.COVER}
+                    shouldPlay
+                    isLooping
+                  />
+                  <TouchableOpacity
+                    onPress={() => setNewPostVideo(null)}
+                    style={styles.closeButton}
+                  >
+                    <SimpleLineIcons name="close" size={20} color="#000" />
+                  </TouchableOpacity>
+                </View>
+              )}
             </TouchableOpacity>
 
             <View style={styles.modalButtonsContainer}>
               <TouchableOpacity
-                style={[styles.modalButton, styles.modalCancelButton]}
+                style={[styles.modalButton, styles.modalCancelButton, {backgroundColor: 'transparent'}]}
                 onPress={() => {
                   setIsAddPostModalVisible(false);
                   setNewPostImage(null);
@@ -972,9 +1008,9 @@ const Community = () => {
                 <Text style={[styles.modalButtonText, { color: '#7A5FFF' }]}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.modalButton, styles.modalPostButton]}
+                style={[styles.modalButton, styles.modalPostButton, !(newPostContent || newPostImage || newPostVideo ) ? {backgroundColor: '#d3d3d3'} : null]}
                 onPress={handleCreateNewPost}
-                disabled={uploadingImage || postLoading}
+                disabled={uploadingImage || postLoading || !(newPostContent || newPostImage || newPostVideo )}
               >
                 {postLoading ? <ActivityIndicator size='small' color='#d3d3d3' /> : <Text style={styles.modalButtonText}>{uploadingImage ? 'Posting...' : 'Post'}</Text>}
               </TouchableOpacity>
@@ -990,11 +1026,11 @@ const Community = () => {
         onRequestClose={() => setEditModalVisible(false)}
         style={{}}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.editModalContainer}>
-            <Text style={styles.editModalTitle}>Edit Post</Text>
+        <View style={[styles.modalOverlay]}>
+          <View style={[styles.editModalContainer, {backgroundColor: theme.backgroundSecondary, borderColor: theme.borderPrimary}]}>
+            <Text style={[styles.editModalTitle, {color: theme.textPrimary}]}>Edit Post</Text>
             <TextInput
-              style={styles.editInput}
+              style={[styles.editInput, { backgroundColor: theme.backgroundTertiary, color: theme.textPrimary, borderColor: theme.borderPrimary }]}
               value={editedContent}
               onChangeText={setEditedContent}
               multiline
@@ -1359,6 +1395,19 @@ const styles = StyleSheet.create({
     color: 'blue',
     fontSize: 16,
   },
+  closeButton: {
+    position: 'absolute',
+    backgroundColor: "#ededed",
+    top: 6,
+    right: -8,
+    borderRadius: 12,
+    width: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  
 });
 
 export default Community;

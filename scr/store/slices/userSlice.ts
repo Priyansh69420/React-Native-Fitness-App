@@ -22,6 +22,7 @@ export interface UserData {
     calorieGoal: number;
     glassGoal: number;
     stepGoal: number;
+    darkMode: boolean;
 }
 
 interface RealmUser {
@@ -41,6 +42,7 @@ interface RealmUser {
     calorieGoal: number;
     glassGoal: number;
     stepGoal: number;
+    darkMode: boolean; 
 }
 
 interface UserState {
@@ -82,17 +84,14 @@ export const updateUserProfile = createAsyncThunk(
   
       const newUserData = { ...currentUser, ...updatedData };
   
-      // Step 1: Update Redux store
       dispatch(updateUser(updatedData));
   
-      // Step 2: Update Realm immediately
       try {
         saveUserDataToRealm(realm, newUserData);
       } catch (err) {
         console.error('[updateUserProfile] Failed to save to Realm:', err);
       }
   
-      // Step 3: Sync logic based on network status
       try {
         const netState = await NetInfo.fetch();
         if (netState.isConnected) {
@@ -135,6 +134,7 @@ export const syncRealmUserToFirestore = async (realm: Realm, email: string) => {
             calorieGoal: user.calorieGoal,
             glassGoal: user.glassGoal,
             stepGoal: user.stepGoal,
+            darkMode: user.darkMode
         };
 
         const firestoreUser = auth.currentUser;
@@ -191,6 +191,7 @@ export const loadUserDataFromRealm = createAsyncThunk(
         calorieGoal: user.calorieGoal,
         glassGoal: user.glassGoal,
         stepGoal: user.stepGoal,
+        darkMode: user.darkMode,
         };
   
         return userData;

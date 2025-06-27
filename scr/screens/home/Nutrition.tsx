@@ -7,7 +7,7 @@ import { useNavigation } from '@react-navigation/native';
 import Svg, { Circle, G } from 'react-native-svg';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { auth, firestore } from '../../../firebaseConfig';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { setCalories } from '../../store/slices/userSlice';
 import { doc, updateDoc, collection, getDocs, addDoc } from '@firebase/firestore';
 import { TextInput } from 'react-native-gesture-handler';
@@ -16,6 +16,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRealm } from '../../../realmConfig';
 import { useNetInfo } from '@react-native-community/netinfo';
 import { UpdateMode } from 'realm';
+import { useTheme } from '../../contexts/ThemeContext';
+import { RootState } from '../../store/store';
 
 type NavigationProp = DrawerNavigationProp<HomeStackParamList, 'Nutrition'>;
 
@@ -82,6 +84,8 @@ export default function Nutrition() {
   const [isLoading, setIsLoading] = useState(false);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
+  const darkMode = useSelector((state: RootState) => state.user?.userData?.darkMode);
+  const theme = useTheme();
   const realm = useRealm()
   const isConnected = useNetInfo();
 	const [nutritionData, setNutritionData] = useState([
@@ -113,7 +117,7 @@ export default function Nutrition() {
   const strokeWidth = 18;
   const center = baseRadius + strokeWidth / 2;
   const separation = 10;
-  const backgroundColor = '#E6E6FA';
+  const backgroundColor = darkMode ? '#3f3f3f': '#E6E6FA';
 
   useEffect(() => {
     loadAndResetData();
@@ -291,14 +295,14 @@ export default function Nutrition() {
   };
 
 	const renderFoodItem = ({ item }: { item: FoodItem }) => (
-    <TouchableOpacity style={styles.foodItem} onPress={() => handleFoodSelection(item)}>
-      <Text style={styles.foodName}>{item.name}</Text>
-      <View style={styles.selectionIndicator}>
+    <TouchableOpacity style={[styles.foodItem, { backgroundColor: theme.backgroundSecondary}]} onPress={() => handleFoodSelection(item)}>
+      <Text style={[styles.foodName, { color: theme.textSecondary }]}>{item.name}</Text>
+      <View style={[styles.selectionIndicator, {backgroundColor: theme.backgroundSecondary, borderColor: darkMode ? '#575757' : '#ccc'}]}>
         {selectedFoods.some((selectedItem) => selectedItem.name === item.name) && (
           <Image
-            source={require('../../assets/check.png')} 
-            style={{ width: RFValue(18), height: RFValue(18), justifyContent: 'center', alignItems: 'center' }}
-            resizeMode="contain" 
+            source={require('../../assets/check.png')}
+            style={{ width: RFValue(18), height: RFValue(18), justifyContent: 'center', alignItems: 'center'}}
+            resizeMode="contain"
           />
         )}
       </View>
@@ -528,8 +532,8 @@ export default function Nutrition() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.backgroundPrimary }]}>
+      <View style={[styles.header, { backgroundColor: theme.backgroundPrimary }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backContainer}>
           <Image
             source={require('../../assets/backArrowIcon.png')}
@@ -547,7 +551,7 @@ export default function Nutrition() {
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.stepsContainer}>
-          <Text style={styles.title}>You consumed <Text style={styles.highlight}>{totalCalories}</Text> calories today</Text>
+          <Text style={[styles.title, { color: theme.textPrimary }]}>You consumed <Text style={styles.highlight}>{totalCalories}</Text> calories today</Text>
         </View>
 
         <View style={styles.progressContainer}>
@@ -606,11 +610,11 @@ export default function Nutrition() {
               <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: "60%"}}>
                 <View style={{flexDirection: 'row'}}>
                   <View style={{height: 20, width: 20, backgroundColor: '#66D3C8', borderRadius: 6, marginRight: 10}} />
-                  <Text style={{fontSize: 17}}>Fat</Text>
+                  <Text style={{fontSize: 17, color: theme.textPrimary }}>Fat</Text>
                 </View>
-                <Text style={{fontSize: 17}}>{totalFat}g</Text>
+                <Text style={{fontSize: 17, color: theme.textPrimary}}>{totalFat}g</Text>
               </View>
-              <Text style={{fontSize: 17, fontWeight: 'bold'}}>{Math.round(nutritionData[0].percentage * 100)}%</Text>
+              <Text style={{fontSize: 17, fontWeight: 'bold', color: theme.textPrimary}}>{Math.round(nutritionData[0].percentage * 100)}%</Text>
             </View>
           </View>
           
@@ -619,11 +623,11 @@ export default function Nutrition() {
               <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: "60%"}}>
                 <View style={{flexDirection: 'row'}}>
                   <View style={{height: 20, width: 20, backgroundColor: '#9D6DEB', borderRadius: 6, marginRight: 10}} />
-                  <Text style={{fontSize: 17}}>Carbs</Text>
+                  <Text style={{fontSize: 17, color: theme.textPrimary}}>Carbs</Text>
                 </View>
-                <Text style={{fontSize: 17}}>{totalCarbs}g</Text>
+                <Text style={{fontSize: 17, color: theme.textPrimary}}>{totalCarbs}g</Text>
               </View>
-              <Text style={{fontSize: 17, fontWeight: 'bold'}}>{Math.round(nutritionData[1].percentage * 100)}%</Text>
+              <Text style={{fontSize: 17, fontWeight: 'bold', color: theme.textPrimary}}>{Math.round(nutritionData[1].percentage * 100)}%</Text>
             </View>
           </View>
 
@@ -632,11 +636,11 @@ export default function Nutrition() {
               <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: "60%"}}>
                 <View style={{flexDirection: 'row'}}>
                   <View style={{height: 20, width: 20, backgroundColor: 'orange', borderRadius: 6, marginRight: 10}} />
-                  <Text style={{fontSize: 17}}>Protein</Text>
+                  <Text style={{fontSize: 17, color: theme.textPrimary}}>Protein</Text>
                 </View>
-                <Text style={{fontSize: 17}}>{totalProtein}g</Text>
+                <Text style={{fontSize: 17, color: theme.textPrimary}}>{totalProtein}g</Text>
               </View>
-              <Text style={{fontSize: 17, fontWeight: 'bold'}}>{Math.round(nutritionData[2].percentage * 100)}%</Text>
+              <Text style={{fontSize: 17, fontWeight: 'bold', color: theme.textPrimary}}>{Math.round(nutritionData[2].percentage * 100)}%</Text>
             </View>
           </View>
         </View>
@@ -654,6 +658,7 @@ export default function Nutrition() {
                 <Animated.View key={mealType} 
                   style={[
                     styles.mealCard,
+                    { backgroundColor: theme.backgroundSecondary },
                     {
                         transform: [{ translateY: cardAnimations[mealType as MealType] }],
                     },
@@ -677,28 +682,28 @@ export default function Nutrition() {
                         { cancelable: true } 
                       )}
                   >
-                    <Text style={styles.deleteCardText}>X</Text>
+                    <Text style={[styles.deleteCardText, { color: theme.textSecondary }]}>X</Text>
                   </Pressable>
-                    <Text style={styles.mealCardTitle}>{mealType}</Text>
-                  <View style={styles.macroSummaryContainer}>
+                    <Text style={[styles.mealCardTitle, { color: theme.textPrimary }]}>{mealType}</Text>
+                  <View style={[styles.macroSummaryContainer, { backgroundColor: darkMode ? '#575757' : '#f9f9f9' }]}>
                     <View style={styles.macroRow}>
                       <View style={styles.macroItem}>
                         <View style={[styles.macroColorBox, { backgroundColor: 'red' }]} />
-                        <Text style={styles.macroText}>Calories: {totalCalories} cal</Text>
+                        <Text style={[styles.macroText, { color: theme.textPrimary }]}>Calories: {totalCalories} cal</Text>
                       </View>
                       <View style={styles.macroItem}>
                         <View style={[styles.macroColorBox, styles.proteinColor]} />
-                        <Text style={styles.macroText}>Protein: {totalProtein}g</Text>
+                        <Text style={[styles.macroText, { color: theme.textPrimary }]}>Protein: {totalProtein}g</Text>
                       </View>
                     </View>
                     <View style={styles.macroRow}>
                       <View style={styles.macroItem}>
                         <View style={[styles.macroColorBox, styles.carbsColor]} />
-                        <Text style={styles.macroText}>Carbs: {totalCarbs}g</Text>
+                        <Text style={[styles.macroText, { color: theme.textPrimary }]}>Carbs: {totalCarbs}g</Text>
                       </View>
                       <View style={styles.macroItem}>
                         <View style={[styles.macroColorBox, styles.fatColor]} />
-                        <Text style={styles.macroText}>Fat: {totalFat}g</Text>
+                        <Text style={[styles.macroText, { color: theme.textPrimary }]}>Fat: {totalFat}g</Text>
                       </View>
                     </View>
                   </View>
@@ -727,19 +732,19 @@ export default function Nutrition() {
                               <TouchableOpacity onPress={() => handleDeleteItem(mealType as MealType, food.name)}>
                                 <Image source={require('../../assets/cross-Icon.png')} style={styles.crossIcon} /> 
                               </TouchableOpacity>
-                              <Text style={styles.foodCardName}>{food.name}</Text>
+                              <Text style={[styles.foodCardName, { color: theme.textPrimary }]}>{food.name}</Text>
                             </View>
-                            <Text style={styles.foodQuantity}>{food.quantity * food.portion} grams</Text>
+                            <Text style={[styles.foodQuantity, { color: theme.textPrimary }]}>{food.quantity * food.portion} grams</Text>
                           </View>
                           <View style={{ flexDirection: 'column', alignItems: 'center' }}>
-                            <Text style={styles.foodCalories}>
+                            <Text style={[styles.foodCalories, { color: theme.textPrimary }]}>
                               {String(food.calories).padStart(3, '0')} <Text style={{ fontSize: 15, color: 'gray' }}>Cal</Text>
                             </Text>
                             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                               <TouchableOpacity onPress={() => updateFoodPortion(mealType as MealType, food.name, false)} style={{justifyContent: 'center', alignItems: 'center', height: 20, width: 20}} disabled={food.portion === 1}>
                                 <Image source={require('../../assets/minus-Icon.png')} style={{height: 16, width: 16, tintColor: food.portion === 1 ? '#d9d9d9' : '#a9a4ff'}} />                              
                               </TouchableOpacity>
-                              <Text style={{ fontSize: 14, marginVertical: 7, marginHorizontal: 7 }}>{food.portion}</Text>
+                              <Text style={{ fontSize: 14, marginVertical: 7, marginHorizontal: 7, color: theme.textSecondary }}>{food.portion}</Text>
                               <TouchableOpacity onPress={() => updateFoodPortion(mealType as MealType, food.name, true)} style={{justifyContent: 'center', alignItems: 'center', height: 20, width: 20}}>
                                 <Image source={require('../../assets/plus-Icon.png')} style={{height: 16, width: 16, tintColor: '#a9a4ff'}} />
                               </TouchableOpacity>
@@ -764,21 +769,21 @@ export default function Nutrition() {
 					style={{height: height, width: width}}
 				>
           <View style={styles.modalOverlay}>
-            <View style={styles.modalContainer}>
+            <View style={[styles.modalContainer, { backgroundColor: theme.backgroundSecondary }]}>
               <View style={styles.modalHeader}>
                 <Image source={require('../../assets/plateIcon.png')} style={{height: RFValue(60), width: RFValue(55)}} />
-                <Text style={styles.modalTitle}>Choose Food</Text>
-                <Text style={styles.modalSubtitle}>Select your meal and your foods that you consume today</Text>
+                <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>Choose Food</Text>
+                <Text style={[styles.modalSubtitle, { color: theme.textSecondary }]}>Select your meal and your foods that you consume today</Text>
               </View>
 
               <View style={styles.mealTypeCheckboxes}>
                 {mealTypes.map((meal) => (
-                  <TouchableOpacity
+                  <Pressable
                     key={meal}
                     style={styles.mealCheckboxContainerVertical} 
                     onPress={() => handleMealTypeSelect(meal)}
                   >
-                    <View style={styles.checkbox}>
+                    <View style={[styles.checkbox, { borderColor: darkMode ? '#575757' : '#ccc', backgroundColor: selectedMeal === meal ? theme.backgroundBadge : theme.backgroundSecondary }]}>
                       {selectedMeal === meal && (
                         <Image
                           source={require('../../assets/check.png')}
@@ -787,14 +792,14 @@ export default function Nutrition() {
                         />
                       )}
                     </View>
-                    <Text style={styles.mealCheckboxText}>{meal}</Text>
-                  </TouchableOpacity>
+                    <Text style={[styles.mealCheckboxText, { color: theme.textSecondary }]}>{meal}</Text>
+                  </Pressable>
                 ))}
               </View>
 
               <TextInput 
                 placeholder='Search' 
-                style={styles.inputContainer} 
+                style={[styles.inputContainer, { borderColor: theme.borderPrimary, backgroundColor: theme.backgroundSecondary, color: theme.textPrimary }]}
                 value={searchQuery}
                 onChangeText={setSearchQuery}
               />
@@ -804,7 +809,7 @@ export default function Nutrition() {
                   {isLoading ? (
                     <ActivityIndicator size="large" color="#7A5FFF" />
                   ) : (
-                    <Text style={styles.noResultsText}>No record found for "{searchQuery}".</Text>
+                    <Text style={[styles.noResultsText, { color: theme.textSecondary }]}>No record found for "{searchQuery}".</Text>
                   )}
                 </View>
               ) : (
@@ -829,7 +834,7 @@ export default function Nutrition() {
                 setSelectedMeal('');
                 setIsLoading(false);
               }}>
-                <Text style={{fontSize: RFValue(20), marginTop: -5}}>✕</Text>
+                <Text style={{fontSize: RFValue(20), marginTop: -5, color: theme.textPrimary}}>✕</Text>
               </TouchableOpacity>
             </View>
           </View>

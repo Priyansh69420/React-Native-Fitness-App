@@ -13,6 +13,7 @@ import { useNavigation } from '@react-navigation/native';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { RFPercentage, RFValue } from 'react-native-responsive-fontsize';
 import { SettingStackParamList } from '../../navigations/SettingStackParamList';
+import { useTheme } from '../../contexts/ThemeContext';
 
 type NavigationProp = DrawerNavigationProp<SettingStackParamList, 'AboutUs'>;
 
@@ -20,21 +21,20 @@ const { width, height } = Dimensions.get('window');
 
 export default function AboutUs() {
   const navigation = useNavigation<NavigationProp>();
-
-  
+  const theme = useTheme();
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.backgroundPrimary }]}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButtonContainer} onPress={() => navigation.goBack()}>
           <Image
             source={require('../../assets/backArrowIcon.png')}
             style={styles.backIcon}
           />
-          <Text style={styles.backButton}>Back</Text>
+          <Text style={[styles.backButton, { color: theme.textButtonTertiary }]}>Back</Text>
         </TouchableOpacity>
         
-        <View style={styles.logoContainer}>
+        <View style={[styles.logoContainer, { backgroundColor: theme.backgroundQuaternary }]}>
           <Image
             source={require('../../assets/logo.png')}
             style={styles.logo}
@@ -42,15 +42,15 @@ export default function AboutUs() {
         </View>
       </View>
 
-      <Text style={styles.missionStatement}>
+      <Text style={[styles.missionStatement, { color: theme.textAccent }]}>
         "Empowering Your Fitness Journey"
       </Text>
 
-      <View style={styles.titleContainer}>
-        <Text style={styles.title}>About Us</Text>
+      <View style={[styles.titleContainer, { borderBottomColor: theme.borderSecondary }]}>
+        <Text style={[styles.title, { color: theme.textPrimary }]}>About Us</Text>
       </View>
 
-      <Text style={styles.description}>
+      <Text style={[styles.description, { color: theme.textSecondary }]}>
         Welcome to our Fitness App, your ultimate companion for a healthier lifestyle! We are a
         passionate team dedicated to helping you achieve your fitness goals through personalized
         workouts, nutrition plans, and community support. Whether you're a beginner or a seasoned
@@ -58,21 +58,21 @@ export default function AboutUs() {
       </Text>
 
       <View style={styles.teamContainer}>
-        <Text style={styles.teamTitle}>Meet Our Team</Text>
+        <Text style={[styles.teamTitle, { color: theme.textPrimary }]}>Meet Our Team</Text>
         <View style={styles.teamMembers}>
-          <View style={[styles.teamMember, {marginLeft: -10}]}>
+          <View style={[styles.teamMember, { marginLeft: -10 }]}>
             <Image
               source={require('../../assets/team_icon_1.jpg')} 
               style={styles.teamIcon}
             />
-            <Text style={styles.teamName}>Jane Doe</Text>
-            <Text style={styles.teamRole}>Founder & Fitness Coach</Text>
-            <View style={{flexDirection: 'row', marginTop: 5, justifyContent: 'space-evenly', marginLeft: 5}}>
+            <Text style={[styles.teamName, { color: theme.textPrimary }]}>Jane Doe</Text>
+            <Text style={[styles.teamRole, { color: theme.textSecondary }]}>Founder & Fitness Coach</Text>
+            <View style={{ flexDirection: 'row', marginTop: 5, justifyContent: 'space-evenly', marginLeft: 5 }}>
               <TouchableOpacity onPress={() => Linking.openURL('https://twitter.com/yourpage')}>
-                <Image source={require('../../assets/twitter.png')} style={styles.socialIcon} />
+                <Image source={require('../../assets/twitter.png')} style={[styles.socialIcon, { tintColor: theme.iconPrimary }]} />
               </TouchableOpacity>
               <TouchableOpacity onPress={() => Linking.openURL('https://instagram.com/yourpage')}>
-                <Image source={require('../../assets/instagram.png')} style={styles.socialIcon} />
+                <Image source={require('../../assets/instagram.png')} style={[styles.socialIcon, { tintColor: theme.iconPrimary }]} />
               </TouchableOpacity>
             </View>
           </View>
@@ -81,14 +81,14 @@ export default function AboutUs() {
               source={require('../../assets/team_icon_2.jpg')} 
               style={styles.teamIcon}
             />
-            <Text style={[styles.teamName, {marginLeft: 10}]}>John Smith</Text>
-            <Text style={[styles.teamRole, {marginLeft: 10}]}>Nutrition Expert</Text>
-            <View style={{flexDirection: 'row', marginTop: 5, justifyContent: 'space-evenly', marginLeft: 10}}>
+            <Text style={[styles.teamName, { color: theme.textPrimary, marginLeft: 10 }]}>John Smith</Text>
+            <Text style={[styles.teamRole, { color: theme.textSecondary, marginLeft: 10 }]}>Nutrition Expert</Text>
+            <View style={{ flexDirection: 'row', marginTop: 5, justifyContent: 'space-evenly', marginLeft: 10 }}>
               <TouchableOpacity onPress={() => Linking.openURL('https://twitter.com/yourpage')}>
-                <Image source={require('../../assets/twitter.png')} style={styles.socialIcon} />
+                <Image source={require('../../assets/twitter.png')} style={[styles.socialIcon, { tintColor: theme.iconPrimary }]} />
               </TouchableOpacity>
               <TouchableOpacity onPress={() => Linking.openURL('https://instagram.com/yourpage')}>
-                <Image source={require('../../assets/instagram.png')} style={styles.socialIcon} />
+                <Image source={require('../../assets/instagram.png')} style={[styles.socialIcon, { tintColor: theme.iconPrimary }]} />
               </TouchableOpacity>
             </View>
           </View>
@@ -101,7 +101,7 @@ export default function AboutUs() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    marginTop: height * 0.03,
+    paddingTop: height * 0.03,
   },
   header: {
     flexDirection: 'row',

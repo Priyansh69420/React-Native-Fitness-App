@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Image, ActivityIndicator, useColorScheme } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import { useOnboarding } from '../../contexts/OnboardingContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -16,6 +16,7 @@ export default function ReadyToGo() {
   const { onboardingData } = useOnboarding();
   const { setAuthUser } = useAuth();
   const isConnected = useNetInfo().isConnected;
+  const theme = useColorScheme();
 
   useEffect(() => {
     if(!isConnected) {
@@ -50,6 +51,7 @@ export default function ReadyToGo() {
         onboardingComplete: true,
         isPremium: false,
         planType: '',
+        darkMode: theme === 'dark' ? true : false,
       });
 
       await setAuthUser(user.uid);

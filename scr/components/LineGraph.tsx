@@ -1,8 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
-import React, { useCallback, useState } from 'react';
-import { View, StyleSheet, Dimensions, Text } from 'react-native';
+import React, { useState } from 'react';
+import { View, StyleSheet, Dimensions, Text, AppState } from 'react-native';
 import { LineChart } from 'react-native-gifted-charts';
+import { useTheme } from '../contexts/ThemeContext';
 
 const { width } = Dimensions.get('window');
 
@@ -13,39 +14,51 @@ interface DailyStepsPerformance {
 
 const LineGraphSVG = () => {
   const [weeklySteps, setWeeklySteps] = useState<DailyStepsPerformance[]>([]);
+  const theme = useTheme();
 
-  useFocusEffect(
-    useCallback(() => {
-      loadData();
-    }, [])
-  );
-
+  useFocusEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextAppState) => {
+      if (nextAppState === 'active') {
+        loadData(); 
+      }
+    });
+  
+    return () => {
+      subscription.remove();
+    };
+  });
+  
   const loadData = async () => {
     const today = new Date();
+    const todayStr = today.toDateString(); 
     const dayName = today.toLocaleDateString('en-US', { weekday: 'long' });
   
     try {
-      const storedWeeklySteps = await AsyncStorage.getItem('weeklyStepsPerformance');
       const lastClearedDate = await AsyncStorage.getItem('lastWeeklyReset');
   
-      const todayStr = today.toDateString();
-  
       if (dayName === 'Monday' && lastClearedDate !== todayStr) {
-        await AsyncStorage.removeItem('weeklyStepsPerformance');
+        const todayEntry: DailyStepsPerformance = {
+          day: dayName,
+          count: 0,
+        };
+  
+        await AsyncStorage.setItem('weeklyStepsPerformance', JSON.stringify([todayEntry]));
         await AsyncStorage.setItem('lastWeeklyReset', todayStr);
-        setWeeklySteps([]);
+        setWeeklySteps([todayEntry]);
         return;
       }
   
+      const storedWeeklySteps = await AsyncStorage.getItem('weeklyStepsPerformance');
       if (storedWeeklySteps) {
         const parsedData: DailyStepsPerformance[] = JSON.parse(storedWeeklySteps);
         setWeeklySteps(parsedData);
+      } else {
+        setWeeklySteps([]);
       }
     } catch (error) {
       console.error('Error loading weekly steps from AsyncStorage:', error);
     }
   };
-  
 
   const convertStepstoCalories = () => {
     return weeklySteps.map((item) => ({
@@ -60,9 +73,9 @@ const LineGraphSVG = () => {
   const hasValidData = data.length > 1 && data.some(item => item.value > 0);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, {backgroundColor: theme.backgroundSecondary}]}>
       <View style={styles.chartContainer}>
-        <Text style={styles.yAxisLabel}>Calories</Text>
+        <Text style={[styles.yAxisLabel, {color: theme.textSecondary}]}>Calories Burned</Text>
         <View style={{ height: graphHeight, width: graphWidth }}>
           {hasValidData ? (
             <LineChart
@@ -85,11 +98,13 @@ const LineGraphSVG = () => {
               hideDataPoints
               curved
               curvature={0.1}
-              yAxisOffset={-11}
+              yAxisOffset={-5}
+              xAxisLabelTextStyle={{color: theme.textSecondary}}
+              yAxisTextStyle={{color: theme.textSecondary}}
             />
           ) : (
             <View style={styles.emptyGraphPlaceholder}>
-              <Text style={styles.noDataText}>Not enough data to show stats.</Text>
+              <Text style={[styles.noDataText, , {color: theme.textSecondary}]}>Not enough data to show stats.</Text>
             </View>
           )}
         </View>
@@ -109,7 +124,7 @@ const styles = StyleSheet.create({
   },
   yAxisLabel: {
     position: 'absolute',
-    left: -35, 
+    left: -55, 
     top: '50%',
     transform: [{ rotate: '-90deg' }], 
     fontSize: 14,

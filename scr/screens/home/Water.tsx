@@ -20,6 +20,7 @@ import { saveDailyProgress } from '../../utils/monthlyProgressUtils';
 import PerformanceContainer from '../../components/PerformanceContainer';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store/store';
+import { useTheme } from '../../contexts/ThemeContext';
 
 type NavigationProp = DrawerNavigationProp<HomeStackParamList, 'Water'>;
 
@@ -73,6 +74,7 @@ export default function Water() {
   const [worstPerformance, setWorstPerformance] = useState<{ day: string; count: number } | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const navigation = useNavigation<NavigationProp>();
+  const theme = useTheme();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -184,9 +186,9 @@ export default function Water() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.backgroundPrimary }]}>
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <ActivityIndicator size="large" color="#7A5FFF" />
+          <ActivityIndicator size="large" color={theme.backgroundButtonPrimary} />
         </View>
       </SafeAreaView>
     );
@@ -194,7 +196,7 @@ export default function Water() {
 
   return (
     <ScrollView>
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.backgroundPrimary }]}>
         <View style={styles.header}>
           <TouchableOpacity style={styles.backButtonContainer} onPress={() => navigation.goBack()}>
             <Image
@@ -205,7 +207,7 @@ export default function Water() {
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.title}>
+        <Text style={[styles.title, { color: theme.textPrimary }]}>
           You drank <Text style={styles.highlight}>{glassDrunk} glasses</Text> today
         </Text>
 
@@ -222,7 +224,7 @@ export default function Water() {
                     ? require('../../assets/filledGlass.png')
                     : require('../../assets/emptyGlass.png')
                 }
-                style={styles.glassIcon}
+                style={[styles.glassIcon, index >= glassDrunk && { tintColor: theme.iconPrimary }]}
               />
               {index >= glassDrunk && (
                 <Text style={styles.plusSign}>+</Text>
@@ -233,12 +235,12 @@ export default function Water() {
 
         <View style={styles.statsContainer}>
           <View style={styles.stat}>
-            <Text style={styles.statValue}>{glassDrunk * 250} ml</Text>
+            <Text style={[styles.statValue, { color: theme.textSecondary }]}>{glassDrunk * 250} ml</Text>
             <Text style={styles.statLabel}>Water Drank</Text>
           </View>
           <View style={styles.divider} />
           <View style={styles.stat}>
-            <Text style={styles.statValue}>{totalGlasses} glasses</Text>
+            <Text style={[styles.statValue, { color: theme.textSecondary }]}>{totalGlasses} glasses</Text>
             <Text style={styles.statLabel}>Daily goal</Text>
           </View>
         </View>
@@ -256,6 +258,7 @@ export default function Water() {
           bestPerformance={bestPerformance}
           worstPerformance={worstPerformance}
         />
+        <View style={{ backgroundColor: theme.backgroundPrimary, height: '100%' }} />
       </SafeAreaView>
     </ScrollView>
   );

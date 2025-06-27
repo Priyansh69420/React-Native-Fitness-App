@@ -38,6 +38,7 @@ export class User extends Realm.Object {
       calorieGoal: 'float',
       glassGoal: 'float',
       stepGoal: 'float',
+      darkMode: 'bool', // Added darkMode field
     },
     primaryKey: 'email',
   };
@@ -75,7 +76,17 @@ export class DailyProgress extends Realm.Object {
 
 const realmConfig = {
   schema: [User, NutritionInfo, Post, DailyProgress],
-  schemaVersion: 10, // Incremented from 9
+  schemaVersion: 11, // Incremented from 10
+  migration: (oldRealm: Realm, newRealm: Realm) => {
+    if (oldRealm.schemaVersion < 11) {
+      const oldUsers = oldRealm.objects('User');
+      const newUsers = newRealm.objects('User');
+
+      for (let i = 0; i < oldUsers.length; i++) {
+        newUsers[i].darkMode = false; // Set default darkMode to false
+      }
+    }
+  },
 };
 
 let realmInstance: Realm | null = null;
@@ -85,10 +96,7 @@ export const getRealmInstance = async (): Promise<Realm> => {
     return realmInstance;
   }
 
-  realmInstance = await Realm.open({
-    schema: [User, NutritionInfo, Post, DailyProgress],
-    schemaVersion: 10,
-  });
+  realmInstance = await Realm.open(realmConfig);
 
   return realmInstance;
 };
