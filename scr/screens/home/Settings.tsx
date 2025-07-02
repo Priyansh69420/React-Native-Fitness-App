@@ -319,7 +319,7 @@ export default function Settings() {
             />
             <View style={styles.modalButtons}>
               <TouchableOpacity
-                style={[styles.modalButton, styles.modalCancelButton, { borderColor: theme.borderAccent }]}
+                style={[styles.modalButton, styles.modalCancelButton, { borderColor: theme.borderAccent, backgroundColor: theme.backgroundSecondary}]}
                 onPress={handleCloseFeedbackModal}
               >
                 <Text style={[styles.modalButtonText, { color: theme.textButtonSecondary }]}>Close</Text>
@@ -377,7 +377,7 @@ export default function Settings() {
             </View>
             <View style={styles.modalButtons}>
               <TouchableOpacity
-                style={[styles.modalButton, styles.modalCancelButton, { borderColor: theme.borderAccent }]}
+                style={[styles.modalButton, styles.modalCancelButton, { borderColor: theme.borderAccent, backgroundColor: theme.backgroundSecondary }]}
                 onPress={handleCloseSupportModal}
               >
                 <Text style={[styles.modalButtonText, { color: theme.textButtonSecondary }]}>Close</Text>
@@ -480,7 +480,6 @@ const styles = StyleSheet.create({
         marginHorizontal: 10, 
     },
     modalCancelButton: {
-        backgroundColor: '#FFF',
         borderWidth: 1, 
         borderColor: '#7A5FFF',
     },

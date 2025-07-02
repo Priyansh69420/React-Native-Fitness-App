@@ -6183,6 +6183,7 @@ __metadata:
     react-native-ble-plx: ^3.5.0
     react-native-dev-menu: ^4.1.1
     react-native-element-dropdown: ^2.12.4
+    react-native-fbsdk-next: ^13.4.1
     react-native-fs: ^2.20.0
     react-native-gesture-handler: ~2.20.2
     react-native-gifted-charts: ^1.4.60
@@ -6199,6 +6200,7 @@ __metadata:
     react-native-screens: ~4.4.0
     react-native-sha256: ^1.4.10
     react-native-svg: 15.8.0
+    react-native-tracking-transparency: ^0.1.2
     react-native-vector-icons: ^10.2.0
     react-redux: ^9.2.0
     realm: ^12.14.2
@@ -9299,6 +9301,19 @@ __metadata:
   languageName: node
   linkType: hard
 
+"react-native-fbsdk-next@npm:^13.4.1":
+  version: 13.4.1
+  resolution: "react-native-fbsdk-next@npm:13.4.1"
+  peerDependencies:
+    expo: ">=47.0.0"
+    react-native: ">=0.63.3"
+  peerDependenciesMeta:
+    expo:
+      optional: true
+  checksum: e8f0f470009485c48e17279b1dfe8e6f94303de52394ce579fb888518a694b79f741a060d957b097534003abb07827e03955203b55101c333ba07bf8f5d307b1
+  languageName: node
+  linkType: hard
+
 "react-native-fs@npm:^2.20.0":
   version: 2.20.0
   resolution: "react-native-fs@npm:2.20.0"
@@ -9532,6 +9547,16 @@ __metadata:
   version: 1.0.5
   resolution: "react-native-swipe-gestures@npm:1.0.5"
   checksum: d637bc40baa50fa0ce3b6cf2b494efeceaea03cc3875cb7cf7d76922914a21d5e6b098d4a084fb291ce61bfbb0a241c03cff24b15bebf0cfae1c146f4ad10d92
+  languageName: node
+  linkType: hard
+
+"react-native-tracking-transparency@npm:^0.1.2":
+  version: 0.1.2
+  resolution: "react-native-tracking-transparency@npm:0.1.2"
+  peerDependencies:
+    react: "*"
+    react-native: "*"
+  checksum: 972706c14929c3c158cd47dc908ba1c448f482f64a9a1fb2087374b5fbc4124d54dd678de7094d6ad866a75415479e6a120d3cc7e39f338fee27ee214a4b902a
   languageName: node
   linkType: hard
 

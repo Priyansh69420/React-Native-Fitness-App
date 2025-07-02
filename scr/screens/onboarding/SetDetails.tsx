@@ -88,6 +88,7 @@ export default function SetDetails() {
       title="Please enter your height and weight."
       onContinue={handleContinuePress}
       nextScreen="FaceId"
+      backButton={false}
     >
       <View style={onboardingStyles.onboardingInputContainer}>
         <TextInput

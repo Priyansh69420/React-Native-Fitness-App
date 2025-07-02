@@ -15,6 +15,7 @@ interface OnboardingFormProps {
   children: React.ReactNode;
   onContinue: () => boolean;
   nextScreen: keyof RootStackParamList;
+  backButton: boolean;
 }
 
 export const OnboardingForm: React.FC<OnboardingFormProps> = ({
@@ -22,6 +23,7 @@ export const OnboardingForm: React.FC<OnboardingFormProps> = ({
   children,
   onContinue,
   nextScreen,
+  backButton,
 }) => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
@@ -41,12 +43,14 @@ export const OnboardingForm: React.FC<OnboardingFormProps> = ({
     >
       <SafeAreaView style={onboardingStyles.onboardingSafeArea}>
         <View style={onboardingStyles.onboardingContainer}>
-          <TouchableOpacity
+          {!backButton ? (
+            <TouchableOpacity
             style={onboardingStyles.onboardingBackButton}
             onPress={() => navigation.goBack()}
           >
             <Image source={backIcon} style={onboardingStyles.onboardingBackIcon} />
           </TouchableOpacity>
+          ) : null}
 
           <View style={onboardingStyles.onboardingCenteredContent}>
             <Image source={logo} style={onboardingStyles.onboardingAppLogo} resizeMode="contain" />

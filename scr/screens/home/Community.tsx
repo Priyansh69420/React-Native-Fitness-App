@@ -947,8 +947,9 @@ const Community = () => {
           <View style={[styles.modalView, { backgroundColor: theme.backgroundSecondary }]}>
             <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>Create New Post</Text>
             <TextInput
-              style={[styles.modalInput, { borderColor: theme.borderPrimary}]}
+              style={[styles.modalInput, { borderColor: theme.borderPrimary, color: theme.textPrimary}]}
               placeholder="What's on your mind?"
+              placeholderTextColor={theme.textPlaceholder}
               multiline
               value={newPostContent}
               onChangeText={setNewPostContent}

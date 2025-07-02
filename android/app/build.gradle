@@ -93,6 +93,10 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0"
+         manifestPlaceholders = [
+            facebookAppId: "501511446351352",
+            facebookClientToken: "16a0ca38182d964913beda6e46883e03"
+        ]
     }
     signingConfigs {
         debug {

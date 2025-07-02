@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">FitTrack</string>
+    <string name="facebook_app_id">501511446351352</string>
+    <string name="facebook_client_token">16a0ca38182d964913beda6e46883e03</string>
 </resources>

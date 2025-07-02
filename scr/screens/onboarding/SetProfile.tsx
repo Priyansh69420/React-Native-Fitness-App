@@ -1,5 +1,5 @@
 import { View, Text, Dimensions, StyleSheet, SafeAreaView, TouchableOpacity, Image, Modal, Button, Platform, ActivityIndicator } from 'react-native';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { RootStackParamList } from '../../navigations/RootStackParamList';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -32,7 +32,13 @@ export default function SetProfile() {
   const [buttonLoading, setButtonLoading] = useState<boolean>(false);
   const [imageLoading, setImageLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
-  const {updateOnboardingData} = useOnboarding();
+  const {updateOnboardingData, onboardingData} = useOnboarding();
+
+  useEffect(() => {
+    if (!customImg && typeof onboardingData.profilePicture === 'string') {
+      setCustomImg(onboardingData.profilePicture);
+    }
+  }, []);
 
   const handleAddCustomPhoto = async () => {
     try {
@@ -164,6 +170,7 @@ export default function SetProfile() {
   const cancelCustomImage = () => {
     setCustomImg(null);
     setModalVisible(false);
+    updateOnboardingData({profilePicture: null})
   }
 
   const handleContinuePress = async () => {
@@ -263,9 +270,9 @@ export default function SetProfile() {
                       /> 
                     )}
                     
-                    {customImg ? (
+                    {customImg || onboardingData.profilePicture ? (
                       <Image
-                        source={{ uri: String(customImg) }}
+                        source={{ uri: String(customImg || onboardingData.profilePicture) }}
                         style={styles.modalImagePreview}
                         resizeMode="cover"
                         onLoad={() => setImageLoading(false)} 

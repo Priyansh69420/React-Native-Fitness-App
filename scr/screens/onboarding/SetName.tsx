@@ -2,11 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { TextInput, View, Text } from 'react-native';
 import { useOnboarding } from '../../contexts/OnboardingContext';
 import { OnboardingForm, onboardingStyles } from '../../components/OnboardingForm';
+import { auth } from '../../../firebaseConfig';
 
 export default function SetNameScreen() {
   const [firstName, setFirstName] = useState<string>('');
   const [lastName, setLastName] = useState<string>('');
   const [firstNameError, setFirstNameError] = useState<string>('');
+  const user = auth.currentUser;
 
   const { updateOnboardingData, onboardingData } = useOnboarding();
 
@@ -40,6 +42,7 @@ export default function SetNameScreen() {
       title="What’s your name?"
       onContinue={handleContinuePress}
       nextScreen="SetDetails"
+      backButton={user?.emailVerified || false}
     >
       <View style={onboardingStyles.onboardingInputContainer}>
         <TextInput

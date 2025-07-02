@@ -1,9 +1,11 @@
-import { View, Text, Dimensions, StyleSheet, SafeAreaView, TextInput, TouchableOpacity, Image, ActivityIndicator, Alert, useColorScheme } from 'react-native';
+import { View, Text, Dimensions, StyleSheet, SafeAreaView, TextInput, TouchableOpacity, Image, ActivityIndicator, Alert, useColorScheme, Platform } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import { useNavigation } from "@react-navigation/native";
 import { RootStackParamList } from "../../navigations/RootStackParamList";
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { GoogleAuthProvider, signInWithCredential, signInWithEmailAndPassword } from 'firebase/auth';
+import { FacebookAuthProvider, GoogleAuthProvider, signInWithCredential, signInWithEmailAndPassword } from 'firebase/auth';
+import { AccessToken, LoginManager, Settings } from 'react-native-fbsdk-next';
+import { getTrackingStatus, requestTrackingPermission } from 'react-native-tracking-transparency';
 import { auth, firestore } from '../../../firebaseConfig';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -19,6 +21,7 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList, "GettingStar
 
 const logo = require('../../assets/logo.png');
 const googleLogo = require('../../assets/google.png');
+const facebookLogo = require('../../assets/facebook.png');
 const lockLogo = require('../../assets/padlock.png');
 const userLogo = require('../../assets/user.png');
 const backIcon = require('../../assets/backIcon.png');
@@ -41,6 +44,21 @@ export default function LoginScreen() {
   const isConnected = useNetInfo().isConnected;
   const { resetOnboardingData, onboardingData } = useOnboarding();
   const theme = useColorScheme();
+
+  const requestTracking = async () => {
+    try {
+      const status = await getTrackingStatus();
+  
+      if (status === 'not-determined') {
+        const newStatus = await requestTrackingPermission();
+        console.log('Tracking status granted:', newStatus);
+      } else {
+        console.log('Tracking status:', status);
+      }
+    } catch (err) {
+      console.log('Tracking request failed:', err);
+    }
+  };  
 
   useEffect(() => {
     setError('')
@@ -153,6 +171,65 @@ export default function LoginScreen() {
     }
   };
 
+  const handleFacebookSignIn = async () => {
+    setLoading(true);
+    try {
+      // 🧠 ASK FOR TRACKING PERMISSION ON iOS
+      if (Platform.OS === 'ios') {
+        await requestTracking();
+      }
+  
+      const result = await LoginManager.logInWithPermissions(['public_profile', 'email']);
+      if (result.isCancelled) {
+        throw 'User cancelled the login process';
+      }
+  
+      const data = await AccessToken.getCurrentAccessToken();
+      if (!data) {
+        throw 'Something went wrong obtaining access token';
+      }
+  
+      const facebookCredential = FacebookAuthProvider.credential(data.accessToken);
+      const creds = await signInWithCredential(auth, facebookCredential);
+      const user = creds.user;
+  
+      const userDocRef = doc(firestore, 'users', user.uid);
+      const userDoc = await getDoc(userDocRef);
+  
+      if (!userDoc.exists()) {
+        await setDoc(userDocRef, {
+          email: user.email ?? 'user@gmail.com',
+          name: user.displayName ?? 'User',
+          profilePicture: user.photoURL ?? '2',
+          goals: ['Weight Loss'],
+          interests: ['Fitness'],
+          gender: 'Male',
+          calories: 0,
+          faceId: false,
+          userHeight: 0,
+          userWeight: 0,
+          onboardingComplete: true,
+          isPremium: false,
+          planType: '',
+          calorieGoal: 2000,
+          glassGoal: 8,
+          stepGoal: 10000,
+          darkMode: theme === 'dark' ? true : false,
+        });
+      }
+  
+      await setAuthUser(user.uid);
+      await resetOnboardingData();
+    } catch (error: any) {
+      console.error('Facebook Sign-In Error:', error);
+      Alert.alert('Facebook Sign-In Error', error?.message || 'Something went wrong.');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAwareScrollView
@@ -220,6 +297,10 @@ export default function LoginScreen() {
           <View style={styles.socialIconsContainer}>
             <TouchableOpacity style={styles.socialButton} onPress={handleGoogleSignIn} disabled={loading}>
               <Image source={googleLogo} style={styles.socialIconImage} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.socialButton} onPress={handleFacebookSignIn} disabled={loading}>
+              <Image source={facebookLogo} style={styles.socialIconImage} />
             </TouchableOpacity>
           </View>
 
@@ -317,6 +398,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
+    marginHorizontal: 10
   },
   socialIconImage: {
     width: width * 0.055,
