@@ -1,7 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useFocusEffect } from '@react-navigation/native';
-import React, { useState } from 'react';
-import { View, StyleSheet, Dimensions, Text, AppState } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, StyleSheet, Dimensions, Text } from 'react-native';
 import { LineChart } from 'react-native-gifted-charts';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -16,17 +15,9 @@ const LineGraphSVG = () => {
   const [weeklySteps, setWeeklySteps] = useState<DailyStepsPerformance[]>([]);
   const theme = useTheme();
 
-  useFocusEffect(() => {
-    const subscription = AppState.addEventListener('change', (nextAppState) => {
-      if (nextAppState === 'active') {
-        loadData(); 
-      }
-    });
-  
-    return () => {
-      subscription.remove();
-    };
-  });
+  useEffect(() => {
+    loadData();
+  }, []);
   
   const loadData = async () => {
     const today = new Date();
@@ -98,7 +89,7 @@ const LineGraphSVG = () => {
               hideDataPoints
               curved
               curvature={0.1}
-              yAxisOffset={-5}
+              yAxisOffset={-25}
               xAxisLabelTextStyle={{color: theme.textSecondary}}
               yAxisTextStyle={{color: theme.textSecondary}}
             />

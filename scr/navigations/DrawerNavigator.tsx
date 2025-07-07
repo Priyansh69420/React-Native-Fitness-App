@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
   },
   activeItem: {
     backgroundColor: '#f0f0f0',
-    borderRadius: 5,
+    borderRadius: 50,
   },
   activeLabel: {
     fontWeight: 'bold',

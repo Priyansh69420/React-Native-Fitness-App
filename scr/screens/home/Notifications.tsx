@@ -24,7 +24,7 @@ const { width, height } = Dimensions.get('window');
 const scaleFactor = 1.1;
 
 const NotificationsScreen = () => {
-  const { notifications } = useNotifications();
+  const { notifications, addNotification } = useNotifications();
   const [isPushEnabled, setIsPushEnabled] = useState(true);
   const navigation = useNavigation<NavigationProp>();
   const theme = useTheme();
@@ -42,23 +42,34 @@ const NotificationsScreen = () => {
     loadPushSetting();
   }, []);
 
+  useEffect(() => {
+    const seen = new Set();
+    const filtered = notifications.filter(item => {
+      const uniqueKey = `${item.type}-${item.timestamp}`;
+      
+      if(seen.has(uniqueKey)) return false
+    });
+  }, [])
+
   let offset = 1;
 
   const renderNotificationItem = ({ item }: { item: NotificationItem }) => {
     const time = item.timestamp 
       ? `${Math.floor((Date.now() - item.timestamp + (1000000 + (offset++ * 100000))) / 60000)} minutes ago` 
       : 'Just now';
-    let title = 'Someone';
-    if (item.type === 'new_post' || item.type === 'comment' || item.type === 'like') {
-      title = item.title ?? 'Someone';
-    }
+  
+    const isKnownType = ['new_post', 'comment', 'like'].includes(item.type);
+    const title = isKnownType ? (item.title ?? 'Someone') : (item.title ?? '');
     const body = item.body ?? (item.type === 'comment' ? 'New comment' : '');
-
+  
     return (
       <View style={[styles.notificationItem, { borderBottomColor: theme.borderPrimary }]}>
         <View style={styles.notificationTextContainer}>
           <Text style={[styles.notificationTitle, { color: theme.textPrimary }]}>
-            {title} <Text style={[styles.notificationBody, { color: theme.textSecondary }]}>{body}</Text>
+            {!!title && title + ' '}
+            <Text style={[styles.notificationBody, { color: theme.textSecondary }]}>
+              {body}
+            </Text>
           </Text>
         </View>
         <Text style={[styles.notificationTime, { color: theme.textPlaceholder }]}>{time}</Text>
@@ -66,6 +77,7 @@ const NotificationsScreen = () => {
       </View>
     );
   };
+  
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.backgroundPrimary }]}>

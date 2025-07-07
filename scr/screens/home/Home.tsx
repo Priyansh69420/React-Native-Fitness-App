@@ -11,7 +11,7 @@ import {
   ScrollView,
 } from 'react-native';
 import NetInfo from '@react-native-community/netinfo';
-import { auth } from '../../../firebaseConfig';
+import { auth, firestore } from '../../../firebaseConfig';
 import { HomeStackParamList } from '../../navigations/HomeStackParamList';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { useNavigation } from '@react-navigation/native';
@@ -19,11 +19,13 @@ import { RFPercentage, RFValue } from 'react-native-responsive-fontsize';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../store/store';
-import { fetchUserData, loadUserDataFromRealm } from '../../store/slices/userSlice';
+import { fetchUserData, loadUserDataFromRealm, setCalories, updateUser } from '../../store/slices/userSlice';
 import { loadData } from './Water';
 import { fetchSteps } from '../../store/slices/footstepSlice';
 import { useRealm } from '../../../realmConfig';
 import { useTheme } from '../../contexts/ThemeContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { doc, updateDoc } from 'firebase/firestore';
 
 type NavigationProp = DrawerNavigationProp<HomeStackParamList, 'Home'>;
 
@@ -62,6 +64,33 @@ export default function Home() {
       }
     }
   }, [rehydrated, dispatch, userData, isOffline, realm]);
+
+  useEffect(() => {
+    const resetCaloriesIfNeeded = async () => {
+      const userId = auth.currentUser?.uid;
+      if (!userId) return;
+  
+      const today = new Date().toISOString().split('T')[0];
+      const lastResetDateKey = `lastCalorieResetDate_${userId}`;
+  
+      try {
+        const lastResetDate = await AsyncStorage.getItem(lastResetDateKey);
+  
+        if (lastResetDate !== today) {
+          await updateDoc(doc(firestore, 'users', userId), {
+            calories: 0,
+          });
+  
+          dispatch(updateUser({ calories: 0 }));
+          await AsyncStorage.setItem(lastResetDateKey, today);
+        }
+      } catch (error) {
+        console.error('Error resetting daily calories:', error);
+      }
+    };
+  
+    resetCaloriesIfNeeded();
+  }, []);
 
   useEffect(() => {
     loadData(setGlassDrunk);
@@ -208,9 +237,9 @@ export default function Home() {
                     </TouchableOpacity>
                   </View>
                   <Text style={[styles.sectionProgress, { color: theme.textPlaceholder }]}>
-                    {userData?.calories ?? 0} cal / {userData?.calorieGoal ?? 2000} cal
+                    {userData?.calories ?? 0} kcal / {userData?.calorieGoal ?? 2000} kcal
                   </Text>
-                  <View style={[styles.progressBarContainer, { backgroundColor: theme.backgroundBadge }]}>
+                  <View style={[styles.progressBarContainer]}>
                     <LinearGradient
                       colors={['#66D3C8', '#66D3C8', '#9D6DEB', '#9D6DEB', '#FFA500', '#FFA500']}
                       locations={[0, 0.33, 0.33, 0.66, 0.66, 1]}

@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Image, Dimensions, ScrollView, Modal, FlatList, KeyboardAvoidingView, Platform, ActivityIndicator, Animated, Easing, Alert, Pressable, Keyboard, Button } from 'react-native'
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Image, Dimensions, ScrollView, Modal, FlatList, ActivityIndicator, Animated, Easing, Alert, Pressable, Keyboard, Button } from 'react-native'
 import React, { useCallback, useEffect, useState } from 'react'
 import { RFPercentage, RFValue } from 'react-native-responsive-fontsize';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
@@ -148,6 +148,10 @@ export default function Nutrition() {
       keyboardDidClose.remove();
     }
   }, []);
+
+  useEffect(() => {
+    const today = new Date().toISOString().split('T')[0];
+  }, [])
   
   const fetchNutritionInfo = async () => {
     try {
@@ -229,6 +233,7 @@ export default function Nutrition() {
     });
   
     clearSelections();
+    setSearchQuery('');
   };
   
   const updateConsumedFoods = (
@@ -689,7 +694,7 @@ export default function Nutrition() {
                     <View style={styles.macroRow}>
                       <View style={styles.macroItem}>
                         <View style={[styles.macroColorBox, { backgroundColor: 'red' }]} />
-                        <Text style={[styles.macroText, { color: theme.textPrimary }]}>Calories: {totalCalories} cal</Text>
+                        <Text style={[styles.macroText, { color: theme.textPrimary }]}>Calories: {totalCalories} kcal</Text>
                       </View>
                       <View style={styles.macroItem}>
                         <View style={[styles.macroColorBox, styles.proteinColor]} />

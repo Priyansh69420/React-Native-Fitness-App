@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, TextInput, Alert, SafeAreaView, Image, StyleSheet, Dimensions, ActivityIndicator, Modal, Animated } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, FlatList, TouchableOpacity, TextInput, Alert, SafeAreaView, Image, StyleSheet, Dimensions, ActivityIndicator, Modal, Animated, Easing } from 'react-native';
 import { collection, query, orderBy, onSnapshot, doc, updateDoc, arrayUnion, arrayRemove, addDoc, serverTimestamp, getDoc, where, deleteDoc, limit, startAfter, getDocs, startAt, DocumentSnapshot, QuerySnapshot } from 'firebase/firestore';
 import { auth, firestore } from '../../../firebaseConfig';
 import { useNavigation } from '@react-navigation/native';
@@ -76,6 +76,19 @@ export const getTimeAgo = (timestamp: any) => {
   }
 };
 
+const likeThrottleMap: Record<string, boolean> = {};
+
+const throttleLike = (postId: string, callback: () => void, delay: number = 1000) => {
+  if (likeThrottleMap[postId]) return;
+
+  likeThrottleMap[postId] = true;
+  callback();
+
+  setTimeout(() => {
+    likeThrottleMap[postId] = false;
+  }, delay);
+};
+
 const Community = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
@@ -103,6 +116,26 @@ const Community = () => {
   const isConnected = useNetInfo().isConnected;
   const realm = useRealm()
   const navigation = useNavigation<NavigationProp>();
+
+  const heartOpacity = useRef(new Animated.Value(0)).current;
+
+  const animateHeart = () => {
+    Animated.sequence([
+      Animated.timing(heartOpacity, {
+        toValue: 1,
+        duration: 200,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true,
+      }),
+      Animated.timing(heartOpacity, {
+        toValue: 0,
+        duration: 500,
+        easing: Easing.in(Easing.ease),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+  
 
     const loadOfflinePosts = async () => {
       try {
@@ -652,9 +685,10 @@ const Community = () => {
     const profilePic = userData?.profilePicture;
 
     const handleDoubleTap = (id: string) => {
-      handleLikePost(id);
-      setShowHeart(true);
-      setTimeout(() => setShowHeart(false), 500);
+      throttleLike(id, () => {
+        handleLikePost(id);
+        animateHeart();
+      });
     };
 
     return (
@@ -747,12 +781,12 @@ const Community = () => {
                     />
                     {showHeart && (
                       <Animated.View>
-                        <View style={styles.heartOverlay}>
+                        <Animated.View style={[styles.heartOverlay, { opacity: heartOpacity }]}>
                           <Image
                             source={require('../../assets/likedIcon.png')}
                             style={{ width: 50, height: 50, tintColor: theme.iconSecondary }}
                           />
-                        </View>
+                        </Animated.View>
                       </Animated.View>
                     )}
                   </View>
@@ -797,11 +831,10 @@ const Community = () => {
           <TouchableOpacity
             style={styles.actionButton}
             onPress={() => {
-              if (likingPostId !== item.id) {
+              throttleLike(item.id, () => {
                 setLikingPostId(item.id);
-                handleLikePost(item.id).finally(() => setLikingPostId(null)); 
-                setLikingPostId(null);
-              }
+                handleLikePost(item.id).finally(() => setLikingPostId(null));
+              });
             }}
             disabled={likingPostId === item.id}
           >

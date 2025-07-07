@@ -265,22 +265,60 @@ export default function Profile() {
       return;
     }
 
-    if(interests.length === 0 || goals.length === 0 || name.trim().length === 0 || (height.trim() === '0' || height.trim() === '') || (weight.trim() === '0' || weight.trim() === '') ) {
-      if(interests.length === 0) setInterestError('Select atleast one field from here');
-      if(goals.length === 0) setGoalError('Select atleast one field from here');
-      if(name.trim().length === 0) setDetailError(prev => ({
-        ...prev,
-        nameError: 'Name must be at least 2 characters long',
-      }));
-      if(height.trim() === '0' || height.trim() === '') setDetailError(prev => ({
-        ...prev,
-        heightError: 'Height is required.'
-      }))
-      if(weight.trim() === '0' || weight.trim() === '') setDetailError(prev => ({
-        ...prev,
-        weightError: 'Weight is required.'
-      }))
-
+    if (
+      interests.length === 0 ||
+      goals.length === 0 ||
+      name.trim().length < 2 ||
+      /\d/.test(name.trim()) ||
+      height.trim() === '0' || height.trim() === '' ||
+      weight.trim() === '0' || weight.trim() === '' ||
+      Number(height) <= 0 || Number(height) > 300 ||
+      Number(weight) <= 0 || Number(weight) > 300
+    ) {
+      if (interests.length === 0) {
+        setInterestError('Select at least one field from here');
+      }
+    
+      if (goals.length === 0) {
+        setGoalError('Select at least one field from here');
+      }
+    
+      if (name.trim().length < 2) {
+        setDetailError(prev => ({
+          ...prev,
+          nameError: 'Name must be at least 2 characters long',
+        }));
+      } else if (/\d/.test(name.trim())) {
+        setDetailError(prev => ({
+          ...prev,
+          nameError: 'Name should not contain numbers',
+        }));
+      }
+    
+      if (height.trim() === '' || height.trim() === '0') {
+        setDetailError(prev => ({
+          ...prev,
+          heightError: 'Height is required.',
+        }));
+      } else if (Number(height) <= 0 || Number(height) > 300) {
+        setDetailError(prev => ({
+          ...prev,
+          heightError: 'Height must be between 1 and 300',
+        }));
+      }
+    
+      if (weight.trim() === '' || weight.trim() === '0') {
+        setDetailError(prev => ({
+          ...prev,
+          weightError: 'Weight is required.',
+        }));
+      } else if (Number(weight) <= 0 || Number(weight) > 300) {
+        setDetailError(prev => ({
+          ...prev,
+          weightError: 'Weight must be between 1 and 300',
+        }));
+      }
+    
       return;
     }
 

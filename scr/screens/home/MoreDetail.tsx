@@ -18,7 +18,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 type NavigationProp = DrawerNavigationProp<HomeStackParamList, 'MoreDetail'>;
 
 interface DailyProgress {
-  date: string; // e.g., "2025-06-24"
+  date: string;
   steps: number;
   calories: number;
   water: number;
@@ -40,7 +40,6 @@ export default function MoreDetail() {
   const theme = useTheme();
   const darkMode = userData?.darkMode;
 
-  // Generate last 3 months for selector
   const availableMonths = Array.from({ length: 3 }, (_, i) => {
     const month = subMonths(new Date(), i);
     return {
@@ -153,7 +152,7 @@ export default function MoreDetail() {
 
   const totalSteps = monthlyData.reduce((sum, entry) => sum + entry.steps, 0);
   const totalCalories = monthlyData.reduce((sum, entry) => sum + entry.calories, 0);
-  const totalWater = monthlyData.reduce((sum, entry) => sum + entry.water, 0).toFixed(1);
+  const totalWater = monthlyData.reduce((sum, entry) => sum + entry.water, 0).toFixed(2);
 
   const formattedData = monthlyData.map((entry) => {
     const date = new Date(entry.date);
@@ -183,7 +182,7 @@ export default function MoreDetail() {
         {selectedMetric === 'water' && (
           <>
             <Ionicons name="water" size={20} color="#7A5FFF" style={styles.dailyEntryIcon} />
-            <Text style={[styles.dailyEntryValue, { color: theme.textSecondary }]}>{item.water.toFixed(1)} L</Text>
+            <Text style={[styles.dailyEntryValue, { color: theme.textSecondary }]}>{item.water.toFixed(2)} L</Text>
           </>
         )}
       </View>
@@ -198,6 +197,10 @@ export default function MoreDetail() {
       default: return '';
     }
   })();
+
+  function removeLeadingZeros(str: string) {
+    return str.replace(/^0+/, '');
+  }
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.backgroundPrimary }]}>
@@ -301,7 +304,8 @@ export default function MoreDetail() {
           ) : null}
 
           {formattedData.length > 0 ? (
-            <ScrollView
+            <View>
+              <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.trendGraphContent}
@@ -328,24 +332,31 @@ export default function MoreDetail() {
                     ((entry.water || 0) / waterGoalLiters) * 100,
                     100
                   );
-                  displayData = `${entry.displayDate}, ${entry.water.toFixed(1)} L / ${((userData?.glassGoal ?? 8) * 0.25).toFixed(1)} L`;
+                  displayData = `${entry.displayDate}, ${entry.water.toFixed(2)} L / ${((userData?.glassGoal ?? 8) * 0.25).toFixed(2)} L`;
                 }
 
                 return (
-                  <TouchableOpacity style={styles.trendPoint} key={entry.date} onPress={() => setSelectedInfo(displayData)}>
-                    <View
-                      style={[
-                        styles.trendBar,
-                        {
-                          height: barHeight,
-                          backgroundColor: '#7A5FFF',
-                        },
-                      ]}
-                    />
-                  </TouchableOpacity>
+                  <View>
+                    <TouchableOpacity style={styles.trendPoint} key={entry.date} onPress={() => setSelectedInfo(displayData)}>
+                      <View
+                        style={[
+                          styles.trendBar,
+                          {
+                            height: barHeight,
+                            backgroundColor: '#7A5FFF',
+                          },
+                        ]}
+                      />
+                    </TouchableOpacity>
+                    <View style={{flexDirection: 'row', justifyContent: 'center'}}>
+                      <Text style={{color: theme.textSecondary, textAlign: 'center'}}>{removeLeadingZeros(entry.displayDate.slice(entry.displayDate.length - 2, entry.displayDate.length))}</Text>
+                    </View>
+                  </View>
                 );
               })}
             </ScrollView>
+           
+            </View>
           ) : (
             <Text style={styles.noDataText}>No data available for this month.</Text>
           )}
@@ -530,7 +541,7 @@ const styles = StyleSheet.create({
     marginBottom: height * 0.015,
   },
   trendGraph: {
-    height: height * 0.15,
+    height: height * 0.165,
   },
   trendGraphContent: {
     flexDirection: 'row',
@@ -541,10 +552,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: 15,
     marginHorizontal: 2,
+    marginBottom: 10,
   },
   trendBar: {
     width: 8,
-    borderRadius: 4,
+    borderRadius: 10,
   },
   noDataText: {
     fontSize: RFValue(14, height),
@@ -595,7 +607,7 @@ const styles = StyleSheet.create({
   selectedInfoContainer: {
     paddingVertical: height * 0.01,
     paddingHorizontal: width * 0.03,
-    marginBottom: height * 0.01,
+    marginBottom: height * 0.03,
     backgroundColor: '#e1e1ff',
     borderRadius: 8,
     alignItems: 'center',
