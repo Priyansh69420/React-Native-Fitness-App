@@ -14,6 +14,7 @@ import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { RFPercentage, RFValue } from 'react-native-responsive-fontsize';
 import { SettingStackParamList } from '../../navigations/SettingStackParamList';
 import { useTheme } from '../../contexts/ThemeContext';
+import { TEXT } from '../../constants/text';
 
 type NavigationProp = DrawerNavigationProp<SettingStackParamList, 'AboutUs'>;
 
@@ -31,7 +32,7 @@ export default function AboutUs() {
             source={require('../../assets/backArrowIcon.png')}
             style={styles.backIcon}
           />
-          <Text style={[styles.backButton, { color: theme.textButtonTertiary }]}>Back</Text>
+          <Text style={[styles.backButton, { color: theme.textButtonTertiary }]}>{TEXT.aboutUs.back}</Text>
         </TouchableOpacity>
         
         <View style={[styles.logoContainer, { backgroundColor: theme.backgroundQuaternary }]}>
@@ -43,30 +44,27 @@ export default function AboutUs() {
       </View>
 
       <Text style={[styles.missionStatement, { color: theme.textAccent }]}>
-        "Empowering Your Fitness Journey"
+        {TEXT.aboutUs.missionStatement}
       </Text>
 
       <View style={[styles.titleContainer, { borderBottomColor: theme.borderSecondary }]}>
-        <Text style={[styles.title, { color: theme.textPrimary }]}>About Us</Text>
+        <Text style={[styles.title, { color: theme.textPrimary }]}>{TEXT.aboutUs.title}</Text>
       </View>
 
       <Text style={[styles.description, { color: theme.textSecondary }]}>
-        Welcome to our Fitness App, your ultimate companion for a healthier lifestyle! We are a
-        passionate team dedicated to helping you achieve your fitness goals through personalized
-        workouts, nutrition plans, and community support. Whether you're a beginner or a seasoned
-        athlete, our app is designed to empower you on your wellness journey.
+        {TEXT.aboutUs.description}
       </Text>
 
       <View style={styles.teamContainer}>
-        <Text style={[styles.teamTitle, { color: theme.textPrimary }]}>Meet Our Team</Text>
+        <Text style={[styles.teamTitle, { color: theme.textPrimary }]}>{TEXT.aboutUs.teamTitle}</Text>
         <View style={styles.teamMembers}>
           <View style={[styles.teamMember, { marginLeft: -10 }]}>
             <Image
               source={require('../../assets/team_icon_1.jpg')} 
               style={styles.teamIcon}
             />
-            <Text style={[styles.teamName, { color: theme.textPrimary }]}>Jane Doe</Text>
-            <Text style={[styles.teamRole, { color: theme.textSecondary }]}>Founder & Fitness Coach</Text>
+            <Text style={[styles.teamName, { color: theme.textPrimary }]}>{TEXT.aboutUs.teamMember1Name}</Text>
+            <Text style={[styles.teamRole, { color: theme.textSecondary }]}>{TEXT.aboutUs.teamMember1Role}</Text>
             <View style={{ flexDirection: 'row', marginTop: 5, justifyContent: 'space-evenly', marginLeft: 5 }}>
               <TouchableOpacity onPress={() => Linking.openURL('https://twitter.com/yourpage')}>
                 <Image source={require('../../assets/twitter.png')} style={[styles.socialIcon, { tintColor: theme.iconPrimary }]} />
@@ -81,8 +79,8 @@ export default function AboutUs() {
               source={require('../../assets/team_icon_2.jpg')} 
               style={styles.teamIcon}
             />
-            <Text style={[styles.teamName, { color: theme.textPrimary, marginLeft: 10 }]}>John Smith</Text>
-            <Text style={[styles.teamRole, { color: theme.textSecondary, marginLeft: 10 }]}>Nutrition Expert</Text>
+            <Text style={[styles.teamName, { color: theme.textPrimary, marginLeft: 10 }]}>{TEXT.aboutUs.teamMember2Name}</Text>
+            <Text style={[styles.teamRole, { color: theme.textSecondary, marginLeft: 10 }]}>{TEXT.aboutUs.teamMember2Role}</Text>
             <View style={{ flexDirection: 'row', marginTop: 5, justifyContent: 'space-evenly', marginLeft: 10 }}>
               <TouchableOpacity onPress={() => Linking.openURL('https://twitter.com/yourpage')}>
                 <Image source={require('../../assets/twitter.png')} style={[styles.socialIcon, { tintColor: theme.iconPrimary }]} />

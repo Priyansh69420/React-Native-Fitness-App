@@ -15,6 +15,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../../contexts/AuthContext'; 
 import { doc, updateDoc } from '@firebase/firestore';
 import { useTheme } from '../../contexts/ThemeContext';
+import { TEXT } from '../../constants/text';
 
 type NavigationProp = DrawerNavigationProp<SettingStackParamList, 'Settings'>;
 
@@ -233,19 +234,19 @@ export default function Settings() {
         />
       </TouchableOpacity>
 
-      <Text style={[styles.title, { color: theme.textPrimary }]}>Settings</Text>
+      <Text style={[styles.title, { color: theme.textPrimary }]}>{TEXT.settings.title}</Text>
 
       <View style={styles.settingView}>
         <TouchableOpacity style={styles.option} onPress={() => navigation.navigate('Profile')}>
-          <Text style={[styles.optionText, { color: theme.textPrimary }]}>Edit Profile</Text>
+          <Text style={[styles.optionText, { color: theme.textPrimary }]}>{TEXT.settings.editProfile}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.option} onPress={handleInviteFriend}>
-          <Text style={[styles.optionText, { color: theme.textPrimary }]}>Invite Friend</Text>
+          <Text style={[styles.optionText, { color: theme.textPrimary }]}>{TEXT.settings.inviteFriend}</Text>
         </TouchableOpacity>
 
         <View style={styles.option}>
-          <Text style={[styles.optionText, { color: theme.textPrimary }]}>Push Notification</Text>
+          <Text style={[styles.optionText, { color: theme.textPrimary }]}>{TEXT.settings.pushNotification}</Text>
           <Switch
             value={isPushEnabled}
             onValueChange={(value) => setIsPushEnabled(value)}
@@ -255,7 +256,7 @@ export default function Settings() {
         </View>
 
         <View style={styles.option}>
-          <Text style={[styles.optionText, { color: theme.textPrimary }]}>Enable Biometric</Text>
+          <Text style={[styles.optionText, { color: theme.textPrimary }]}>{TEXT.settings.enableBiometric}</Text>
           <Switch
             value={isBiometricEnabled}
             onValueChange={(value) => setIsBiometricEnabled(value)}
@@ -265,7 +266,7 @@ export default function Settings() {
         </View>
 
         <View style={styles.option}>
-          <Text style={[styles.optionText, { color: theme.textPrimary }]}>Dark Mode</Text>
+          <Text style={[styles.optionText, { color: theme.textPrimary }]}>{TEXT.settings.darkMode}</Text>
           <Switch
             value={darkTheme}
             onValueChange={(value) => setDarkTheme(value)}
@@ -275,27 +276,27 @@ export default function Settings() {
         </View>
 
         <TouchableOpacity style={styles.option} onPress={handleGiveFeedback}>
-          <Text style={[styles.optionText, { color: theme.textPrimary }]}>Give Feedback</Text>
+          <Text style={[styles.optionText, { color: theme.textPrimary }]}>{TEXT.settings.giveFeedback}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.option} onPress={handleHelpAndSupport}>
-          <Text style={[styles.optionText, { color: theme.textPrimary }]}>Help and Support</Text>
+          <Text style={[styles.optionText, { color: theme.textPrimary }]}>{TEXT.settings.helpAndSupport}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.option} onPress={() => navigation.navigate('AboutUs')}>
-          <Text style={[styles.optionText, { color: theme.textPrimary }]}>About Us</Text>
+          <Text style={[styles.optionText, { color: theme.textPrimary }]}>{TEXT.settings.aboutUs}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.option}
           onPress={() =>
-            Alert.alert('Confirm Logout', 'Are you sure you want to log out?', [
-              { text: 'Cancel', style: 'cancel' },
-              { text: 'Log Out', style: 'destructive', onPress: () => handleSignOut().catch(console.error) },
+            Alert.alert(TEXT.settings.confirmLogout, TEXT.settings.areYouSureLogout, [
+              { text: TEXT.settings.cancel, style: 'cancel' },
+              { text: TEXT.settings.logOut, style: 'destructive', onPress: () => handleSignOut().catch(console.error) },
             ])
           }
         >
-          <Text style={[styles.logoutButton, { color: theme.textError }]}>Log Out</Text>
+          <Text style={[styles.logoutButton, { color: theme.textError }]}>{TEXT.settings.logOut}</Text>
         </TouchableOpacity>
       </View>
 
@@ -307,10 +308,10 @@ export default function Settings() {
       >
         <View style={styles.centeredView}>
           <View style={[styles.modalView, { backgroundColor: theme.backgroundSecondary }]}>
-            <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>Give Feedback</Text>
+            <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>{TEXT.settings.feedbackTitle}</Text>
             <TextInput
               style={[styles.modalInput, { color: theme.textPrimary, borderColor: theme.borderSecondary }]}
-              placeholder="Enter your feedback here..."
+              placeholder={TEXT.settings.feedbackPlaceholder}
               placeholderTextColor={theme.textPlaceholder}
               multiline
               value={feedbackText}
@@ -322,7 +323,7 @@ export default function Settings() {
                 style={[styles.modalButton, styles.modalCancelButton, { borderColor: theme.borderAccent, backgroundColor: theme.backgroundSecondary}]}
                 onPress={handleCloseFeedbackModal}
               >
-                <Text style={[styles.modalButtonText, { color: theme.textButtonSecondary }]}>Close</Text>
+                <Text style={[styles.modalButtonText, { color: theme.textButtonSecondary }]}>{TEXT.settings.close}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[
@@ -334,7 +335,7 @@ export default function Settings() {
                 onPress={handleSendFeedback}
                 disabled={!feedbackText.trim()}
               >
-                <Text style={[styles.modalButtonText, { color: theme.textButtonPrimary }]}>Send</Text>
+                <Text style={[styles.modalButtonText, { color: theme.textButtonPrimary }]}>{TEXT.settings.send}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -349,29 +350,29 @@ export default function Settings() {
       >
         <View style={styles.centeredView}>
           <View style={[styles.modalView, { backgroundColor: theme.backgroundSecondary }]}>
-            <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>Contact Us</Text>
+            <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>{TEXT.settings.contactUs}</Text>
             <Text style={[styles.modalDescription, { color: theme.textSecondary }]}>
-              We are here to help and answer any question that you might have.
+              {TEXT.settings.supportDescription}
             </Text>
             <View style={styles.supportOptionsContainer}>
               <TouchableOpacity onPress={handleOpenMapLocation}>
                 <View style={styles.supportOption}>
-                  <Text style={[styles.icon, { color: theme.iconAccent }]}>📍</Text>
+                  <Text style={[styles.icon, { color: theme.iconAccent }]}>{TEXT.settings.locationIcon}</Text>
                   <Text style={[styles.supportDetail, { color: theme.textPrimary }]}>
-                    Park Avenue, Bangalore, 160010
+                    {TEXT.settings.location}
                   </Text>
                 </View>
               </TouchableOpacity>
               <TouchableOpacity onPress={handleOpenDialerWithNumber}>
                 <View style={styles.supportOption}>
-                  <Text style={[styles.icon, { color: theme.iconAccent }]}>📞</Text>
-                  <Text style={[styles.supportDetail, { color: theme.textPrimary }]}>+91-7887052000</Text>
+                  <Text style={[styles.icon, { color: theme.iconAccent }]}>{TEXT.settings.phoneIcon}</Text>
+                  <Text style={[styles.supportDetail, { color: theme.textPrimary }]}>{TEXT.settings.phone}</Text>
                 </View>
               </TouchableOpacity>
               <TouchableOpacity onPress={handleOpenGmail}>
                 <View style={styles.supportOption}>
-                  <Text style={[styles.icon, { color: theme.iconAccent }]}>✉️</Text>
-                  <Text style={[styles.supportDetail, { color: theme.textPrimary }]}>contactus@gmail.com</Text>
+                  <Text style={[styles.icon, { color: theme.iconAccent }]}>{TEXT.settings.emailIcon}</Text>
+                  <Text style={[styles.supportDetail, { color: theme.textPrimary }]}>{TEXT.settings.email}</Text>
                 </View>
               </TouchableOpacity>
             </View>
@@ -380,7 +381,7 @@ export default function Settings() {
                 style={[styles.modalButton, styles.modalCancelButton, { borderColor: theme.borderAccent, backgroundColor: theme.backgroundSecondary }]}
                 onPress={handleCloseSupportModal}
               >
-                <Text style={[styles.modalButtonText, { color: theme.textButtonSecondary }]}>Close</Text>
+                <Text style={[styles.modalButtonText, { color: theme.textButtonSecondary }]}>{TEXT.settings.close}</Text>
               </TouchableOpacity>
             </View>
           </View>

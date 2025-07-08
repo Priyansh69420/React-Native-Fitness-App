@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { TextInput, View, Text } from 'react-native';
 import { useOnboarding } from '../../contexts/OnboardingContext';
 import { OnboardingForm, onboardingStyles } from '../../components/OnboardingForm';
+import { TEXT } from '../../constants/text';
 
 export default function SetDetails() {
   const [heightText, setHeightText] = useState('');
@@ -85,7 +86,7 @@ export default function SetDetails() {
 
   return (
     <OnboardingForm
-      title="Please enter your height and weight."
+      title={TEXT.onboarding.setMetrics.title}
       onContinue={handleContinuePress}
       nextScreen="FaceId"
       backButton={false}
@@ -101,7 +102,7 @@ export default function SetDetails() {
               if (heightError && !isNaN(parseFloat(cleaned))) setHeightError('');
             }
           }}
-          placeholder="Height (cm)"
+          placeholder={TEXT.onboarding.setMetrics.heightPlaceholder}
           keyboardType="numeric"
           autoFocus
           maxLength={5}
@@ -110,7 +111,7 @@ export default function SetDetails() {
       {heightError ? (
         <Text style={onboardingStyles.onboardingErrorText}>{heightError}</Text>
       ) : null}
-
+  
       <View style={onboardingStyles.onboardingInputContainer}>
         <TextInput
           style={onboardingStyles.onboardingInput}
@@ -122,7 +123,7 @@ export default function SetDetails() {
               if (weightError && !isNaN(parseFloat(cleaned))) setWeightError('');
             }
           }}
-          placeholder="Weight (kg)"
+          placeholder={TEXT.onboarding.setMetrics.weightPlaceholder}
           keyboardType="numeric"
           maxLength={5}
         />
@@ -131,5 +132,5 @@ export default function SetDetails() {
         <Text style={onboardingStyles.onboardingErrorText}>{weightError}</Text>
       ) : null}
     </OnboardingForm>
-  );
+  );  
 }

@@ -21,6 +21,7 @@ import PerformanceContainer from '../../components/PerformanceContainer';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store/store';
 import { useTheme } from '../../contexts/ThemeContext';
+import { TEXT } from '../../constants/text';
 
 type NavigationProp = DrawerNavigationProp<HomeStackParamList, 'Water'>;
 
@@ -203,12 +204,12 @@ export default function Water() {
               source={require('../../assets/backArrowIcon.png')}
               style={styles.backIcon}
             />
-            <Text style={styles.backButton}>Back</Text>
+            <Text style={styles.backButton}>{TEXT.water.back}</Text>
           </TouchableOpacity>
         </View>
 
         <Text style={[styles.title, { color: theme.textPrimary }]}>
-          You drank <Text style={styles.highlight}>{glassDrunk} glasses</Text> today
+          {TEXT.water.title} <Text style={styles.highlight}>{glassDrunk} {TEXT.water.glassesToday}</Text>
         </Text>
 
         <View style={styles.glassesContainer}>
@@ -227,7 +228,7 @@ export default function Water() {
                 style={[styles.glassIcon, index >= glassDrunk && { tintColor: theme.iconPrimary }]}
               />
               {index >= glassDrunk && (
-                <Text style={styles.plusSign}>+</Text>
+                <Text style={styles.plusSign}>{TEXT.water.plusSign}</Text>
               )}
             </TouchableOpacity>
           ))}
@@ -236,18 +237,18 @@ export default function Water() {
         <View style={styles.statsContainer}>
           <View style={styles.stat}>
             <Text style={[styles.statValue, { color: theme.textSecondary }]}>{glassDrunk * 250} ml</Text>
-            <Text style={styles.statLabel}>Water Drank</Text>
+            <Text style={styles.statLabel}>{TEXT.water.waterDrank}</Text>
           </View>
           <View style={styles.divider} />
           <View style={styles.stat}>
-            <Text style={[styles.statValue, { color: theme.textSecondary }]}>{totalGlasses} glasses</Text>
-            <Text style={styles.statLabel}>Daily goal</Text>
+            <Text style={[styles.statValue, { color: theme.textSecondary }]}>{totalGlasses} {TEXT.water.glassesToday}</Text>
+            <Text style={styles.statLabel}>{TEXT.water.dailyGoal}</Text>
           </View>
         </View>
 
         {glassDrunk < totalGlasses ? (
           <View style={styles.warningContainer}>
-            <Text style={styles.warningText}>You didn’t drink enough water for today.</Text>
+            <Text style={styles.warningText}>{TEXT.water.warning}</Text>
           </View>
         ) : (
           <View />

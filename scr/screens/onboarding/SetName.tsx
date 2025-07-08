@@ -3,6 +3,7 @@ import { TextInput, View, Text } from 'react-native';
 import { useOnboarding } from '../../contexts/OnboardingContext';
 import { OnboardingForm, onboardingStyles } from '../../components/OnboardingForm';
 import { auth } from '../../../firebaseConfig';
+import { TEXT } from '../../constants/text';
 
 export default function SetNameScreen() {
   const [firstName, setFirstName] = useState<string>('');
@@ -39,7 +40,7 @@ export default function SetNameScreen() {
 
   return (
     <OnboardingForm
-      title="What’s your name?"
+      title={TEXT.onboarding.setName.title}
       onContinue={handleContinuePress}
       nextScreen="SetDetails"
       backButton={user?.emailVerified || false}
@@ -54,7 +55,7 @@ export default function SetNameScreen() {
               setFirstNameError('');
             }
           }}
-          placeholder="First Name"
+          placeholder={TEXT.onboarding.setName.firstNamePlaceholder}
           autoCapitalize="words"
           autoFocus
         />
@@ -62,16 +63,16 @@ export default function SetNameScreen() {
       {firstNameError ? (
         <Text style={onboardingStyles.onboardingErrorText}>{firstNameError}</Text>
       ) : null}
-
+  
       <View style={onboardingStyles.onboardingInputContainer}>
         <TextInput
           style={onboardingStyles.onboardingInput}
           value={lastName}
           onChangeText={(input) => setLastName(input.replace(/\d/g, ''))}
-          placeholder="Last Name"
+          placeholder={TEXT.onboarding.setName.lastNamePlaceholder}
           autoCapitalize="words"
         />
       </View>
     </OnboardingForm>
-  );
+  );  
 }

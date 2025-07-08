@@ -18,6 +18,7 @@ import { useNetInfo } from '@react-native-community/netinfo';
 import { UpdateMode } from 'realm';
 import { useTheme } from '../../contexts/ThemeContext';
 import { RootState } from '../../store/store';
+import { TEXT } from '../../constants/text';
 
 type NavigationProp = DrawerNavigationProp<HomeStackParamList, 'Nutrition'>;
 
@@ -544,7 +545,7 @@ export default function Nutrition() {
             source={require('../../assets/backArrowIcon.png')}
             style={styles.backlogo}
           />          
-          <Text style={styles.backButton1}>Back</Text>
+          <Text style={styles.backButton1}>{TEXT.nutrition.back}</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => setModalVisible(true)}>
           <Image
@@ -556,7 +557,7 @@ export default function Nutrition() {
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.stepsContainer}>
-          <Text style={[styles.title, { color: theme.textPrimary }]}>You consumed <Text style={styles.highlight}>{totalCalories}</Text> calories today</Text>
+          <Text style={[styles.title, { color: theme.textPrimary }]}>{TEXT.nutrition.title} <Text style={styles.highlight}>{totalCalories}</Text> {TEXT.nutrition.caloriesToday}</Text>
         </View>
 
         <View style={styles.progressContainer}>
@@ -599,15 +600,15 @@ export default function Nutrition() {
             </Svg>
           </View>
 
-					<View style={styles.legendContainer}>
-						{nutritionData.map((item, index) => (
+          <View style={styles.legendContainer}>
+            {nutritionData.map((item, index) => (
               <View key={`legend-item-${item.name}`} style={styles.legendItem}>
                 <View style={{ backgroundColor: item.color, width: 20, height: 20, borderRadius: 10 }} />
-								<Text style={{ color: item.color, marginLeft: 10, fontSize: 12 }}>{item.name} {Math.round(item.percentage * 100)}%</Text>
-							</View>
-						))}
-					</View>
-				</View>
+                <Text style={{ color: item.color, marginLeft: 10, fontSize: 12 }}>{item.name} {Math.round(item.percentage * 100)}%</Text>
+              </View>
+            ))}
+          </View>
+        </View>
 
         <View style={styles.nutritionContainer}>
           <View style={{flexDirection: 'row', borderBottomWidth: 0.5, borderBottomColor: '#d6d6d6', paddingVertical: 20, paddingLeft: 15, paddingRight: 20}}>
@@ -615,7 +616,7 @@ export default function Nutrition() {
               <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: "60%"}}>
                 <View style={{flexDirection: 'row'}}>
                   <View style={{height: 20, width: 20, backgroundColor: '#66D3C8', borderRadius: 6, marginRight: 10}} />
-                  <Text style={{fontSize: 17, color: theme.textPrimary }}>Fat</Text>
+                  <Text style={{fontSize: 17, color: theme.textPrimary }}>{TEXT.nutrition.fat}</Text>
                 </View>
                 <Text style={{fontSize: 17, color: theme.textPrimary}}>{totalFat}g</Text>
               </View>
@@ -628,7 +629,7 @@ export default function Nutrition() {
               <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: "60%"}}>
                 <View style={{flexDirection: 'row'}}>
                   <View style={{height: 20, width: 20, backgroundColor: '#9D6DEB', borderRadius: 6, marginRight: 10}} />
-                  <Text style={{fontSize: 17, color: theme.textPrimary}}>Carbs</Text>
+                  <Text style={{fontSize: 17, color: theme.textPrimary}}>{TEXT.nutrition.carbs}</Text>
                 </View>
                 <Text style={{fontSize: 17, color: theme.textPrimary}}>{totalCarbs}g</Text>
               </View>
@@ -641,7 +642,7 @@ export default function Nutrition() {
               <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: "60%"}}>
                 <View style={{flexDirection: 'row'}}>
                   <View style={{height: 20, width: 20, backgroundColor: 'orange', borderRadius: 6, marginRight: 10}} />
-                  <Text style={{fontSize: 17, color: theme.textPrimary}}>Protein</Text>
+                  <Text style={{fontSize: 17, color: theme.textPrimary}}>{TEXT.nutrition.protein}</Text>
                 </View>
                 <Text style={{fontSize: 17, color: theme.textPrimary}}>{totalProtein}g</Text>
               </View>
@@ -673,42 +674,42 @@ export default function Nutrition() {
                     style={styles.deleteCardButton}
                     onPress={() => 
                       Alert.alert(
-                        'Confirm Deletion',
-                        'Are you sure you want to delete this meal?',
+                        TEXT.nutrition.deleteMealTitle,
+                        TEXT.nutrition.deleteMealMessage,
                         [
                           {
-                            text: 'Cancel',
+                            text: TEXT.nutrition.cancel,
                           },
                           {
-                            text: 'OK',
+                            text: TEXT.nutrition.ok,
                             onPress: () => handleDeleteCard(mealType as MealType),
                           },
                         ],
                         { cancelable: true } 
                       )}
                   >
-                    <Text style={[styles.deleteCardText, { color: theme.textSecondary }]}>X</Text>
+                    <Text style={[styles.deleteCardText, { color: theme.textSecondary }]}>{TEXT.nutrition.close}</Text>
                   </Pressable>
                     <Text style={[styles.mealCardTitle, { color: theme.textPrimary }]}>{mealType}</Text>
                   <View style={[styles.macroSummaryContainer, { backgroundColor: darkMode ? '#575757' : '#f9f9f9' }]}>
                     <View style={styles.macroRow}>
                       <View style={styles.macroItem}>
                         <View style={[styles.macroColorBox, { backgroundColor: 'red' }]} />
-                        <Text style={[styles.macroText, { color: theme.textPrimary }]}>Calories: {totalCalories} kcal</Text>
+                        <Text style={[styles.macroText, { color: theme.textPrimary }]}>{TEXT.nutrition.calories}: {totalCalories} kcal</Text>
                       </View>
                       <View style={styles.macroItem}>
                         <View style={[styles.macroColorBox, styles.proteinColor]} />
-                        <Text style={[styles.macroText, { color: theme.textPrimary }]}>Protein: {totalProtein}g</Text>
+                        <Text style={[styles.macroText, { color: theme.textPrimary }]}>{TEXT.nutrition.protein}: {totalProtein}g</Text>
                       </View>
                     </View>
                     <View style={styles.macroRow}>
                       <View style={styles.macroItem}>
                         <View style={[styles.macroColorBox, styles.carbsColor]} />
-                        <Text style={[styles.macroText, { color: theme.textPrimary }]}>Carbs: {totalCarbs}g</Text>
+                        <Text style={[styles.macroText, { color: theme.textPrimary }]}>{TEXT.nutrition.carbs}: {totalCarbs}g</Text>
                       </View>
                       <View style={styles.macroItem}>
                         <View style={[styles.macroColorBox, styles.fatColor]} />
-                        <Text style={[styles.macroText, { color: theme.textPrimary }]}>Fat: {totalFat}g</Text>
+                        <Text style={[styles.macroText, { color: theme.textPrimary }]}>{TEXT.nutrition.fat}: {totalFat}g</Text>
                       </View>
                     </View>
                   </View>
@@ -766,19 +767,19 @@ export default function Nutrition() {
           })}
         </View>
 
-				<Modal
-					animationType='slide'
-					transparent={true}
-					visible={modalVisible}
-					onRequestClose={() => setModalVisible(false)}
-					style={{height: height, width: width}}
-				>
+        <Modal
+          animationType='slide'
+          transparent={true}
+          visible={modalVisible}
+          onRequestClose={() => setModalVisible(false)}
+          style={{height: height, width: width}}
+        >
           <View style={styles.modalOverlay}>
             <View style={[styles.modalContainer, { backgroundColor: theme.backgroundSecondary }]}>
               <View style={styles.modalHeader}>
                 <Image source={require('../../assets/plateIcon.png')} style={{height: RFValue(60), width: RFValue(55)}} />
-                <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>Choose Food</Text>
-                <Text style={[styles.modalSubtitle, { color: theme.textSecondary }]}>Select your meal and your foods that you consume today</Text>
+                <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>{TEXT.nutrition.chooseFoodTitle}</Text>
+                <Text style={[styles.modalSubtitle, { color: theme.textSecondary }]}>{TEXT.nutrition.chooseFoodSubtitle}</Text>
               </View>
 
               <View style={styles.mealTypeCheckboxes}>
@@ -803,7 +804,7 @@ export default function Nutrition() {
               </View>
 
               <TextInput 
-                placeholder='Search' 
+                placeholder={TEXT.nutrition.searchPlaceholder} 
                 style={[styles.inputContainer, { borderColor: theme.borderPrimary, backgroundColor: theme.backgroundSecondary, color: theme.textPrimary }]}
                 value={searchQuery}
                 onChangeText={setSearchQuery}
@@ -814,7 +815,7 @@ export default function Nutrition() {
                   {isLoading ? (
                     <ActivityIndicator size="large" color="#7A5FFF" />
                   ) : (
-                    <Text style={[styles.noResultsText, { color: theme.textSecondary }]}>No record found for "{searchQuery}".</Text>
+                    <Text style={[styles.noResultsText, { color: theme.textSecondary }]}>{TEXT.nutrition.noResults(searchQuery)}</Text>
                   )}
                 </View>
               ) : (
@@ -828,7 +829,7 @@ export default function Nutrition() {
 
               {selectedFoods.length > 0 && selectedMeal && !isKeyboardVisible && (
               <TouchableOpacity style={styles.addButton} onPress={handleAddButtonPress}>
-                <Text style={styles.addButtonText}>Add</Text>
+                <Text style={styles.addButtonText}>{TEXT.nutrition.addFood}</Text>
               </TouchableOpacity>
               )}
 
@@ -839,14 +840,14 @@ export default function Nutrition() {
                 setSelectedMeal('');
                 setIsLoading(false);
               }}>
-                <Text style={{fontSize: RFValue(20), marginTop: -5, color: theme.textPrimary}}>✕</Text>
+                <Text style={{fontSize: RFValue(20), marginTop: -5, color: theme.textPrimary}}>{TEXT.nutrition.close}</Text>
               </TouchableOpacity>
             </View>
           </View>
-				</Modal>
+        </Modal>
       </ScrollView>
     </SafeAreaView>
-  );
+);
 }
 
 const styles = StyleSheet.create({

@@ -7,6 +7,7 @@ import { useOnboarding } from '../../contexts/OnboardingContext';
 import { RFValue } from 'react-native-responsive-fontsize';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { Ionicons } from '@expo/vector-icons';
+import { TEXT } from '../../constants/text';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, "SetPassword">;
 const logo = require('../../assets/logo.png'); 
@@ -76,73 +77,65 @@ export default function SetPassword() {
           <TouchableOpacity style={styles.backButton2} onPress={() => navigation.goBack()}>
             <Image source={backIcon} style={styles.backIcon2} />
           </TouchableOpacity>
-
+  
           <View style={styles.centeredContent2}>
             <Image source={logo} style={styles.appLogo2} resizeMode="contain" />
-
-            <Text style={styles.title2}>Now let's set up your password</Text>
-
+  
+            <Text style={styles.title2}>{TEXT.passwordSetup.title}</Text>
+  
             <View style={styles.inputContainer2}>
               <TextInput
                 style={styles.input2}
                 value={password}
                 onChangeText={setPassword}
-                placeholder="Enter your password"
+                placeholder={TEXT.passwordSetup.placeholder}
                 secureTextEntry={!isVisible}
                 autoCapitalize="none"
                 autoFocus
               />
               <TouchableOpacity
-              onPress={() => setIsVisible(v => !v)}
-              style={styles.eyeButton}
-              accessibilityLabel={isVisible ? "Hide password" : "Show password"}
-            >
-              <Ionicons
-                name={isVisible ? "eye-off-outline" : "eye-outline"}
-                size={24}
-                color="#666"
-              />
-            </TouchableOpacity>
+                onPress={() => setIsVisible(v => !v)}
+                style={styles.eyeButton}
+                accessibilityLabel={isVisible ? "Hide password" : "Show password"}
+              >
+                <Ionicons
+                  name={isVisible ? "eye-off-outline" : "eye-outline"}
+                  size={24}
+                  color="#666"
+                />
+              </TouchableOpacity>
             </View>
-
-            {error ? <Text style={{color: 'red', width: '85%', marginBottom: 20, textAlign: 'center', marginTop: -10}}>{error}</Text>: <></>}
-
+  
+            {error ? (
+              <Text style={{ color: 'red', width: '85%', marginBottom: 20, textAlign: 'center', marginTop: -10 }}>
+                {error}
+              </Text>
+            ) : null}
+  
             <View style={styles.requirementsContainer2}>
               <View style={styles.requirementRow2}>
-                {minLength ? (
-                  <View style={styles.checkedBox2} />
-                ) : (
-                  <View style={styles.uncheckedBox2} />
-                )}
-                <Text style={styles.requirementText2}>  8+ characters</Text>
+                {minLength ? <View style={styles.checkedBox2} /> : <View style={styles.uncheckedBox2} />}
+                <Text style={styles.requirementText2}>  {TEXT.passwordSetup.requirements.minLength}</Text>
               </View>
               <View style={styles.requirementRow2}>
-                {hasUpperCase ? (
-                  <View style={styles.checkedBox2} />
-                ) : (
-                  <View style={styles.uncheckedBox2} />
-                )}
-                <Text style={styles.requirementText2}>  At least 1 uppercase</Text>
+                {hasUpperCase ? <View style={styles.checkedBox2} /> : <View style={styles.uncheckedBox2} />}
+                <Text style={styles.requirementText2}>  {TEXT.passwordSetup.requirements.upperCase}</Text>
               </View>
               <View style={styles.requirementRow2}>
-                {hasNumber ? (
-                  <View style={styles.checkedBox2} />
-                ) : (
-                  <View style={styles.uncheckedBox2} />
-                )}
-                <Text style={styles.requirementText2}>  At least 1 number</Text>
+                {hasNumber ? <View style={styles.checkedBox2} /> : <View style={styles.uncheckedBox2} />}
+                <Text style={styles.requirementText2}>  {TEXT.passwordSetup.requirements.number}</Text>
               </View>
             </View>
-
+  
             <TouchableOpacity style={styles.button2} onPress={handleContinue}>
-              <Text style={styles.buttonText2}>Continue</Text>
+              <Text style={styles.buttonText2}>{TEXT.passwordSetup.button}</Text>
             </TouchableOpacity>
           </View>
         </View>
-      <View style={{marginBottom: height * 0.09, }}/>
+        <View style={{ marginBottom: height * 0.09 }} />
       </KeyboardAwareScrollView>
     </SafeAreaView>
-  )
+  );  
 }
 
 const { width, height } = Dimensions.get('window');

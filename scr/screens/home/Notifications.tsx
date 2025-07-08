@@ -8,6 +8,7 @@ import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { HomeStackParamList } from '../../navigations/HomeStackParamList';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../../contexts/ThemeContext';
+import { TEXT } from '../../constants/text';
 
 type NavigationProp = DrawerNavigationProp<HomeStackParamList, 'Notification'>;
 
@@ -24,7 +25,7 @@ const { width, height } = Dimensions.get('window');
 const scaleFactor = 1.1;
 
 const NotificationsScreen = () => {
-  const { notifications, addNotification } = useNotifications();
+  const { notifications } = useNotifications();
   const [isPushEnabled, setIsPushEnabled] = useState(true);
   const navigation = useNavigation<NavigationProp>();
   const theme = useTheme();
@@ -85,14 +86,14 @@ const NotificationsScreen = () => {
         <Image source={require('../../assets/drawerIcon.png')} style={[styles.drawerIcon, { tintColor: theme.iconPrimary }]} />
       </TouchableOpacity>
 
-      <Text style={[styles.title, { color: theme.textPrimary }]}>Notifications</Text>
+      <Text style={[styles.title, { color: theme.textPrimary }]}>{TEXT.notifications.title}</Text>
 
       <View style={[styles.notificationContainer, { backgroundColor: theme.backgroundSecondary }]}>
         {(() => {
           if (!isPushEnabled) {
             return (
               <Text style={[styles.notificationDisabledText, { color: theme.textPlaceholder }]}>
-                Enable Notifications to receive updates about likes, comments, and more.
+                {TEXT.notifications.enableNotifications}
               </Text>
             );
           }
@@ -110,7 +111,7 @@ const NotificationsScreen = () => {
 
           return (
             <Text style={[styles.noNotificationsText, { color: theme.textPlaceholder }]}>
-              No notifications available.
+              {TEXT.notifications.noNotifications}
             </Text>
           );
         })()}

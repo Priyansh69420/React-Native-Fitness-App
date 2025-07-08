@@ -4,6 +4,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useNavigation } from "@react-navigation/native";
 import { RootStackParamList } from "../../navigations/RootStackParamList";
 import { RFValue } from "react-native-responsive-fontsize";
+import { TEXT } from "../../constants/text";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, "GettingStarted">;
 const logo = require('../../assets/logo.png');
@@ -14,32 +15,31 @@ const GettingStartedScreen = () => {
 
   return (
     <View style={styles.container}>
-      <Image source={logo} style={styles.logo}/>
-
-      <Text style={styles.title}>Welcome to FitTrack</Text>
-      <Text style={styles.subtitle}>
-        The best UI kit for your next health and fitness project
-      </Text>
-
+      <Image source={logo} style={styles.logo} />
+  
+      <Text style={styles.title}>{TEXT.welcome.title}</Text>
+      <Text style={styles.subtitle}>{TEXT.welcome.subtitle}</Text>
+  
       <View style={styles.illustrationContainer}>
         <Image source={illustrationImage} style={styles.illustrationImage} />
       </View>
-
+  
       <TouchableOpacity
         style={styles.button}
         onPress={() => navigation.navigate("Signup")} 
       >
-        <Text style={styles.buttonText}>Get Started</Text>
+        <Text style={styles.buttonText}>{TEXT.welcome.getStarted}</Text>
       </TouchableOpacity>
-
+  
       <View style={styles.signInContainer}>
-        <Text style={styles.signInText}>Already have an account? </Text>
+        <Text style={styles.signInText}>{TEXT.welcome.loginPrompt} </Text>
         <TouchableOpacity onPress={() => navigation.navigate("Login")}>
-        <Text style={styles.linkText}>Log in</Text>
-      </TouchableOpacity>
+          <Text style={styles.linkText}>{TEXT.welcome.login}</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
+  
 };
 
 export default GettingStartedScreen;

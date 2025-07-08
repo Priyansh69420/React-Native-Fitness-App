@@ -5,6 +5,7 @@ import { RootStackParamList } from '../../navigations/RootStackParamList';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useOnboarding } from '../../contexts/OnboardingContext';
 import { RFValue } from 'react-native-responsive-fontsize';
+import { TEXT } from '../../constants/text';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, "Goals">;
 
@@ -53,18 +54,18 @@ export default function SetGoalsScreen() {
   return (
     <SafeAreaView style={styles.goalSafeArea}>
       <View style={styles.goalContainer}>
-
+  
         <TouchableOpacity style={styles.goalBackButton} onPress={() => navigation.goBack()}>
           <Image source={backIcon} style={styles.goalBackIcon} />
         </TouchableOpacity>
-
+  
         <View style={styles.goalCenteredContent}>
           <Image source={logo} style={styles.appLogo} resizeMode="contain" />
-
-          <Text style={styles.title}>Let us know how we can help you</Text>
-
-          <Text style={styles.subtitle}>You can always change this later</Text>
-
+  
+          <Text style={styles.title}>{TEXT.onboarding.setGoals.title}</Text>
+  
+          <Text style={styles.subtitle}>{TEXT.onboarding.setGoals.subtitle}</Text>
+  
           <View style={styles.goalsContainer}>
             {goals.map((goal) => (
               <TouchableOpacity
@@ -85,17 +86,20 @@ export default function SetGoalsScreen() {
                 </View>
               </TouchableOpacity>
             ))}
-
-            {error ? <Text style={{color: 'red', width: '100%', textAlign: 'center'}}>{error}</Text>: <></>}
+  
+            {error ? (
+              <Text style={{ color: 'red', width: '100%', textAlign: 'center' }}>{error}</Text>
+            ) : null}
           </View>
-
+  
           <TouchableOpacity style={styles.button} onPress={handleContinuePress}>
-            <Text style={styles.buttonText}>Continue</Text>
+            <Text style={styles.buttonText}>{TEXT.onboarding.setGoals.continue}</Text>
           </TouchableOpacity>
         </View>
       </View>
     </SafeAreaView>
   );
+  
 }
 
 const { width, height } = Dimensions.get('window');

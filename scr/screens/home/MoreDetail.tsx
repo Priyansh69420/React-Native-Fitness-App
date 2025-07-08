@@ -14,6 +14,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRealm } from '../../../realmConfig';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../contexts/ThemeContext';
+import { BarChart } from 'react-native-gifted-charts';
+import { TEXT } from '../../constants/text';
 
 type NavigationProp = DrawerNavigationProp<HomeStackParamList, 'MoreDetail'>;
 
@@ -51,12 +53,10 @@ export default function MoreDetail() {
   useEffect(() => {
     const syncData = async () => {
       try {
-        // Check last saved month for month-end save
         const lastSavedMonth = await AsyncStorage.getItem('lastSavedMonth');
         const currentDate = new Date();
         const currentMonth = format(currentDate, 'yyyy-MM');
 
-        // Handle month-end save
         if (lastSavedMonth && !isSameMonth(new Date(lastSavedMonth), currentDate)) {
           const prevMonthData = realm
             .objects('DailyProgress')
@@ -68,14 +68,12 @@ export default function MoreDetail() {
               water: item.water,
             }));
           realm.write(() => {
-            // Prune data older than 3 months
             const cutoffDate = format(subMonths(currentDate, 3), 'yyyy-MM-dd');
             const oldData = realm
               .objects('DailyProgress')
               .filtered('date < $0', cutoffDate);
             realm.delete(oldData);
 
-            // Save previous month's data
             prevMonthData.forEach((entry) => {
               realm.create(
                 'DailyProgress',
@@ -94,12 +92,9 @@ export default function MoreDetail() {
           await AsyncStorage.setItem('lastSavedMonth', currentMonth);
         }
 
-        // Load data for selected month
         let data: DailyProgress[] = [];
         if (selectedMonth === currentMonth) {
-          // Fetch current month's data from Firestore
           data = await loadMonthlyProgress();
-          // Cache in Realm for offline access
           realm.write(() => {
             data.forEach((entry) => {
               realm.create(
@@ -115,7 +110,6 @@ export default function MoreDetail() {
             });
           });
         } else {
-          // Load past month from Realm
           data = realm
             .objects('DailyProgress')
             .filtered('date BEGINSWITH $0', selectedMonth)
@@ -127,12 +121,10 @@ export default function MoreDetail() {
             }));
         }
 
-        // Sort and set data
         data.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
         setMonthlyData(data);
       } catch (error) {
         console.error('Error syncing progress:', error);
-        // Fallback to Realm for any month
         const monthData = realm
           .objects('DailyProgress')
           .filtered('date BEGINSWITH $0', selectedMonth)
@@ -164,7 +156,7 @@ export default function MoreDetail() {
   });
 
   const renderDailyEntry = ({ item }: { item: typeof formattedData[0] }) => (
-    <View style={styles.dailyEntry}>
+    <View style={styles.dailyEntry} key={item.date}>
       <Text style={[styles.dailyEntryDate, { color: theme.textSecondary }]}>{item.displayDate}</Text>
       <View style={styles.dailyEntryValueContainer}>
         {selectedMetric === 'steps' && (
@@ -202,22 +194,41 @@ export default function MoreDetail() {
     return str.replace(/^0+/, '');
   }
 
+  const chartData = formattedData.map((entry) => {
+    let actualValue = 0;
+    let maxGoal = 1;
+  
+    if (selectedMetric === 'steps') {
+      actualValue = entry.steps;
+      maxGoal = userData?.stepGoal ?? 10000;
+    } else if (selectedMetric === 'calories') {
+      actualValue = entry.calories;
+      maxGoal = userData?.calorieGoal ?? 2000;
+    } else {
+      actualValue = Number(entry.water.toFixed(2));
+      maxGoal = (userData?.glassGoal ?? 8) * 0.25;
+    }
+  
+    const clampedValue = Math.min(actualValue, maxGoal); 
+    return {
+      value: clampedValue,
+      actualValue,
+      label: removeLeadingZeros(entry.displayDate.slice(-2)),
+      frontColor: '#7A5FFF',
+      date: entry.displayDate,
+    };
+  });
+
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.backgroundPrimary }]}>
       <View style={[styles.headerContainer, { backgroundColor: theme.backgroundPrimary }]}>
-      <View style={styles.header}>
+        <View style={styles.header}>
           <TouchableOpacity style={styles.backButtonContainer} onPress={() => navigation.goBack()}>
-            <Image
-              source={require('../../assets/backArrowIcon.png')}
-              style={styles.backIcon}
-            />
-            <Text style={styles.backButton}>Back</Text>
+            <Image source={require('../../assets/backArrowIcon.png')} style={styles.backIcon} />
+            <Text style={styles.backButton}>{TEXT.moreDetails.back}</Text>
           </TouchableOpacity>
           <View style={styles.monthSelectorContainer}>
-            <LinearGradient
-              colors={['#b6b4ff', '#6952de']}
-              style={styles.monthPickerGradient}
-            >
+            <LinearGradient colors={['#b6b4ff', '#6952de']} style={styles.monthPickerGradient}>
               <Dropdown
                 style={styles.dropdown}
                 containerStyle={styles.dropdownContainer}
@@ -228,33 +239,33 @@ export default function MoreDetail() {
                 valueField="value"
                 value={selectedMonth}
                 onChange={(item) => setSelectedMonth(item.value)}
-                iconStyle={{tintColor: '#fff'}}
+                iconStyle={{ tintColor: '#fff' }}
               />
             </LinearGradient>
           </View>
         </View>
-        <Text style={[styles.title, { color: theme.textPrimary }]}>Monthly Progress</Text>
+        <Text style={[styles.title, { color: theme.textPrimary }]}>{TEXT.moreDetails.title}</Text>
       </View>
-
-      <View style={styles.scrollContainer}>
+  
+      <ScrollView style={styles.scrollContainer}>
         <View style={styles.summaryContainer}>
           <View style={[styles.summaryCard, { backgroundColor: theme.backgroundSecondary }]}>
             <Ionicons name="walk" size={30} color="#7A5FFF" />
             <Text style={[styles.summaryValue, { color: theme.textPrimary }]}>{totalSteps.toLocaleString()}</Text>
-            <Text style={[styles.summaryLabel, { color: theme.textSecondary }]}>Total Steps</Text>
+            <Text style={[styles.summaryLabel, { color: theme.textSecondary }]}>{TEXT.moreDetails.totalSteps}</Text>
           </View>
           <View style={[styles.summaryCard, { backgroundColor: theme.backgroundSecondary }]}>
             <Ionicons name="restaurant" size={30} color="#7A5FFF" />
             <Text style={[styles.summaryValue, { color: theme.textPrimary }]}>{totalCalories.toLocaleString()}</Text>
-            <Text style={[styles.summaryLabel, { color: theme.textSecondary }]}>Total Calories</Text>
+            <Text style={[styles.summaryLabel, { color: theme.textSecondary }]}>{TEXT.moreDetails.totalCalories}</Text>
           </View>
           <View style={[styles.summaryCard, { backgroundColor: theme.backgroundSecondary }]}>
             <Ionicons name="water" size={30} color="#7A5FFF" />
             <Text style={[styles.summaryValue, { color: theme.textPrimary }]}>{totalWater}</Text>
-            <Text style={[styles.summaryLabel, { color: theme.textSecondary }]}>Total Water (L)</Text>
+            <Text style={[styles.summaryLabel, { color: theme.textSecondary }]}>{TEXT.moreDetails.totalWater}</Text>
           </View>
         </View>
-
+  
         <View style={[styles.toggleContainer]}>
           <TouchableOpacity
             style={[styles.toggleButton, { backgroundColor: theme.backgroundButtonSecondary }, selectedMetric === 'steps' && styles.toggleButtonSelected]}
@@ -265,7 +276,9 @@ export default function MoreDetail() {
               }
             }}
           >
-            <Text style={[styles.toggleText, { color: darkMode ? '#fff' : '#000' }, selectedMetric === 'steps' && styles.toggleTextSelected]}>Steps</Text>
+            <Text style={[styles.toggleText, { color: darkMode ? '#fff' : '#000' }, selectedMetric === 'steps' && styles.toggleTextSelected]}>
+              {TEXT.moreDetails.steps}
+            </Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.toggleButton, { backgroundColor: theme.backgroundButtonSecondary }, selectedMetric === 'calories' && styles.toggleButtonSelected]}
@@ -276,7 +289,9 @@ export default function MoreDetail() {
               }
             }}
           >
-            <Text style={[styles.toggleText, , { color: darkMode ? '#fff' : '#000' }, selectedMetric === 'calories' && styles.toggleTextSelected]}>Nutrition</Text>
+            <Text style={[styles.toggleText, { color: darkMode ? '#fff' : '#000' }, selectedMetric === 'calories' && styles.toggleTextSelected]}>
+              {TEXT.moreDetails.calories}
+            </Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.toggleButton, { backgroundColor: theme.backgroundButtonSecondary }, selectedMetric === 'water' && styles.toggleButtonSelected]}
@@ -287,97 +302,90 @@ export default function MoreDetail() {
               }
             }}
           >
-            <Text style={[styles.toggleText, { color: darkMode ? '#fff' : '#000' }, selectedMetric === 'water' && styles.toggleTextSelected]}>Water</Text>
+            <Text style={[styles.toggleText, { color: darkMode ? '#fff' : '#000' }, selectedMetric === 'water' && styles.toggleTextSelected]}>
+              {TEXT.moreDetails.water}
+            </Text>
           </TouchableOpacity>
         </View>
-
+  
         <View style={[styles.trendContainer, { backgroundColor: theme.backgroundSecondary }]}>
-          <Text style={[styles.trendTitle, { color: theme.textPrimary }]}>{trendTitle} Stats</Text>
+          <Text style={[styles.trendTitle, { color: theme.textPrimary }]}>{trendTitle} {TEXT.moreDetails.stats}</Text>
           {monthlyData.length !== 0 ? (
             <View style={styles.selectedInfoContainer}>
-            {selectedInfo ? (
-              <Text style={styles.selectedInfoText}>{selectedInfo}</Text>
-            ) : (
-              <Text style={[styles.selectedInfoText, { color: '#999' }]}>Tap a bar to see details</Text>
-            )}
-          </View>
+              {selectedInfo ? (
+                <Text style={styles.selectedInfoText}>{selectedInfo}</Text>
+              ) : (
+                <Text style={[styles.selectedInfoText, { color: '#999' }]}>{TEXT.moreDetails.tapToSee}</Text>
+              )}
+            </View>
           ) : null}
-
+  
           {formattedData.length > 0 ? (
-            <View>
-              <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.trendGraphContent}
-              style={styles.trendGraph}
-            >
-              {formattedData.map((entry) => {
-                let barHeight = 0;
-                let displayData = '';
-                if (selectedMetric === 'steps') {
-                  barHeight = Math.min(
-                    ((entry.steps || 0) / (userData?.stepGoal ?? 10000)) * 100,
-                    100
+            <View style={{ marginLeft: -20 }}>
+              <BarChart
+                data={chartData}
+                barWidth={10}
+                height={140}
+                spacing={14}
+                frontColor="#7A5FFF"
+                hideRules
+                noOfSections={1}
+                yAxisThickness={0}
+                yAxisTextStyle={{ display: 'none' }}
+                xAxisThickness={0}
+                initialSpacing={0}
+                barBorderRadius={3}
+                hideAxesAndRules
+                isAnimated
+                xAxisLabelTextStyle={{
+                  color: theme.textSecondary,
+                  fontSize: 14,
+                  fontWeight: '300',
+                  marginVeritcal: 6,
+                }}
+                barStyle={{
+                  borderRadius: 6,
+                  backgroundColor: 'transparent',
+                }}
+                onPress={(item: any) => {
+                  setSelectedInfo(
+                    `${item.date}, ${
+                      selectedMetric === 'steps'
+                        ? `${item.actualValue} steps / ${userData?.stepGoal}`
+                        : selectedMetric === 'calories'
+                        ? `${item.actualValue} cal / ${userData?.calorieGoal}`
+                        : `${item.actualValue.toFixed(2)} L / ${((userData?.glassGoal ?? 8) * 0.25).toFixed(2)} L`
+                    }`
                   );
-                  displayData = `${entry.displayDate}, ${entry.steps} steps / ${userData?.stepGoal} steps`;
-                } else if (selectedMetric === 'calories') {
-                  barHeight = Math.min(
-                    ((entry.calories || 0) / (userData?.calorieGoal ?? 2000)) * 100,
-                    100
-                  );
-                  displayData = `${entry.displayDate}, ${entry.calories} cal / ${userData?.calorieGoal} cal`;
-                } else {
-                  const waterGoalLiters = userData?.glassGoal ? userData.glassGoal * 0.25 : 2;
-                  barHeight = Math.min(
-                    ((entry.water || 0) / waterGoalLiters) * 100,
-                    100
-                  );
-                  displayData = `${entry.displayDate}, ${entry.water.toFixed(2)} L / ${((userData?.glassGoal ?? 8) * 0.25).toFixed(2)} L`;
+                }}
+                maxValue={
+                  selectedMetric === 'steps'
+                    ? userData?.stepGoal ?? 10000
+                    : selectedMetric === 'calories'
+                    ? userData?.calorieGoal ?? 2000
+                    : (userData?.glassGoal ?? 8) * 0.25
                 }
-
-                return (
-                  <View>
-                    <TouchableOpacity style={styles.trendPoint} key={entry.date} onPress={() => setSelectedInfo(displayData)}>
-                      <View
-                        style={[
-                          styles.trendBar,
-                          {
-                            height: barHeight,
-                            backgroundColor: '#7A5FFF',
-                          },
-                        ]}
-                      />
-                    </TouchableOpacity>
-                    <View style={{flexDirection: 'row', justifyContent: 'center'}}>
-                      <Text style={{color: theme.textSecondary, textAlign: 'center'}}>{removeLeadingZeros(entry.displayDate.slice(entry.displayDate.length - 2, entry.displayDate.length))}</Text>
-                    </View>
-                  </View>
-                );
-              })}
-            </ScrollView>
-           
+              />
             </View>
           ) : (
-            <Text style={styles.noDataText}>No data available for this month.</Text>
+            <Text style={[styles.noDataText, { color: theme.textSecondary }]}>{TEXT.moreDetails.noData}</Text>
           )}
         </View>
-
+  
         <View style={[styles.breakdownContainer, { backgroundColor: theme.backgroundSecondary }]}>
-          <Text style={[styles.breakdownTitle, { color: theme.textPrimary }]}>Daily Breakdown</Text>
+          <Text style={[styles.breakdownTitle, { color: theme.textPrimary }]}>{TEXT.moreDetails.dailyBreakdown}</Text>
           {formattedData.length > 0 ? (
-            <FlatList
-              data={formattedData}
-              renderItem={renderDailyEntry}
-              keyExtractor={(item) => item.date}
-              showsVerticalScrollIndicator={false}
-            />
+            formattedData.map((item) => renderDailyEntry({ item }))
           ) : (
-            <Text style={[styles.noDataText, {marginTop: 70, color: theme.textSecondary}]}>No data available for this month.</Text>
+            <Text style={[styles.noDataText, { marginBottom: 10, color: theme.textSecondary }]}>
+              {TEXT.moreDetails.noData}
+            </Text>
           )}
         </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
+  
 }
 
 const { width, height } = Dimensions.get('window');
@@ -562,6 +570,7 @@ const styles = StyleSheet.create({
     fontSize: RFValue(14, height),
     color: '#666',
     textAlign: 'center',
+    textAlignVertical: 'center',
   },
   breakdownContainer: {
     backgroundColor: '#FFF',
@@ -572,8 +581,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
-    marginBottom: height * 0.02,
-    height: 250
+    marginBottom: height * 0.01,
   },
   breakdownTitle: {
     fontSize: RFValue(18, height),

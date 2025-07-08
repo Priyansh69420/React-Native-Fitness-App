@@ -22,6 +22,7 @@ import { RootState } from '../../store/store';
 import { useNetInfo } from '@react-native-community/netinfo';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../../contexts/ThemeContext';
+import { TEXT } from '../../constants/text';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 const BUTTON_HORIZONTAL_MARGIN_PERCENTAGE = 6;
@@ -237,7 +238,7 @@ export default function GetPremium() {
                 source={require('../../assets/backArrowIcon.png')}
                 style={[styles.backArrowIcon, { tintColor: theme.textButtonTertiary }]}
               />
-              <Text style={[styles.backButton, { color: theme.textButtonTertiary }]}>Back</Text>
+              <Text style={[styles.backButton, { color: theme.textButtonTertiary }]}>{TEXT.subscription.back}</Text>
             </TouchableOpacity>
           </View>
 
@@ -263,10 +264,10 @@ export default function GetPremium() {
             ) : (
               <View style={[styles.radio, { borderColor: theme.borderPrimary }]} />
             )}
-            <Text style={[styles.planPrice, { color: theme.textPrimary }]}>$4.99/month</Text>
+            <Text style={[styles.planPrice, { color: theme.textPrimary }]}>{TEXT.subscription.monthlyPrice}</Text>
           </View>
           <View style={[styles.freeTrialBadge, { backgroundColor: theme.backgroundBadge }]}>
-            <Text style={[styles.freeTrialText, { color: theme.textButtonSecondary }]}>Free Trial</Text>
+            <Text style={[styles.freeTrialText, { color: theme.textButtonSecondary }]}>{TEXT.subscription.freeTrial}</Text>
           </View>
         </TouchableOpacity>
 
@@ -282,16 +283,16 @@ export default function GetPremium() {
             ) : (
               <View style={[styles.radio, { borderColor: theme.borderPrimary }]} />
             )}
-            <Text style={[styles.planPrice, { color: theme.textPrimary }]}>$89.99/year</Text>
+            <Text style={[styles.planPrice, { color: theme.textPrimary }]}>{TEXT.subscription.yearlyPrice}</Text>
           </View>
           <View style={[styles.freeTrialBadge, { backgroundColor: theme.backgroundBadge }]}>
-            <Text style={[styles.freeTrialText, { color: theme.textButtonSecondary }]}>Free Trial</Text>
+            <Text style={[styles.freeTrialText, { color: theme.textButtonSecondary }]}>{TEXT.subscription.freeTrial}</Text>
           </View>
         </TouchableOpacity>
 
-        <Text style={[styles.billingTitle, { color: theme.textPrimary }]}>Recurring billing, cancel anytime</Text>
+        <Text style={[styles.billingTitle, { color: theme.textPrimary }]}>{TEXT.subscription.billingTitle}</Text>
         <Text style={[styles.billingDescription, { color: theme.textSecondary }]}>
-          Contrary to what many people think, eating healthy is not easier said than done. Just a few good habits can make a great difference.
+          {TEXT.subscription.billingDescription}
         </Text>
 
         <TouchableOpacity
@@ -307,7 +308,7 @@ export default function GetPremium() {
         </TouchableOpacity>
         {isPremium ? (
           <TouchableOpacity style={styles.cancelContainer} onPress={handleCancelSubscription}>
-            <Text style={[styles.cancelText, { color: theme.textButtonTertiary }]}>Cancel Subscription</Text>
+            <Text style={[styles.cancelText, { color: theme.textButtonTertiary }]}>{TEXT.subscription.cancelSubscription}</Text>
           </TouchableOpacity>
         ) : null}
       </View>

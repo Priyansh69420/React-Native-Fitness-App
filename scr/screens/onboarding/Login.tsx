@@ -16,6 +16,7 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view
 import { useAuth } from '../../contexts/AuthContext';
 import { useNetInfo } from '@react-native-community/netinfo';
 import { useOnboarding } from '../../contexts/OnboardingContext';
+import { TEXT } from '../../constants/text';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, "GettingStarted">;
 
@@ -174,7 +175,6 @@ export default function LoginScreen() {
   const handleFacebookSignIn = async () => {
     setLoading(true);
     try {
-      // 🧠 ASK FOR TRACKING PERMISSION ON iOS
       if (Platform.OS === 'ios') {
         await requestTracking();
       }
@@ -228,8 +228,6 @@ export default function LoginScreen() {
     }
   };
   
-  
-
   return (
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAwareScrollView
@@ -242,33 +240,33 @@ export default function LoginScreen() {
           <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
             <Image source={backIcon} style={styles.backIcon} />
           </TouchableOpacity>
-
+  
           <Image source={logo} style={styles.appLogo} />
-
+  
           <View style={styles.inputContainer}>
             <Image source={userLogo} style={styles.iconPlaceholder} />
             <TextInput
               style={styles.input}
               value={email}
               onChangeText={(text) => setEmail(text)}
-              placeholder="Email Address"
+              placeholder={TEXT.login.emailPlaceholder}
               keyboardType="email-address"
-              autoCapitalize='none'
+              autoCapitalize="none"
               autoFocus
             />
           </View>
-
+  
           <View style={styles.inputContainer}>
             <Image source={lockLogo} style={styles.iconPlaceholder} />
             <TextInput
               style={styles.input}
               value={password}
               onChangeText={setPassword}
-              placeholder="Password"
+              placeholder={TEXT.login.passwordPlaceholder}
               secureTextEntry={!isVisible}
             />
             <TouchableOpacity
-              onPress={() => setIsVisible(v => !v)}
+              onPress={() => setIsVisible((v) => !v)}
               style={styles.eyeButton}
               accessibilityLabel={isVisible ? "Hide password" : "Show password"}
             >
@@ -279,37 +277,44 @@ export default function LoginScreen() {
               />
             </TouchableOpacity>
           </View>
-
+  
           <View style={styles.forgotPasswordContainer}>
-            <TouchableOpacity onPress={() => {
-              navigation.navigate('ForgetPassword');
-              setEmail('');
-              setPassword('');
-            }}>
-              <Text style={styles.forgotPassword}>Forgot Password?</Text>
+            <TouchableOpacity
+              onPress={() => {
+                navigation.navigate("ForgetPassword");
+                setEmail("");
+                setPassword("");
+              }}
+            >
+              <Text style={styles.forgotPassword}>{TEXT.login.forgotPassword}</Text>
             </TouchableOpacity>
           </View>
-
-          {error ? <Text style={{ color: 'red', width: '85%', textAlign: 'center' }}>{error}</Text> : null}
-
-          <Text style={styles.signInWithText}>Sign in with</Text>
-
+  
+          {error ? (
+            <Text style={{ color: "red", width: "85%", textAlign: "center" }}>{error}</Text>
+          ) : null}
+  
+          <Text style={styles.signInWithText}>{TEXT.login.signInWith}</Text>
+  
           <View style={styles.socialIconsContainer}>
             <TouchableOpacity style={styles.socialButton} onPress={handleGoogleSignIn} disabled={loading}>
               <Image source={googleLogo} style={styles.socialIconImage} />
             </TouchableOpacity>
-
+  
             <TouchableOpacity style={styles.socialButton} onPress={handleFacebookSignIn} disabled={loading}>
               <Image source={facebookLogo} style={styles.socialIconImage} />
             </TouchableOpacity>
           </View>
-
+  
           <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={loading}>
-            {loading ? <ActivityIndicator size='small' color='#FFF' /> :
-              <Text style={styles.buttonText}>Sign In</Text>}
+            {loading ? (
+              <ActivityIndicator size="small" color="#FFF" />
+            ) : (
+              <Text style={styles.buttonText}>{TEXT.login.signIn}</Text>
+            )}
           </TouchableOpacity>
         </View>
-
+  
         <View style={{ marginBottom: height * 0.12 }} />
       </KeyboardAwareScrollView>
     </SafeAreaView>

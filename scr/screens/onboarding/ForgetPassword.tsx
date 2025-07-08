@@ -7,11 +7,12 @@ import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../../../firebaseConfig';
 import { RFValue } from 'react-native-responsive-fontsize';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { TEXT } from '../../constants/text';
 
 const logo = require('../../assets/logo.png');
 const userLogo = require('../../assets/user.png');
 const backIcon = require('../../assets/backIcon.png');
-const illustration = require('../../assets/password_reset_illustration.png'); // 👈 Add this illustration asset
+const illustration = require('../../assets/password_reset_illustration.png'); 
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, "GettingStarted">;
 
@@ -64,44 +65,44 @@ export default function LoginScreen() {
           <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
             <Image source={backIcon} style={styles.backIcon} />
           </TouchableOpacity>
-
+  
           <Image source={illustration} style={styles.illustration} />
-          <Text style={styles.title}>Reset Your Password</Text>
-          <Text style={styles.subtitle}>Enter your email address below. We'll send you a link to reset your password.</Text>
-
+          <Text style={styles.title}>{TEXT.forgotPassword.title}</Text>
+          <Text style={styles.subtitle}>{TEXT.forgotPassword.subtitle}</Text>
+  
           <View style={{ width: '100%', marginTop: 20 }}>
-            <Text style={styles.label}>Email Address</Text>
+            <Text style={styles.label}>{TEXT.forgotPassword.label}</Text>
             <View style={styles.inputContainer}>
               <Image source={userLogo} style={styles.iconPlaceholder} />
               <TextInput
                 style={styles.input}
                 value={email}
                 onChangeText={(text) => setEmail(text)}
-                placeholder="Enter your email"
+                placeholder={TEXT.forgotPassword.placeholder}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoFocus
               />
             </View>
           </View>
-
+  
           {error ? <Text style={styles.error}>{error}</Text> : null}
-
+  
           <TouchableOpacity style={styles.button} onPress={handlePasswordReset} disabled={loading}>
             {loading
               ? <ActivityIndicator size="small" color="#FFF" />
-              : <Text style={styles.buttonText}>Reset Password</Text>
+              : <Text style={styles.buttonText}>{TEXT.forgotPassword.resetButton}</Text>
             }
           </TouchableOpacity>
-
+  
           <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={styles.linkText}>Remember your password? Log in</Text>
+            <Text style={styles.linkText}>{TEXT.forgotPassword.rememberText}</Text>
           </TouchableOpacity>
         </View>
-
+  
         <View style={{ marginBottom: height * 0.12 }} />
       </KeyboardAwareScrollView>
-
+  
       {loading && (
         <View style={styles.loadingOverlay}>
           <ActivityIndicator size="large" color="#7A5FFF" />
@@ -109,6 +110,7 @@ export default function LoginScreen() {
       )}
     </SafeAreaView>
   );
+  
 }
 
 const { width, height } = Dimensions.get('window');

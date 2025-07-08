@@ -15,6 +15,7 @@ import * as Linking from 'expo-linking';
 import { saveDailyProgress } from '../../utils/monthlyProgressUtils';
 import PerformanceContainer from '../../components/PerformanceContainer';
 import { useTheme } from '../../contexts/ThemeContext';
+import { TEXT } from '../../constants/text';
 
 type NavigationProp = DrawerNavigationProp<HomeStackParamList, 'DailySteps'>;
 
@@ -43,9 +44,7 @@ export default function DailySteps() {
 
   useEffect(() => {
     const initializeData = async () => {
-      // Fetch steps first
       await dispatch(fetchSteps()).unwrap();
-      // Then load performance data
       await loadData();
     };
     initializeData();
@@ -203,7 +202,7 @@ export default function DailySteps() {
             source={require('../../assets/backArrowIcon.png')}
             style={styles.backIcon}
           />
-          <Text style={styles.backButton}>Back</Text>
+          <Text style={styles.backButton}>{TEXT.dailySteps.back}</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => setModalVisible(true)}>
           <Image
@@ -215,7 +214,9 @@ export default function DailySteps() {
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.stepsContainer}>
-          <Text style={[styles.title, { color: theme.textPrimary }]}>You walked <Text style={styles.highlight}>{loading ? '...' : steps}</Text> steps today</Text>
+          <Text style={[styles.title, { color: theme.textPrimary }]}>
+            {TEXT.dailySteps.title} <Text style={styles.highlight}>{loading ? '...' : steps}</Text> {TEXT.dailySteps.stepsToday}
+          </Text>
         </View>
 
         <View style={styles.progressContainer}>
@@ -272,7 +273,7 @@ export default function DailySteps() {
             >
               {Math.round(progress * 100)}%{'\n'}
               <Text style={{ fontSize: 18, fontWeight: 'normal' }}>
-                of daily goal
+                {TEXT.dailySteps.ofDailyGoal}
               </Text>
             </Text>
           </View>
@@ -280,18 +281,18 @@ export default function DailySteps() {
 
         <View style={styles.statsContainer}>
           <View style={styles.stat}>
-            <Text style={[styles.statValue, { color: theme.textSecondary }]}>{caloriesBurned}</Text>
-            <Text style={styles.statLabel}>Cal Burned</Text>
+            <Text style={{ ...styles.statValue, color: theme.textSecondary }}>{caloriesBurned}</Text>
+            <Text style={styles.statLabel}>{TEXT.dailySteps.calBurned}</Text>
           </View>
           <View style={styles.divider} />
           <View style={styles.stat}>
-            <Text style={[styles.statValue, { color: theme.textSecondary }]}>{stepGoal}</Text>
-            <Text style={styles.statLabel}>Daily goal</Text>
+            <Text style={{ ...styles.statValue, color: theme.textSecondary }}>{stepGoal}</Text>
+            <Text style={styles.statLabel}>{TEXT.dailySteps.dailyGoal}</Text>
           </View>
         </View>
 
         <View style={[styles.graphContainer, {backgroundColor: theme.backgroundSecondary}]}>
-          <Text style={[styles.graphTitle, {color: theme.textPrimary}]}>Statistic</Text>
+          <Text style={[styles.graphTitle, {color: theme.textPrimary}]}>{TEXT.dailySteps.statistic}</Text>
           <LineGraph />
         </View>
 
@@ -319,12 +320,12 @@ export default function DailySteps() {
               style={styles.modalCloseButton}
               onPress={() => setModalVisible(false)}
             >
-              <Text style={styles.modalCloseButtonText}>✕</Text>
+              <Text style={styles.modalCloseButtonText}>{TEXT.dailySteps.close}</Text>
             </TouchableOpacity>
 
             <View style={styles.modalHeaderArea}>
-              <Text style={styles.modalHeaderTitle}>{steps >= stepGoal ? 'Goal Achieved!' : 'Goal Incomplete!'}</Text>
-              <Text style={styles.modalHeaderSubtitle}>{steps >= stepGoal ? 'Share with friends!' : `Just ${stepGoal - steps} steps left`}</Text>
+              <Text style={styles.modalHeaderTitle}>{steps >= stepGoal ? TEXT.dailySteps.goalAchieved : TEXT.dailySteps.goalIncomplete}</Text>
+              <Text style={styles.modalHeaderSubtitle}>{steps >= stepGoal ? TEXT.dailySteps.shareWithFriends : TEXT.dailySteps.stepsLeft(stepGoal - steps)}</Text>
             </View>
 
             <View style={styles.floatingCardScrollView}>
@@ -353,19 +354,19 @@ export default function DailySteps() {
                   />
                   <View style={styles.progressTextContainer}>
                     <Text style={[styles.progressStepsValue, { color: theme.textPrimary }]}>{steps}</Text>
-                    <Text style={[styles.progressStepsLabel, { color: theme.textPrimary }]}>steps today</Text>
+                    <Text style={[styles.progressStepsLabel, { color: theme.textPrimary }]}>{TEXT.dailySteps.stepsToday}</Text>
                   </View>
                 </View>
 
                 <View style={styles.modalStatsRow}>
                   <View style={styles.stat}>
                     <Text style={[styles.statValueGray, { color: theme.textSecondary }]}>{caloriesBurned}</Text>
-                    <Text style={styles.statLabel}>Cal Burned</Text>
+                    <Text style={styles.statLabel}>{TEXT.dailySteps.calBurned}</Text>
                   </View>
                   <View style={styles.divider} />
                   <View style={styles.stat}>
                     <Text style={[styles.statValueGray, { color: theme.textSecondary }]}>{stepGoal}</Text>
-                    <Text style={styles.statLabel}>Daily goal</Text>
+                    <Text style={styles.statLabel}>{TEXT.dailySteps.dailyGoal}</Text>
                   </View>
                 </View>
               </View>
@@ -373,10 +374,10 @@ export default function DailySteps() {
 
             <View style={styles.modalFooterArea}>
               <TouchableOpacity style={styles.shareButton} onPress={handleShareFriend}>
-                <Text style={styles.shareButtonText}>Share to friend</Text>
+                <Text style={styles.shareButtonText}>{TEXT.dailySteps.shareToFriend}</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => setModalVisible(false)}>
-                <Text style={styles.notNowText}>Not now</Text>
+                <Text style={styles.notNowText}>{TEXT.dailySteps.notNow}</Text>
               </TouchableOpacity>
             </View>
           </View>

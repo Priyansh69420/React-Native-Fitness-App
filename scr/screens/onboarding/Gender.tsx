@@ -5,6 +5,7 @@ import { RootStackParamList } from '../../navigations/RootStackParamList';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useOnboarding } from '../../contexts/OnboardingContext';
 import { RFValue } from 'react-native-responsive-fontsize';
+import { TEXT } from '../../constants/text';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, "SetProfile">;
 
@@ -45,16 +46,16 @@ export default function SetGenderScreen() {
   return (
     <SafeAreaView style={styles.genderSafeArea}>
       <View style={styles.gendercontainer}>
-
+  
         <TouchableOpacity style={styles.genderBackButton} onPress={() => navigation.goBack()}>
           <Image source={backIcon} style={styles.genderBackIcon} />
         </TouchableOpacity>
-
+  
         <View style={styles.genderCenteredContent}>
           <Image source={logo} style={styles.appLogo} resizeMode="contain" />
-
-          <Text style={styles.title}>Which one are you?</Text>
-
+  
+          <Text style={styles.title}>{TEXT.onboarding.setGender.title}</Text>
+  
           <View style={styles.genderContainer}>
             {genders.map((gender) => (
               <TouchableOpacity
@@ -77,20 +78,22 @@ export default function SetGenderScreen() {
               </TouchableOpacity>
             ))}
           </View>
-
-          <Text style={styles.subtitle}>
-            To give you a better experience we need to know your gender
-          </Text>
-
-          {error ? <Text style={{color: 'red', width: '100%', textAlign: 'center', marginTop: -30, marginBottom: 12}}>{error}</Text>: <></>}
-
+  
+          <Text style={styles.subtitle}>{TEXT.onboarding.setGender.subtitle}</Text>
+  
+          {error ? (
+            <Text style={{ color: 'red', width: '100%', textAlign: 'center', marginTop: -30, marginBottom: 12 }}>
+              {error}
+            </Text>
+          ) : null}
+  
           <TouchableOpacity style={styles.button} onPress={handleContinuePress}>
-            <Text style={styles.buttonText}>Continue</Text>
+            <Text style={styles.buttonText}>{TEXT.onboarding.setGender.continue}</Text>
           </TouchableOpacity>
         </View>
       </View>
     </SafeAreaView>
-  );
+  );  
 }
 
 const { width, height } = Dimensions.get('window');

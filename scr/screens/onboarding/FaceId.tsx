@@ -6,6 +6,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import ReactNativeBiometrics, { BiometryTypes } from 'react-native-biometrics';
 import { useOnboarding } from '../../contexts/OnboardingContext';
 import { RFValue } from 'react-native-responsive-fontsize';
+import { TEXT } from '../../constants/text';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, "SetPassword">;
 const logo = require('../../assets/logo.png'); 
@@ -68,33 +69,30 @@ export default function FaceId() {
   return (
     <SafeAreaView style={styles.bioSafeArea}>
       <View style={styles.bioContainer}>
-
+  
         <TouchableOpacity style={styles.bioBackButton} onPress={() => navigation.goBack()}>
           <Image source={backIcon} style={styles.bioBackIcon} />
         </TouchableOpacity>
-
+  
         <View style={styles.bioCenteredContent}>
           <Image source={logo} style={styles.appLogo} resizeMode="contain" />
-
           <Image source={fingerprintIcon} style={styles.fingerprintIcon} resizeMode="contain" />
-
-          <Text style={styles.title}>Enable Face ID</Text>
-
-          <Text style={styles.subtitle}>
-            If you enable Face ID, you don’t need to enter your password when you login.
-          </Text>
-
-          <TouchableOpacity style={styles.button} onPress={enableBiometricAuth} >
-            <Text style={styles.buttonText}>Continue</Text>
+  
+          <Text style={styles.title}>{TEXT.onboarding.faceId.title}</Text>
+  
+          <Text style={styles.subtitle}>{TEXT.onboarding.faceId.subtitle}</Text>
+  
+          <TouchableOpacity style={styles.button} onPress={enableBiometricAuth}>
+            <Text style={styles.buttonText}>{TEXT.onboarding.faceId.continueButton}</Text>
           </TouchableOpacity>
-
-          <TouchableOpacity style={styles.notNowButton} onPress={handleNotNow} >
-            <Text style={styles.notNowText}>Not Now</Text>
+  
+          <TouchableOpacity style={styles.notNowButton} onPress={handleNotNow}>
+            <Text style={styles.notNowText}>{TEXT.onboarding.faceId.notNowButton}</Text>
           </TouchableOpacity>
         </View>
       </View>
     </SafeAreaView>
-  );
+  );  
 }
 
 const { width, height } = Dimensions.get('window');

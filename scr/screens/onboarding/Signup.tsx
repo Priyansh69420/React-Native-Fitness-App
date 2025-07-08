@@ -9,6 +9,7 @@ import { auth } from '../../../firebaseConfig';
 import { RFValue } from 'react-native-responsive-fontsize';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useNetInfo } from '@react-native-community/netinfo';
+import { TEXT } from '../../constants/text';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, "Signup">;
 const logo = require('../../assets/logo.png');
@@ -222,19 +223,21 @@ export default function Signup() {
               <Image source={backIcon} style={styles.backIcon} />
             </TouchableOpacity>
           ) : (<></>)}
-
+  
           <View style={styles.centeredContent}>
             <Image source={logo} style={styles.appLogo} resizeMode="contain" />
-
+  
             <Text style={styles.title}>
-              {onboardingData.password ? 'Verify Your Email' : 'What is your Email address?'}
+              {onboardingData.password
+                ? TEXT.emailVerification.title.verified
+                : TEXT.emailVerification.title.enter}
             </Text>
-
+  
             <View style={{ marginBottom: height * 0.125, width: '100%', alignItems: 'center' }}>
               <View style={styles.inputContainer}>
                 <TextInput
                   style={styles.input}
-                  placeholder="Enter your email address"
+                  placeholder={TEXT.emailVerification.placeholder}
                   keyboardType="email-address"
                   autoCapitalize="none"
                   value={email}
@@ -243,7 +246,7 @@ export default function Signup() {
                   autoFocus
                 />
               </View>
-
+  
               {error ? (
                 <Text style={{ color: 'red', width: '100%', textAlign: 'center' }}>{error}</Text>
               ) : null}
@@ -258,7 +261,7 @@ export default function Signup() {
                 </Text>
               ) : null}
             </View>
-
+  
             <TouchableOpacity
               style={[styles.button, verifying && { backgroundColor: '#A9A9A9' }]}
               onPress={handleContinue}
@@ -268,7 +271,9 @@ export default function Signup() {
                 <ActivityIndicator size="small" color="#FFF" />
               ) : (
                 <Text style={styles.buttonText}>
-                  {onboardingData.password ? 'Verify Email' : 'Continue'}
+                  {onboardingData.password
+                    ? TEXT.emailVerification.verifyButton
+                    : TEXT.emailVerification.continueButton}
                 </Text>
               )}
             </TouchableOpacity>
@@ -278,6 +283,7 @@ export default function Signup() {
       </KeyboardAwareScrollView>
     </SafeAreaView>
   );
+  
 }
 
 const { width, height } = Dimensions.get('window');

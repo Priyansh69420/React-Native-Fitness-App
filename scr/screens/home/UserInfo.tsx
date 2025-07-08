@@ -7,6 +7,7 @@ import { UserInfoScreenRouteProp } from '../../navigations/CommunityStack';
 import { RFPercentage, RFValue } from 'react-native-responsive-fontsize';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../contexts/ThemeContext';
+import { TEXT } from '../../constants/text';
 
 type NavigationProp = DrawerNavigationProp<CommunityStackParamList, 'UserInfo'>;
 
@@ -24,7 +25,7 @@ const UserInfo = () => {
             source={require('../../assets/backArrowIcon.png')}
             style={[styles.backIcon, { tintColor: theme.textButtonTertiary }]}
           />
-          <Text style={[styles.backButton, { color: theme.textButtonTertiary }]}>Back</Text>
+          <Text style={[styles.backButton, { color: theme.textButtonTertiary }]}>{TEXT.userInfo.back}</Text>
         </TouchableOpacity>
       </View>
 
@@ -38,35 +39,35 @@ const UserInfo = () => {
           ) : (
             <View style={[styles.profileImagePlaceholder, { backgroundColor: theme.backgroundTertiary }]} />
           )}
-          <Text style={[styles.userName, { color: theme.textPrimary }]}>{user?.name ?? 'User Name'}</Text>
+          <Text style={[styles.userName, { color: theme.textPrimary }]}>{user?.name ?? TEXT.userInfo.userNamePlaceholder}</Text>
           {user?.email && <Text style={[styles.userEmail, { color: theme.textPlaceholder }]}>{user.email}</Text>}
         </View>
 
         <View style={[styles.infoSection, { backgroundColor: theme.backgroundSecondary, borderColor: theme.borderPrimary }]}>
           <View style={styles.sectionHeader}>
             <Feather name="target" size={RFValue(20, height)} color="#27ae60" style={styles.sectionIcon} />
-            <Text style={[styles.sectionTitle, { color: '#27ae60' }]}>Goals</Text>
+            <Text style={[styles.sectionTitle, { color: '#27ae60' }]}>{TEXT.userInfo.goals}</Text>
           </View>
           {user?.goals && user.goals.length > 0 ? (
             user.goals.map((goal) => (
               <Text key={goal} style={[styles.infoText, { color: theme.textSecondary }]}>• {goal}</Text>
             ))
           ) : (
-            <Text style={[styles.emptyText, { color: theme.textPlaceholder }]}>No goals specified.</Text>
+            <Text style={[styles.emptyText, { color: theme.textPlaceholder }]}>{TEXT.userInfo.noGoals}</Text>
           )}
         </View>
 
         <View style={[styles.infoSection, { backgroundColor: theme.backgroundSecondary, borderColor: theme.borderPrimary }]}>
           <View style={styles.sectionHeader}>
             <Feather name="heart" size={RFValue(20, height)} color="#e74c3c" style={styles.sectionIcon} />
-            <Text style={[styles.sectionTitle, { color: '#e74c3c' }]}>Interests</Text>
+            <Text style={[styles.sectionTitle, { color: '#e74c3c' }]}>{TEXT.userInfo.interests}</Text>
           </View>
           {user?.interests && user.interests.length > 0 ? (
             user.interests.map((interest) => (
               <Text key={interest} style={[styles.infoText, { color: theme.textSecondary }]}>• {interest}</Text>
             ))
           ) : (
-            <Text style={[styles.emptyText, { color: theme.textPlaceholder }]}>No interests specified.</Text>
+            <Text style={[styles.emptyText, { color: theme.textPlaceholder }]}>{TEXT.userInfo.noInterests}</Text>
           )}
         </View>
 
@@ -74,9 +75,9 @@ const UserInfo = () => {
           <View style={[styles.infoSection, { backgroundColor: theme.backgroundSecondary, borderColor: theme.borderPrimary }]}>
             <View style={styles.sectionHeader}>
               <Feather name="user" size={RFValue(20, height)} color="#3498db" style={styles.sectionIcon} />
-              <Text style={[styles.sectionTitle, { color: '#3498db' }]}>Gender</Text>
+              <Text style={[styles.sectionTitle, { color: '#3498db' }]}>{TEXT.userInfo.gender}</Text>
             </View>
-            <Text style={[styles.infoText, { color: theme.textSecondary }]}>{user.gender || 'Not specified'}</Text>
+            <Text style={[styles.infoText, { color: theme.textSecondary }]}>{user.gender || TEXT.userInfo.notSpecified}</Text>
           </View>
         )}
       </ScrollView>

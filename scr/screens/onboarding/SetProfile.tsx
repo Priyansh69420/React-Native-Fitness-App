@@ -8,6 +8,7 @@ import * as ImagePicker from "expo-image-picker";
 import RNFS from 'react-native-fs';
 import { supabase } from '../../../supabaseConfig';
 import { RFValue } from 'react-native-responsive-fontsize';
+import { TEXT } from '../../constants/text';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, "SetProfile">;
 const logo = require('../../assets/logo.png');
@@ -39,6 +40,10 @@ export default function SetProfile() {
       setCustomImg(onboardingData.profilePicture);
     }
   }, []);
+
+  useEffect(() => {
+    if(customImg) setSelectedAvatar(null);
+  }, [customImg, selectedAvatar])
 
   const handleAddCustomPhoto = async () => {
     try {
@@ -158,7 +163,7 @@ export default function SetProfile() {
   };
 
   const confirmCustomImage = () => {
-    if(customImg) {
+    if(customImg || avatars.some(item => item.source.uri === selectedAvatar)) {
       setError('');
       setSelectedAvatar(null);
       setModalVisible(false);
@@ -188,21 +193,20 @@ export default function SetProfile() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Image source={backIcon} style={styles.backIcon} />
         </TouchableOpacity>
-
+  
         <View style={styles.centeredContent}>
           <Image source={logo} style={styles.appLogo} resizeMode="contain" />
-
+  
           <View style={styles.avatarRow}>
             {avatars.map((item) => (
               <TouchableOpacity
                 key={item.id}
                 onPress={() => {
-                  setError('')
-                  setSelectedAvatar(item.source.uri)
+                  setError('');
+                  setSelectedAvatar(item.source.uri);
                 }}
                 disabled={buttonLoading}
               >
@@ -210,8 +214,8 @@ export default function SetProfile() {
                   style={[
                     styles.avatarContainer,
                     selectedAvatar === item.source.uri && styles.selectedAvatarContainer,
-                    !selectedAvatar && error && styles.errorAvatar,  
-                  ]}                
+                    !selectedAvatar && error && styles.errorAvatar,
+                  ]}
                 >
                   <Image
                     source={item.source}
@@ -219,83 +223,86 @@ export default function SetProfile() {
                       styles.avatarImage,
                       selectedAvatar === item.source.uri && styles.selectedAvatar,
                     ]}
-                    resizeMode="cover" 
+                    resizeMode="cover"
                   />
                 </View>
               </TouchableOpacity>
             ))}
           </View>
-
-          <Text style={styles.title}>Profile Picture</Text>
-
-          <Text style={styles.subtitle}>
-            You can select photo from one of this emoji or add your own photo as profile picture
-          </Text>
-
-          <View style={{marginBottom: height * 0.07, alignItems: 'center'}}>
-          <TouchableOpacity style={styles.addPhotoButton} onPress={handleAddCustomPhoto} disabled={buttonLoading}>
-            <Text style={styles.addPhotoText}>Add Custom Photo</Text>
-          </TouchableOpacity>
-
-          {error ? <Text style={{color: 'red', width: '85%', textAlign: 'center', maxWidth: '70%'}}>{error}</Text>: <></>}
+  
+          <Text style={styles.title}>{TEXT.onboarding.setProfile.title}</Text>
+  
+          <Text style={styles.subtitle}>{TEXT.onboarding.setProfile.subtitle}</Text>
+  
+          <View style={{ marginBottom: height * 0.07, alignItems: 'center' }}>
+            <TouchableOpacity style={styles.addPhotoButton} onPress={handleAddCustomPhoto} disabled={buttonLoading}>
+              <Text style={styles.addPhotoText}>{TEXT.onboarding.setProfile.addPhoto}</Text>
+            </TouchableOpacity>
+  
+            {error ? (
+              <Text style={{ color: 'red', width: '85%', textAlign: 'center', maxWidth: '70%' }}>
+                {error}
+              </Text>
+            ) : null}
           </View>
-
+  
           <TouchableOpacity style={styles.button} onPress={handleContinuePress}>
             {buttonLoading ? (
-              <ActivityIndicator size='large' color='#b3b3b3' />
-            ): (
-              <Text style={styles.buttonText}>Continue</Text>
+              <ActivityIndicator size="large" color="#b3b3b3" />
+            ) : (
+              <Text style={styles.buttonText}>{TEXT.onboarding.setProfile.continue}</Text>
             )}
           </TouchableOpacity>
-
-          <TouchableOpacity style={[styles.addPhotoButton, {marginBottom: -20, marginTop: -5}]} onPress={() => setModalVisible(prev => true)}> 
-            <Text style={[styles.addPhotoText, {fontSize: 14}]}>View Image</Text>
+  
+          <TouchableOpacity
+            style={[styles.addPhotoButton, { marginBottom: -20, marginTop: -5 }]}
+            onPress={() => setModalVisible((prev) => true)}
+          >
+            <Text style={[styles.addPhotoText, { fontSize: 14 }]}>
+              {TEXT.onboarding.setProfile.viewImage}
+            </Text>
           </TouchableOpacity>
-
-            <Modal
-              animationType='slide'
-              transparent={true}
-              visible={modalVisible}
-              onRequestClose={() => setModalVisible(false)}
-            >
-              <View style={styles.modalOverlay}>
+  
+          <Modal
+            animationType="slide"
+            transparent={true}
+            visible={modalVisible}
+            onRequestClose={() => setModalVisible(false)}
+          >
+            <View style={styles.modalOverlay}>
               <View style={styles.modalContainer}>
-                  <Text style={styles.modalTitle}>Preview Custom Image</Text>
-                  <View style={styles.modalImagePreviewContainer}>
-                    {imageLoading && (
-                      <ActivityIndicator 
-                        size="large" 
-                        color="#b6b6b6" 
-                        style={styles.activityIndicator} 
-                      /> 
-                    )}
-                    
-                    {customImg || onboardingData.profilePicture ? (
-                      <Image
-                        source={{ uri: String(customImg || onboardingData.profilePicture) }}
-                        style={styles.modalImagePreview}
-                        resizeMode="cover"
-                        onLoad={() => setImageLoading(false)} 
-                        onError={() => setImageLoading(false)} 
-                      />
-                    ) : (
-                      <View style={styles.modalImagePlaceholder}>
-                        <Text style={styles.placeholderText}>No Image Selected</Text>
-                      </View>
-                    )}
-                  </View>
-
-                  <View style={styles.modalButtonContainer}>
-                    <Button title="Cancel" onPress={cancelCustomImage} color="#FF3B30" />
-                    <Button title="Confirm" onPress={confirmCustomImage} color="#007AFF" />
-                  </View>
-                  </View>
+                <Text style={styles.modalTitle}>{TEXT.onboarding.setProfile.modalTitle}</Text>
+                <View style={styles.modalImagePreviewContainer}>
+                  {imageLoading && (
+                    <ActivityIndicator size="large" color="#b6b6b6" style={styles.activityIndicator} />
+                  )}
+  
+                  {customImg || onboardingData.profilePicture ? (
+                    <Image
+                      source={{ uri: String(customImg || onboardingData.profilePicture) }}
+                      style={styles.modalImagePreview}
+                      resizeMode="cover"
+                      onLoad={() => setImageLoading(false)}
+                      onError={() => setImageLoading(false)}
+                    />
+                  ) : (
+                    <View style={styles.modalImagePlaceholder}>
+                      <Text style={styles.placeholderText}>{TEXT.onboarding.setProfile.modalPlaceholder}</Text>
+                    </View>
+                  )}
                 </View>
-            </Modal>
+  
+                <View style={styles.modalButtonContainer}>
+                  <Button title={TEXT.onboarding.setProfile.modalCancel} onPress={cancelCustomImage} color="#FF3B30" />
+                  <Button title={TEXT.onboarding.setProfile.modalConfirm} onPress={confirmCustomImage} color="#007AFF" />
+                </View>
+              </View>
+            </View>
+          </Modal>
         </View>
       </View>
     </SafeAreaView>
-  );
+  );  
 }
 
 const { width, height } = Dimensions.get('window');

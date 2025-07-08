@@ -139,7 +139,7 @@ function CustomDrawerContent(props: any) {
   };
 
   return (
-    <DrawerContentScrollView {...props} contentContainerStyle={[styles.contentContainer, { backgroundColor: theme.backgroundSecondary }]}>
+    <DrawerContentScrollView {...props} contentContainerStyle={[styles.contentContainer, { backgroundColor: theme.backgroundSecondary }]} scrollEnabled={false}>
       <View style={[styles.profileContainer, { borderBottomColor: theme.borderPrimary }]}>
         <Image source={profileImageSource} style={profilePictureStyle} />
         <Text style={[styles.userName, { color: theme.textPrimary }]}>{userData?.name}</Text>

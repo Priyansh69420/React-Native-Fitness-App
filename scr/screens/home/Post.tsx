@@ -12,6 +12,7 @@ import { ResizeMode, Video } from 'expo-av';
 import { getTimeAgo } from './Community';
 import { useNetInfo } from '@react-native-community/netinfo';
 import { useTheme } from '../../contexts/ThemeContext';
+import { TEXT } from '../../constants/text';
 
 type NavigationProp = DrawerNavigationProp<CommunityStackParamList, 'Community'>;
 
@@ -240,7 +241,7 @@ export default function Post() {
       <View style={[styles.header1, { backgroundColor: theme.backgroundSecondary }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButtonContainer1}>
           <Image source={require('../../assets/backArrowIcon.png')} style={[styles.backIcon1, { tintColor: theme.textButtonTertiary }]} />
-          <Text style={[styles.backButton1, { color: theme.textButtonTertiary }]}>Back</Text>
+          <Text style={[styles.backButton1, { color: theme.textButtonTertiary }]}>{TEXT.post.back}</Text>
         </TouchableOpacity>
       </View>
 
@@ -253,7 +254,7 @@ export default function Post() {
               <View style={[styles.avatarPlaceholder, { backgroundColor: theme.backgroundTertiary }]} />
             )}
             <View style={styles.userInfo}>
-              <Text style={[styles.userName, { color: theme.textPrimary }]}>{name ?? 'User'}</Text>
+              <Text style={[styles.userName, { color: theme.textPrimary }]}>{name ?? TEXT.post.userPlaceholder}</Text>
               <Text style={[styles.timestamp, { color: theme.textPlaceholder }]}>{getTimeAgo(post.timestamp)}</Text>
             </View>
           </View>
@@ -293,7 +294,7 @@ export default function Post() {
         </View>
 
         <View style={styles.commentsHeader}>
-          <Text style={[styles.commentsHeaderText, { color: theme.textPrimary }]}>Comments</Text>
+          <Text style={[styles.commentsHeaderText, { color: theme.textPrimary }]}>{TEXT.post.comments}</Text>
         </View>
         {loadingComments ? (
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -312,7 +313,7 @@ export default function Post() {
       <View style={[styles.newAddCommentContainer, { backgroundColor: theme.backgroundSecondary }]}>
         <TextInput
           style={[styles.newCommentInput, { borderColor: theme.borderPrimary, backgroundColor: theme.backgroundSecondary, color: theme.textPrimary }]}
-          placeholder="Write comment..."
+          placeholder={TEXT.post.writeComment}
           placeholderTextColor={theme.textPlaceholder}
           value={commentText}
           onChangeText={setCommentText}
@@ -325,12 +326,12 @@ export default function Post() {
           {loading ? (
             <ActivityIndicator size="small" color={theme.activityIndicatorPrimary} />
           ) : (
-            <Text style={[styles.newPostCommentButtonText, { color: theme.textButtonPrimary }]}>Post</Text>
+            <Text style={[styles.newPostCommentButtonText, { color: theme.textButtonPrimary }]}>{TEXT.post.postButton}</Text>
           )}
         </TouchableOpacity>
       </View>
     </SafeAreaView>
-  );
+);
 }
 
 const { width, height } = Dimensions.get('window');

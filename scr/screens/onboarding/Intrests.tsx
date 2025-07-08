@@ -5,6 +5,7 @@ import { RootStackParamList } from '../../navigations/RootStackParamList';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useOnboarding } from '../../contexts/OnboardingContext';
 import { RFValue } from 'react-native-responsive-fontsize';
+import { TEXT } from '../../constants/text';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, "SetProfile">;
 
@@ -62,16 +63,16 @@ export default function Intrests() {
   return (
     <SafeAreaView style={styles.intrestSafeArea}>
       <View style={styles.intrestContainer}>
-
-        <TouchableOpacity style={styles.intrestBackButton} onPress={() => navigation.goBack()} >
-          <Image source={backIcon} style={styles.intrestBackIcon}/>
+  
+        <TouchableOpacity style={styles.intrestBackButton} onPress={() => navigation.goBack()}>
+          <Image source={backIcon} style={styles.intrestBackIcon} />
         </TouchableOpacity>
-
+  
         <View style={styles.intrestCenteredContent}>
-          <Image source={logo} style={styles.appLogo} resizeMode='contain' />
-
-          <Text style={styles.title}>Time to customize your interests</Text>
-
+          <Image source={logo} style={styles.appLogo} resizeMode="contain" />
+  
+          <Text style={styles.title}>{TEXT.onboarding.setInterests.title}</Text>
+  
           <View style={styles.interestsContainer}>
             {interests.map((item) => (
               <TouchableOpacity
@@ -85,26 +86,28 @@ export default function Intrests() {
                     selectedInterest.includes(item.label) && styles.selectedIconContainer,
                   ]}
                 >
-                  <Image 
-                    source={item.source} 
+                  <Image
+                    source={item.source}
                     style={styles.interestIcon}
-                    resizeMode='contain'
+                    resizeMode="contain"
                   />
                 </View>
                 <Text style={styles.interestLabel}>{item.label}</Text>
               </TouchableOpacity>
             ))}
-
-            {error ? <Text style={{color: 'red', width: '100%', textAlign: 'center'}}>{error}</Text>: <></>}
+  
+            {error ? (
+              <Text style={{ color: 'red', width: '100%', textAlign: 'center' }}>{error}</Text>
+            ) : null}
           </View>
-
-          <TouchableOpacity style={styles.button} onPress={handleContinuePress} >
-            <Text style={styles.buttonText}>Continue</Text>
+  
+          <TouchableOpacity style={styles.button} onPress={handleContinuePress}>
+            <Text style={styles.buttonText}>{TEXT.onboarding.setInterests.continue}</Text>
           </TouchableOpacity>
         </View>
       </View>
     </SafeAreaView>
-  )
+  );  
 }
 
 const { width, height } = Dimensions.get('window');

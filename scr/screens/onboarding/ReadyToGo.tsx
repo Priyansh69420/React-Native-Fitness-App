@@ -6,6 +6,7 @@ import { auth, firestore } from '../../../firebaseConfig';
 import { doc, setDoc, deleteDoc } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNetInfo } from '@react-native-community/netinfo';
+import { TEXT } from '../../constants/text';
 
 const logo = require('../../assets/logo.png');
 const continueIcon = require('../../assets/continueIcon.png');
@@ -76,9 +77,9 @@ export default function ReadyToGo() {
           <Image source={logo} style={styles.appLogo} resizeMode="contain" />
         </View>
 
-        <Text style={styles.title}>You are ready to go!</Text>
+        <Text style={styles.title}>{TEXT.onboarding.readyToGo.title}</Text>
         <Text style={styles.subtitle}>
-          Thanks for taking your time to create account with us. Now this is the fun part, let’s explore the app.
+        {TEXT.onboarding.readyToGo.subTitle}
         </Text>
 
         {error ? (
